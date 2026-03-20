@@ -1500,7 +1500,25 @@
         <button class="btn-primary" style="width:100%;justify-content:center" onclick="handleLogin()">Sign In</button>
         <div class="auth-error" id="loginError"></div>
         <div class="auth-toggle">
+          <a href="#" onclick="event.preventDefault();showForgotPassword()" style="color:#B8A88A">Forgot password?</a>
+        </div>
+        <div class="auth-toggle">
           No account yet? <a href="#" onclick="event.preventDefault();showSignup()">Create one</a>
+        </div>
+      </div>
+
+      <!-- Forgot password form -->
+      <div id="forgotForm" style="display:none">
+        <h2 style="text-align:center;font-size:1.2rem;margin-bottom:20px">Reset Password</h2>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="forgotEmail" placeholder="you@example.com">
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center" onclick="handleForgotPassword()">Send Reset Link</button>
+        <div class="auth-error" id="forgotError"></div>
+        <div class="auth-success" id="forgotSuccess" style="display:none"></div>
+        <div class="auth-toggle">
+          <a href="#" onclick="event.preventDefault();showLogin()">Back to sign in</a>
         </div>
       </div>
 
@@ -1568,6 +1586,7 @@
             <a href="mailto:support@lfyconsulting.com" style="color:#B8A88A;font-size:0.82rem">Contact Support</a>
           </div>
           <button class="account-signout" onclick="doSignOut()">Sign Out</button>
+          <button class="account-signout" onclick="handleDeleteAccount()" style="color:#C94444;margin-top:4px;font-size:0.75rem">Delete Account</button>
         </div>
       </div>
     </div>
@@ -1958,15 +1977,26 @@
       }
     });
 
-    function doSignOut() {
+    var isSigningOut = false;
+    async function doSignOut() {
+      isSigningOut = true;
+      // Sign out of Supabase first
+      try {
+        if (window._supabase) await window._supabase.auth.signOut();
+      } catch(e) {}
+      // Clear state
+      if (typeof state !== 'undefined') {
+        state.userEmail = '';
+        state.userId = '';
+        state.hasPaid = false;
+      }
       // Hide app
       document.getElementById('landingPage').classList.remove('hidden');
       document.getElementById('mainNav').style.display = 'none';
       document.getElementById('mainApp').style.display = 'none';
       document.getElementById('appContent').style.display = 'none';
       window.scrollTo({ top: 0 });
-      // Sign out of Supabase if available
-      try { if (window._supabase) window._supabase.auth.signOut(); } catch(e) {}
+      setTimeout(function() { isSigningOut = false; }, 1000);
     }
 
     // ── Supabase Init ──
@@ -2047,13 +2077,52 @@
     function showLogin() {
       document.getElementById('loginForm').style.display = 'block';
       document.getElementById('signupForm').style.display = 'none';
+      var forgotForm = document.getElementById('forgotForm');
+      if (forgotForm) forgotForm.style.display = 'none';
       document.getElementById('loginError').textContent = '';
     }
     function showSignup() {
       document.getElementById('loginForm').style.display = 'none';
       document.getElementById('signupForm').style.display = 'block';
+      var forgotForm = document.getElementById('forgotForm');
+      if (forgotForm) forgotForm.style.display = 'none';
       document.getElementById('signupError').textContent = '';
       document.getElementById('signupSuccess').style.display = 'none';
+    }
+    function showForgotPassword() {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('signupForm').style.display = 'none';
+      document.getElementById('forgotForm').style.display = 'block';
+      document.getElementById('forgotError').textContent = '';
+      document.getElementById('forgotSuccess').style.display = 'none';
+    }
+    async function handleForgotPassword() {
+      var email = document.getElementById('forgotEmail').value.trim();
+      document.getElementById('forgotError').textContent = '';
+      document.getElementById('forgotSuccess').style.display = 'none';
+      if (!email) {
+        document.getElementById('forgotError').textContent = 'Please enter your email';
+        return;
+      }
+      if (!supabase) {
+        document.getElementById('forgotError').textContent = 'Could not connect. Please try again.';
+        return;
+      }
+      var { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '?reset=true'
+      });
+      if (error) {
+        document.getElementById('forgotError').textContent = error.message;
+      } else {
+        document.getElementById('forgotSuccess').style.display = 'block';
+        document.getElementById('forgotSuccess').textContent = 'Check your email for a password reset link.';
+      }
+    }
+    async function handleDeleteAccount() {
+      if (!confirm('Are you sure you want to delete your account? This cannot be undone. All your data will be permanently removed.')) return;
+      if (!confirm('This is permanent. Your pipeline, saved searches, and all data will be deleted. Continue?')) return;
+      // Send email to support
+      alert('To delete your account, please email support@lfyconsulting.com with the subject "Delete my account" from your registered email address. We will process your request within 30 days.');
     }
 
     async function handleLogin() {
@@ -2180,6 +2249,8 @@
     // Listen for auth changes
     if (supabase) {
       supabase.auth.onAuthStateChange(async (event, session) => {
+        if (isSigningOut) return;
+        if (event === 'SIGNED_OUT') return;
         if (session?.user) {
           showApp(session.user);
           await loadUserData();
