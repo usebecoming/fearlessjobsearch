@@ -1326,9 +1326,9 @@
       <span>FEARLESS JOB SEARCH</span>
     </div>
     <div class="nav-right">
-      <button class="nav-link" onclick="goToStep(1)">Home</button>
+      <button class="nav-link" onclick="goToStep(1)">Search</button>
       <button class="nav-link" onclick="openPipeline()">Pipeline</button>
-      <button class="nav-link accent" onclick="openBookingModal()">Work With Ben</button>
+      <button class="nav-link accent" onclick="openBookingModal()">Get 1:1 Help</button>
       <div class="nav-divider"></div>
       <button class="nav-link accent" id="navUpgradeBtn" onclick="openUpgradeModal()">Upgrade</button>
       <span class="user-email" id="navUserEmail"></span>
@@ -1641,36 +1641,38 @@
 
   <!-- ── Booking Modal ── -->
   <div class="booking-modal" id="bookingModal">
-    <div class="modal" style="max-width:600px">
+    <div class="modal" style="max-width:620px">
       <div class="modal-header">
-        <h2 style="font-size:1.3rem">Work With Ben</h2>
+        <h2 style="font-size:1.3rem">Get 1:1 Help From the Coach Who Built This</h2>
         <button class="modal-close" onclick="closeBookingModal()">&#10005;</button>
       </div>
-      <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:20px">Get direct access to the coach who built this tool. Dr. Benjamin Ritter has helped hundreds of executives land the roles they actually want.</p>
+      <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:6px">The AI finds the opportunities. Dr. Benjamin Ritter helps you win them.</p>
+      <p style="font-size:0.82rem;color:#858585;font-weight:500;margin-bottom:24px;font-family:'IBM Plex Mono',monospace">ICF PCC Coach · Clients at Google, Amazon, Pinterest, Coursera</p>
       <div class="booking-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">Resume Review and Rewrite</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">Resume That Opens Doors</div>
           <span style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:600;color:#B8A88A">$500</span>
         </div>
-        <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">Get your resume rewritten by an expert who knows what hiring managers at top companies actually look for. Includes a 45-minute strategy call and a fully rewritten resume.</p>
-        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book Resume Review</a>
+        <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">Your resume isn't getting you in the room? Ben rewrites it so it does. Includes a 45-minute strategy call and a fully repositioned resume built for the roles you actually want.</p>
+        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book Now</a>
       </div>
       <div class="booking-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">LinkedIn Optimization</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">LinkedIn That Attracts Opportunities</div>
           <span style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:600;color:#B8A88A">$500</span>
         </div>
-        <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">Transform your LinkedIn profile into a magnet for opportunities. Headline, summary, experience, and positioning all optimized for executive-level roles.</p>
-        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book LinkedIn Session</a>
+        <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">Stop being invisible to the right people. Ben overhauls your headline, summary, and positioning so recruiters and hiring managers come to you.</p>
+        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book Now</a>
       </div>
       <div class="booking-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">Career Coaching Session</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">Career Strategy Session</div>
           <span style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:600;color:#B8A88A">$500</span>
         </div>
-        <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">A focused 60-minute session to clarify your career direction, refine your search strategy, and build confidence for your next move. No fluff, just results.</p>
-        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book Coaching Session</a>
+        <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">60 minutes to get clear on your direction, sharpen your positioning, and build a plan that actually moves. For leaders who are done guessing and ready to act.</p>
+        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book Now</a>
       </div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#858585;margin-top:16px;text-align:center">Non-refundable once booked. Rescheduling available with 48+ hours notice. <a href="/policies" style="color:#B8A88A">Full policy</a></p>
     </div>
   </div>
 
@@ -2343,7 +2345,7 @@ Return a JSON array of objects with these exact fields:
 
         let stretchNote = '';
         if (job.fitScore < 87) {
-          stretchNote = `<div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#C94444;font-weight:500">${job.fitScore < 70 ? 'Stretch' : 'Good Match'} - may need resume tailoring. <a href="#" onclick="event.stopPropagation();event.preventDefault();openBookingModal()" style="color:#B8A88A;font-weight:600">Get Ben's eyes on it.</a></div>`;
+          stretchNote = `<div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#C94444;font-weight:500">${job.fitScore < 70 ? 'Stretch' : 'Good Match'} - may need resume tailoring. <a href="#" onclick="event.stopPropagation();event.preventDefault();openBookingModal()" style="color:#B8A88A;font-weight:600">Get 1:1 help with this.</a></div>`;
         }
 
         card.innerHTML = `
@@ -2378,7 +2380,7 @@ Return a JSON array of objects with these exact fields:
       // Coaching CTA after job listings
       const ctaDiv = document.createElement('div');
       ctaDiv.className = 'coaching-cta';
-      ctaDiv.innerHTML = 'Want expert eyes on your strategy? <a href="#" onclick="event.preventDefault();openBookingModal()">Work with Ben &#8594;</a>';
+      ctaDiv.innerHTML = 'Want expert eyes on your strategy? <a href="#" onclick="event.preventDefault();openBookingModal()">Get 1:1 coaching &#8594;</a>';
       container.appendChild(ctaDiv);
 
       document.getElementById('selectionBar').style.display = 'flex';
