@@ -1374,6 +1374,14 @@
         <button class="search-mode-btn" onclick="setSearchMode('companies')">Company Target</button>
       </div>
 
+      <!-- Mode Instructions -->
+      <div id="jobModeInstructions" style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:10px;padding:16px 20px;margin-bottom:20px">
+        <p style="font-size:0.88rem;color:#555;font-weight:500;line-height:1.6;margin:0">Enter the titles you're targeting. We'll find active opportunities that match your leadership profile, score them against your resume, and surface the people who make hiring decisions at each company.</p>
+      </div>
+      <div id="companyModeInstructions" style="display:none;background:#FFFFFF;border:1px solid #E5E4E2;border-radius:10px;padding:16px 20px;margin-bottom:20px">
+        <p style="font-size:0.88rem;color:#555;font-weight:500;line-height:1.6;margin:0">Enter the companies you want to work at. We'll look for relevant leadership openings at each one. If no roles are currently posted, we'll still surface the right people to start building a relationship with, so you're first in line when something opens.</p>
+      </div>
+
       <!-- Saved Search Profiles -->
       <div class="saved-profiles-bar" style="margin-bottom:28px">
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -1401,7 +1409,7 @@
       <div class="form-group" id="companiesGroup" style="display:none">
         <label class="form-label">Target Companies</label>
         <div class="tag-input-wrap" id="companiesWrap">
-          <input type="text" class="tag-field" id="companiesField" placeholder="e.g. Google, Stripe, press Enter to add">
+          <input type="text" class="tag-field" id="companiesField" placeholder="e.g. Google, Stripe, Notion, press Enter to add">
         </div>
       </div>
 
@@ -1953,10 +1961,14 @@
         document.querySelectorAll('.search-mode-btn')[0].classList.add('active');
         document.getElementById('titlesGroup').style.display = '';
         document.getElementById('companiesGroup').style.display = 'none';
+        document.getElementById('jobModeInstructions').style.display = '';
+        document.getElementById('companyModeInstructions').style.display = 'none';
       } else {
         document.querySelectorAll('.search-mode-btn')[1].classList.add('active');
         document.getElementById('titlesGroup').style.display = 'none';
         document.getElementById('companiesGroup').style.display = '';
+        document.getElementById('jobModeInstructions').style.display = 'none';
+        document.getElementById('companyModeInstructions').style.display = '';
       }
       validateSearch();
     }
@@ -2263,7 +2275,13 @@
 
       let userPrompt;
       if (state.searchMode === 'companies') {
-        userPrompt = `Generate 10 realistic active job listings at the specified target companies, posted within the last 5 days. Focus on leadership-level positions (Director, VP, SVP, C-Suite). If no relevant open roles exist at a company, still include the company with the most likely leadership role they would hire for and surface appropriate contacts.
+        userPrompt = `For each target company below, find relevant leadership-level openings (Director, VP, SVP, C-Suite). If a company has active roles, list them with details. If a company has NO relevant active roles right now, still include one entry for that company with:
+- title set to the most likely leadership role they would hire for
+- posted set to "No active listing"
+- a fitReason that says "No open roles right now, but this is the type of position to watch for. Start building relationships with their team."
+- fitScore of 0
+
+This way the user can still get contacts and begin outreach even when no role is posted.
 
 Target companies: ${JSON.stringify(state.companies)}
 Location: ${state.locations.length ? state.locations.join(', ') : 'Any'}
@@ -2337,15 +2355,23 @@ Return a JSON array of objects with these exact fields:
         card.className = 'job-card fade-up' + (state.selectedJobs.includes(job.id) ? ' selected' : '') + (isStretch ? ' stretch-role' : '');
         card.style.animationDelay = `${i * 0.06}s`;
 
-        const fitBadge = job.fitScore >= 87 ? 'badge-green' :
+        const isNoListing = job.fitScore === 0 || (job.posted && job.posted.toLowerCase().includes('no active'));
+        const fitBadge = isNoListing ? 'badge-blue' :
+                         job.fitScore >= 87 ? 'badge-green' :
                          job.fitScore >= 70 ? 'badge-gold' : 'badge-red';
-        const fitLabel = job.fitScore >= 87 ? 'Strong Match' :
+        const fitLabel = isNoListing ? 'Build Relationships' :
+                         job.fitScore >= 87 ? 'Strong Match' :
                          job.fitScore >= 70 ? 'Good Match' : 'Stretch';
         const isFav = state.favorites.some(f => f.title === job.title && f.company === job.company);
 
         let stretchNote = '';
-        if (job.fitScore < 87) {
-          stretchNote = `<div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#C94444;font-weight:500">${job.fitScore < 70 ? 'Stretch' : 'Good Match'} - may need resume tailoring. <a href="#" onclick="event.stopPropagation();event.preventDefault();openBookingModal()" style="color:#B8A88A;font-weight:600">Get 1:1 help with this.</a></div>`;
+        if (!isNoListing && job.fitScore < 87) {
+          stretchNote = `<div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#C94444;font-weight:500">${job.fitScore < 70 ? 'Stretch' : 'Good Match'}. May need resume tailoring. <a href="#" onclick="event.stopPropagation();event.preventDefault();openBookingModal()" style="color:#B8A88A;font-weight:600">Get 1:1 help with this.</a></div>`;
+        }
+
+        let noListingNote = '';
+        if (isNoListing) {
+          noListingNote = `<div style="margin-top:10px;padding:12px 16px;background:rgba(91,141,238,0.06);border:1px solid rgba(91,141,238,0.15);border-radius:8px;font-size:0.82rem;color:#4A7AD4;font-weight:500">No active roles right now. Select this to get contacts and start building relationships so you're first in line when something opens.</div>`;
         }
 
         card.innerHTML = `
@@ -2357,19 +2383,20 @@ Return a JSON array of objects with these exact fields:
               <div class="job-title">${esc(job.title)}</div>
               <div class="job-company">${esc(job.company)}</div>
             </div>
-            <span class="badge ${fitBadge}">${job.fitScore} &middot; ${fitLabel}</span>
+            <span class="badge ${fitBadge}">${isNoListing ? fitLabel : job.fitScore + ' &middot; ' + fitLabel}</span>
           </div>
           <div class="job-meta">
             <span>${esc(job.location)}</span>
-            <span>${esc(job.industry)}</span>
+            <span>${esc(job.industry || '')}</span>
             <span>${esc(job.posted)}</span>
             ${job.salary ? `<span>${esc(job.salary)}</span>` : ''}
-            <span class="mono" style="color:#858585">${esc(job.source)}</span>
+            ${job.source ? `<span class="mono" style="color:#858585">${esc(job.source)}</span>` : ''}
           </div>
           ${job.highlights ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${job.highlights.map(h => `<span style="font-size:0.75rem;color:#555555;background:#F9F6F1;padding:3px 8px;border-radius:4px;border:1px solid #EEEEED;font-weight:500">${esc(h)}</span>`).join('')}</div>` : ''}
           <div class="fit-reason">"${esc(job.fitReason)}"</div>
           ${stretchNote}
-          <button class="job-view-btn" onclick="event.stopPropagation();openJobDetail('${esc(job.id)}')">View details + apply</button>
+          ${noListingNote}
+          <button class="job-view-btn" onclick="event.stopPropagation();openJobDetail('${esc(job.id)}')">${isNoListing ? 'Select to get contacts' : 'View details'}</button>
         `;
         card.onclick = () => toggleJobSelection(job.id);
         grid.appendChild(card);
