@@ -1,6 +1,13 @@
+import { rateLimit } from './_rateLimit.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const rl = rateLimit(req, { maxRequests: 3, windowMs: 60000 });
+  if (!rl.allowed) {
+    return res.status(429).json({ error: 'Too many requests. Please wait and try again.' });
   }
 
   const stripeKey = process.env.STRIPE_SECRET_KEY;

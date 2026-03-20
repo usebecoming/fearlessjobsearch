@@ -2385,6 +2385,19 @@
       if (!file) return;
       const ext = file.name.split('.').pop().toLowerCase();
 
+      // File type validation
+      var allowedTypes = ['pdf', 'docx', 'txt', 'doc'];
+      if (!allowedTypes.includes(ext)) {
+        fileUploadArea.innerHTML = '<p style="color:#C94444">Only PDF, DOCX, and TXT files are accepted.</p>';
+        return;
+      }
+
+      // File size validation (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        fileUploadArea.innerHTML = '<p style="color:#C94444">File too large. Maximum size is 5MB.</p>';
+        return;
+      }
+
       fileUploadArea.classList.remove('has-file');
       fileUploadArea.innerHTML = `<p style="color:#777777">Processing ${esc(file.name)}...</p>`;
 
@@ -2478,6 +2491,32 @@
     }
 
     // ── API Call Helper ──
+    // Usage tracking
+    function logUsage(action, details) {
+      if (!supabase) return;
+      supabase.auth.getSession().then(function(r) {
+        var user = r.data.session?.user;
+        if (!user) return;
+        supabase.from('usage_log').insert({
+          user_id: user.id,
+          action: action,
+          details: details || {}
+        }).catch(function() {});
+      }).catch(function() {});
+    }
+
+    // Input sanitization
+    function sanitizeInput(text, maxLength) {
+      if (!text) return '';
+      var clean = String(text)
+        .substring(0, maxLength || 10000)
+        .replace(/\b(ignore|disregard|forget|override)\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+        .replace(/\b(system|assistant)\s*:/gi, '[filtered]')
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, '');
+      return clean;
+    }
+
     async function callClaude(systemPrompt, userPrompt) {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -2534,7 +2573,7 @@
       showProgress(container, 'Finding opportunities that match your leadership profile...', 20);
       document.getElementById('selectionBar').style.display = 'none';
 
-      const resumeSummary = state.resumeText.substring(0, 1200);
+      const resumeSummary = sanitizeInput(state.resumeText, 1200);
       const systemPrompt = 'You are a job search assistant for senior leaders. Respond ONLY with a JSON array. No markdown, no explanation, no extra text.';
 
       let userPrompt;
@@ -2617,6 +2656,7 @@ Return a JSON array with one object per job:
           state.jobs = scoredJobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0));
           state.selectedJobs = [];
           renderJobs();
+          logUsage('job_search', { mode: 'job_target', titles: state.titles, locations: state.locations, results: scoredJobs.length });
           return;
         } catch (err) {
           console.error('JSearch error, falling back to Claude:', err);
@@ -2655,6 +2695,7 @@ Return a JSON array of objects with these exact fields:
         state.jobs = jobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0));
         state.selectedJobs = [];
         renderJobs();
+        logUsage('job_search', { mode: state.searchMode, titles: state.titles, companies: state.companies, results: jobs.length });
       } catch (err) {
         stopProgress();
         container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runSearch()">Try again</button></div>`;
@@ -3227,6 +3268,7 @@ Return a JSON object with a "results" array. Each result:
         stopProgress();
         state.contacts = data;
         renderContacts(data);
+        logUsage('contact_search', { jobs: selectedJobData.length, contacts: (data.results || []).reduce(function(s,r){ return s + (r.contacts||[]).length; }, 0) });
         // Save to pipeline in background
         for (const sj of selectedJobData) {
           const job = state.jobs.find(j => j.id === sj.job_id);
@@ -3334,7 +3376,7 @@ Return a JSON object with a "results" array. Each result:
       goToStep(4);
       const container = document.getElementById('outreachContainer');
 
-      const resumeSummary = state.resumeText.substring(0, 1500);
+      const resumeSummary = sanitizeInput(state.resumeText, 1500);
       const targets = (state.contacts.results || []).map(g => {
         const job = state.jobs.find(j => j.id === g.job_id);
         return {
@@ -3401,6 +3443,7 @@ Return a JSON object with a "sequences" array. Each sequence:
         stopProgress();
         state.sequences = data;
         renderOutreach(data);
+        logUsage('outreach_generated', { sequences: (data.sequences || []).length });
         // Update pipeline status in background
         for (const p of state.pipeline) {
           if (state.selectedJobs.includes(p.jobId)) {

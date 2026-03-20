@@ -114,7 +114,31 @@ drop policy if exists "Users can delete own search profiles" on search_profiles;
 create policy "Users can delete own search profiles"
   on search_profiles for delete using (auth.uid() = user_id);
 
--- 5. Auto-create profile on signup
+-- 5. Usage tracking table
+create table if not exists usage_log (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade,
+  action text not null,
+  details jsonb default '{}',
+  created_at timestamptz default now()
+);
+
+alter table usage_log enable row level security;
+
+drop policy if exists "Users can view own usage" on usage_log;
+create policy "Users can view own usage"
+  on usage_log for select using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own usage" on usage_log;
+create policy "Users can insert own usage"
+  on usage_log for insert with check (auth.uid() = user_id);
+
+-- Admin can view all usage (add your user ID here)
+drop policy if exists "Admin can view all usage" on usage_log;
+create policy "Admin can view all usage"
+  on usage_log for select using (true);
+
+-- 6. Auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
