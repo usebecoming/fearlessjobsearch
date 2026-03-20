@@ -2969,7 +2969,18 @@ Return a JSON array of objects with these exact fields:
         supabase.from('search_profiles').delete().eq('id', id).catch(function() {});
       }
 
-      loadSearchProfiles();
+      // Force rebuild dropdown
+      select.innerHTML = '<option value="">Load a saved search...</option>';
+      var remaining = [];
+      try { remaining = JSON.parse(localStorage.getItem('fjs_search_profiles') || '[]'); } catch(e) {}
+      remaining.forEach(function(p) {
+        var o = document.createElement('option');
+        o.value = p.id;
+        o.textContent = p.name;
+        o.dataset.profile = JSON.stringify(p);
+        select.appendChild(o);
+      });
+      select.value = '';
 
       // Notification
       var note = document.createElement('div');
