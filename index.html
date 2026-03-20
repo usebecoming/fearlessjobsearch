@@ -3385,8 +3385,6 @@ Return a JSON array of objects with these exact fields:
 
     // ── Pipeline Helpers ──
     async function addToPipeline(job) {
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-        const user = authSession?.user;
       const item = {
         jobId: job.id,
         title: job.title,
@@ -3394,21 +3392,32 @@ Return a JSON array of objects with these exact fields:
         location: job.location,
         fitScore: job.fitScore,
         addedAt: new Date().toISOString().split('T')[0],
-        status: 'Researching'
+        status: 'Outreach Ready'
       };
-      if (user) {
-        const { data } = await supabase.from('pipeline').insert({
-          user_id: user.id,
-          job_id: job.id,
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          fit_score: job.fitScore,
-          status: 'Researching'
-        }).select().single();
-        if (data) item.dbId = data.id;
+      // Upsert to prevent duplicates
+      if (supabase && state.userId) {
+        try {
+          const { data } = await supabase.from('pipeline').upsert({
+            user_id: state.userId,
+            job_id: job.id || '',
+            title: job.title,
+            company: job.company,
+            location: job.location || '',
+            fit_score: job.fitScore || 0,
+            salary: job.salary || '',
+            job_url: job.url || '',
+            status: 'Outreach Ready'
+          }, { onConflict: 'user_id,title,company', ignoreDuplicates: true }).select().single();
+          if (data) item.dbId = data.id;
+          console.log('✅ Pipeline:', job.title, 'at', job.company);
+        } catch (e) {
+          console.log('Pipeline upsert error:', e.message);
+        }
       }
-      state.pipeline.push(item);
+      // Only add to local state if not already there
+      if (!state.pipeline.find(p => p.title === job.title && p.company === job.company)) {
+        state.pipeline.push(item);
+      }
     }
 
     function getFavoriteContext() {

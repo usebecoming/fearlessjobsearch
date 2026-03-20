@@ -214,14 +214,18 @@ HM titles: ${derived.hmTitles.join(', ')}
 SL titles: ${[...derived.slTitles, ...extraSlTitles].join(', ')}
 ${isProfServices ? 'This is a law firm / professional services company. Accept Managing Partner, Chief Administrative Officer as skip-level.' : ''}
 
-For pre-qualified contacts: assign role, extract title from snippet or use inferredTitle, write reason. Do NOT reject.
-For claudeDecide contacts: verify employment, then assign role or reject.
+For pre-qualified contacts: assign role, extract title from snippet or use inferredTitle, write reason. Do NOT reject pre-qualified contacts.
+For claudeDecide contacts: verify employment, then assign role or omit entirely.
 Never return empty titles — use inferredTitle or infer from slug.
+
+IMPORTANT: Return ONLY accepted contacts in the JSON array. Do NOT include rejected contacts. Do NOT use "Rejected" as a role value. Valid roles are ONLY: "Hiring Manager", "Skip-Level", "Recruiter / TA". If you would reject a contact, simply omit them from the array.
+
+CEO, President, COO, CHRO, VP of People, Talent Acquisition Manager should NEVER be rejected for a People/HR role. These are the most valuable contacts.
 
 Contacts:
 ${JSON.stringify(toPassToClaude.slice(0, 20), null, 2)}
 
-Return JSON array only:
+Return JSON array only — accepted contacts only:
 [{"name":"string","title":"string","role":"Hiring Manager|Skip-Level|Recruiter / TA","linkedin":"string (exact URL)","confidence":"high|medium","note":"string"}]`;
 
         try {
@@ -261,6 +265,14 @@ Return JSON array only:
           }
         } catch (e) {
           console.log(`❌ Claude call failed: ${e.message}`);
+        }
+
+        // Filter out contacts Claude marked as "Rejected" role
+        const rejectedByRole = verifiedContacts.filter(c => (c.role || c.role_type || '').toLowerCase().includes('reject'));
+        if (rejectedByRole.length > 0) {
+          console.log(`\n🚫 Claude used "Rejected" as role for ${rejectedByRole.length} contacts:`);
+          rejectedByRole.forEach(c => console.log(`  ${c.name} | ${c.title} — ${c.note || ''}`));
+          verifiedContacts = verifiedContacts.filter(c => !(c.role || c.role_type || '').toLowerCase().includes('reject'));
         }
 
         // Post-Claude quality filters
@@ -402,7 +414,7 @@ function deriveFunction(jobTitle) {
   const text = jobTitle.toLowerCase();
 
   // People/HR must be checked FIRST (before Engineering catches "development")
-  if (/hr|human resources|people ops|people operations|talent development|talent management|learning|l&d|organizational development|\bod\b|training|culture|workforce|hris|compensation|benefits|recruiting|recruiter|talent acquisition|performance|engagement/i.test(text)) {
+  if (/hr|human resources|human capital|people ops|people operations|talent development|talent management|learning|l&d|organizational development|\bod\b|training|culture|workforce|hris|compensation|benefits|recruiting|recruiter|talent acquisition|performance|engagement|workforce planning|people analytics|diversity|inclusion|\bdei\b|employee relations|labor relations|total rewards|people strategy/i.test(text)) {
     return 'People';
   }
   if (/engineering|software|developer|devops|infrastructure|platform|backend|frontend|fullstack|data engineer|ml engineer|site reliability/i.test(text)) {
@@ -697,12 +709,39 @@ function categorizeRole(title, derived) {
 
 // ── Pre-qualification: accept/reject contacts BEFORE Claude ──
 
-function preQualifyContact(url, snippet, companyName) {
+// Known false positive profiles that appear across multiple companies
+const KNOWN_FALSE_POSITIVES = new Set([
+  'ann-miller-hr', 'iker-zubia-hr', 'leigh-gordon-1ab5517', 'leigh-gordon', 'stephanie-yocum'
+]);
+
+// City/name words that cause false positives in slugs
+const COMMON_NAME_WORDS = new Set([
+  'austin', 'clifton', 'houston', 'dallas', 'phoenix', 'jordan', 'hunter', 'taylor',
+  'morgan', 'parker', 'lincoln', 'grant', 'hayes', 'reed', 'scott', 'young', 'white',
+  'black', 'brown', 'green', 'gray', 'mason', 'logan', 'carter', 'cooper', 'riley'
+]);
+
+function preQualifyContact(url, snippet, companyName, pageTitle) {
   const slug = url.toLowerCase();
   const snippetLower = (snippet || '').toLowerCase();
   const companyLower = companyName.toLowerCase();
 
-  // Function keyword slugs - instant accept signals
+  // Check known false positives
+  const slugClean = slug.replace(/.*linkedin\.com\/in\//, '').replace(/\/$/, '');
+  if (KNOWN_FALSE_POSITIVES.has(slugClean)) {
+    return { accepted: false, reason: 'known false positive profile' };
+  }
+
+  // Check city/name false positives
+  const companyWords = companyLower.split(/\s+/).filter(w => w.length > 3);
+  const fpWords = companyWords.filter(w => COMMON_NAME_WORDS.has(w));
+  for (const fpWord of fpWords) {
+    if (slug.includes(fpWord) && !snippetLower.includes(companyLower.substring(0, 10))) {
+      return { accepted: false, reason: `city/name false positive: "${fpWord}" in slug` };
+    }
+  }
+
+  // Function keyword slugs
   const functionSlugs = [
     '-hr', '-chro', '-cpo', '-cto', '-cmo', '-coo', '-cfo', '-cro',
     '-people', '-talent', '-recruiting', '-culture', '-workforce',
@@ -717,7 +756,6 @@ function preQualifyContact(url, snippet, companyName) {
   const hasCsuite = cSuiteSlugs.some(s => slug.includes(s));
 
   // Company signal in snippet
-  const companyWords = companyLower.split(/\s+/).filter(w => w.length > 3);
   const hasCompanySignal = companyWords.some(word => snippetLower.includes(word));
 
   // Current employment signal
@@ -743,8 +781,9 @@ function preQualifyContact(url, snippet, companyName) {
   if (hasInstantSlug && hasCompanySignal) {
     return { accepted: true, confidence: 'high', reason: 'function keyword in slug + company confirmed' };
   }
-  if (hasInstantSlug) {
-    return { accepted: true, confidence: 'medium', reason: 'function keyword in slug' };
+  if (hasInstantSlug && !hasCompanySignal) {
+    // Slug has function keyword but no company confirmation - let Claude decide
+    return { accepted: 'claude_decide', confidence: 'low', reason: 'slug keyword but no company confirmation' };
   }
   if (hasCompanySignal && hasCurrentSignal) {
     return { accepted: true, confidence: 'high', reason: 'company + current employment confirmed' };

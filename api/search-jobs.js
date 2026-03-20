@@ -136,6 +136,7 @@ export default async function handler(req, res) {
     ];
 
     let irrelevantRemoved = 0;
+    let fundraisingRemoved = 0;
     const relevantJobs = dedupedJobs.filter(job => {
       const combined = ((job.job_title || '') + ' ' + (job.job_description || '').substring(0, 200)).toLowerCase();
       if (irrelevantKeywords.some(kw => combined.includes(kw))) {
@@ -143,19 +144,34 @@ export default async function handler(req, res) {
         irrelevantRemoved++;
         return false;
       }
+      // Fundraising "development" disambiguation
+      if (isFundraisingDevelopment(job)) {
+        console.log(`  ❌ Fundraising dev: ${job.job_title} at ${job.employer_name}`);
+        fundraisingRemoved++;
+        return false;
+      }
       return true;
     });
 
-    // Fix 3: Seniority filter
-    const searchSeniority = detectSearchSeniority(titles);
-    console.log(`📊 Search seniority: ${searchSeniority}`);
+    // Seniority filter from resume (not search titles)
+    const resumeSeniority = detectSeniorityFromResume(rawResumeText);
+    console.log(`📊 Seniority from resume: ${resumeSeniority}`);
     let seniorityRemoved = 0;
 
-    const seniorityFiltered = (searchSeniority === 'director' || searchSeniority === 'executive')
+    const filterBelowSeniority = {
+      'csuite': [/\bdirector\b/i, /\bmanager\b/i, /\bspecialist\b/i, /\bcoordinator\b/i, /\bassociate\b/i, /\bassistant\b/i, /\bfacilitator\b/i, /\binstructor\b/i, /\btrainer\b/i, /\banalyst\b/i],
+      'svp': [/\bmanager\b/i, /\bspecialist\b/i, /\bcoordinator\b/i, /\bassociate\b/i, /\bassistant\b/i, /\bfacilitator\b/i, /\binstructor\b/i, /\btrainer\b/i, /\banalyst\b/i],
+      'vp': [/\bspecialist\b/i, /\bcoordinator\b/i, /\bassociate\b/i, /\bassistant\b/i, /\bfacilitator\b/i, /\binstructor\b/i, /\btrainer\b/i, /\banalyst\b/i, /\bjunior\b/i],
+      'director': [/\bspecialist\b/i, /\bcoordinator\b/i, /\bassociate\b/i, /\bassistant\b/i, /\bfacilitator\b/i, /\binstructor\b/i, /\btrainer\b/i, /\bjunior\b/i, /\bentry level\b/i],
+      'senior': [/\bcoordinator\b/i, /\bassistant\b/i, /\bjunior\b/i, /\bentry level\b/i, /\binstructor\b/i, /\bfacilitator\b/i],
+      'manager': [/\bjunior\b/i, /\bentry level\b/i, /\bassistant\b/i],
+    };
+    const patternsToFilter = filterBelowSeniority[resumeSeniority] || [];
+    const seniorityFiltered = patternsToFilter.length > 0
       ? relevantJobs.filter(job => {
           const t = (job.job_title || '').toLowerCase();
-          if (/\b(coordinator|associate|assistant|entry level|junior|specialist|facilitator|instructor|trainer)\b/i.test(t)) {
-            console.log(`  ❌ Too junior: ${job.job_title}`);
+          if (patternsToFilter.some(p => p.test(t))) {
+            console.log(`  ❌ Below ${resumeSeniority}: ${job.job_title}`);
             seniorityRemoved++;
             return false;
           }
@@ -200,6 +216,8 @@ export default async function handler(req, res) {
     console.log(`  Total from JSearch: ${totalFromJSearch}`);
     console.log(`  After deduplication: ${afterDedup}`);
     console.log(`  Irrelevant removed: ${irrelevantRemoved}`);
+    console.log(`  Fundraising dev removed: ${fundraisingRemoved}`);
+    console.log(`  Resume seniority: ${resumeSeniority}`);
     console.log(`  Too junior removed: ${seniorityRemoved}`);
     console.log(`  Staffing agencies flagged: ${agencyCount}`);
     console.log(`  Passed to Claude for scoring: ${filtered.length}`);
@@ -356,6 +374,50 @@ function expandTitle(title) {
 }
 
 // ── 4. Seniority filter ──
+function detectSeniorityFromResume(resumeText) {
+  if (!resumeText || resumeText.length < 100) {
+    console.log('📊 No resume — defaulting to senior');
+    return 'senior';
+  }
+  const body = resumeText.slice(500);
+  if (/(chief executive|chief operating|chief marketing|chief technology|chief people|chief hr|chief financial|chief revenue|chief product|\bCEO\b|\bCOO\b|\bCMO\b|\bCTO\b|\bCPO\b|\bCHRO\b|\bCFO\b|\bCRO\b)/i.test(body)) {
+    console.log('📊 Resume seniority: C-Suite');
+    return 'csuite';
+  }
+  if (/(executive vice president|EVP|senior vice president|SVP)/i.test(body)) {
+    console.log('📊 Resume seniority: SVP/EVP');
+    return 'svp';
+  }
+  if (/(vice president|\bVP\b|\bVP,\b|\bVP of\b)/i.test(body)) {
+    console.log('📊 Resume seniority: VP');
+    return 'vp';
+  }
+  if (/\b(senior director|director of|director,|\bdirector\b)/i.test(body)) {
+    console.log('📊 Resume seniority: Director');
+    return 'director';
+  }
+  if (/\b(senior manager|senior lead|senior advisor|\bsenior\b|\bsr\.\b)/i.test(body)) {
+    console.log('📊 Resume seniority: Senior');
+    return 'senior';
+  }
+  if (/\b(manager of|manager,|\bmanager\b|lead,|\blead\b|principal)\b/i.test(body)) {
+    console.log('📊 Resume seniority: Manager');
+    return 'manager';
+  }
+  console.log('📊 Resume seniority: defaulting to senior');
+  return 'senior';
+}
+
+function isFundraisingDevelopment(job) {
+  const title = (job.job_title || '').toLowerCase();
+  const desc = (job.job_description || '').substring(0, 300).toLowerCase();
+  if (!title.includes('development')) return false;
+  const ldKeywords = ['learning', 'talent', 'training', 'organizational', 'leadership', 'people', 'workforce', 'l&d'];
+  if (ldKeywords.some(kw => title.includes(kw) || desc.includes(kw))) return false;
+  const fundraisingKeywords = ['nonprofit', 'non-profit', 'foundation', 'association', 'fundrais', 'donor', 'philanthrop', 'major gifts', 'annual fund'];
+  return fundraisingKeywords.some(kw => desc.includes(kw));
+}
+
 function detectSearchSeniority(titles) {
   const text = titles.join(' ').toLowerCase();
   if (/(vp|vice president|svp|evp|chief|cmo|cto|coo|ceo|chro|cpo|cro)/i.test(text)) return 'executive';
@@ -376,24 +438,26 @@ function getSeniority(title) {
 
 // ── 5. Resume keyword extraction ──
 function extractResumeKeywords(resumeText) {
-  if (!resumeText || resumeText.length < 50) {
-    console.log('⚠️ Resume too short for keyword extraction');
+  if (!resumeText || resumeText.length < 100) {
+    console.log('⚠️ Resume too short — skipping resume search');
     return null;
   }
 
-  // Skip first 400 chars (header with name/email/phone)
-  const body = resumeText.slice(400);
-  const cleaned = body
-    .replace(/\b[\w.+-]+@[\w-]+\.[\w.]+\b/g, '')
-    .replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '')
-    .replace(/https?:\/\/\S+/g, '');
+  const body = resumeText.slice(500);
 
-  // Broader skill patterns
-  const skillRegex = /(leadership|coaching|facilitation|organizational development|talent management|learning|training|curriculum|instructional design|executive coaching|career development|change management|performance management|succession planning|employee engagement|culture|workforce development|program management|stakeholder management|strategic planning|marketing|demand generation|brand|content|SEO|paid media|analytics|product management|roadmap|agile|scrum|user research|engineering|software development|architecture|DevOps|cloud|sales|business development|revenue|account management|finance|FP&A|forecasting|budgeting|financial modeling|operations|process improvement|project management|PMO|SaaS|B2B|B2C|fintech|healthtech|edtech|ecommerce|enterprise|Fortune|startup|data-driven)/gi;
+  // Aggressive skill extraction
+  const skillRegex = /(leadership|coaching|facilitation|organizational development|talent management|learning|training|curriculum|instructional design|executive coaching|career development|change management|performance management|succession planning|employee engagement|culture|workforce development|program management|stakeholder management|strategic planning|analytics|data-driven|SaaS|B2B|startup|enterprise|Fortune 500|consulting|organizational effectiveness|HRBP|HR business partner|talent acquisition|recruiting|compensation|benefits|HRIS|Workday|SAP|SuccessFactors|marketing|demand generation|brand|content|SEO|paid media|product management|roadmap|agile|scrum|engineering|software development|DevOps|cloud|sales|business development|revenue|account management|finance|FP&A|forecasting|budgeting|operations|process improvement|project management|human capital|workforce planning|people analytics|diversity|inclusion|dei|employee relations|total rewards)/gi;
 
   const keywords = new Set();
-  const matches = cleaned.match(skillRegex) || [];
+  const matches = body.match(skillRegex) || [];
   matches.forEach(m => keywords.add(m.toLowerCase().trim()));
+
+  // Fallback: capitalized multi-word phrases
+  if (keywords.size < 2) {
+    const phrases = body.match(/[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)+/g) || [];
+    const clean = [...new Set(phrases)].filter(p => p.length > 8 && !/^(January|February|March|April|May|June|July|August|September|October|November|December)/.test(p));
+    clean.slice(0, 5).forEach(p => keywords.add(p.toLowerCase()));
+  }
 
   const keywordArray = Array.from(keywords).slice(0, 5);
   if (keywordArray.length < 2) {

@@ -61,6 +61,23 @@ create table if not exists pipeline (
   created_at timestamptz default now()
 );
 
+-- Add columns if table already exists
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_name='pipeline' and column_name='salary') then
+    alter table pipeline add column salary text default '';
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='pipeline' and column_name='job_url') then
+    alter table pipeline add column job_url text default '';
+  end if;
+end $$;
+
+-- Unique constraint to prevent duplicates
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'unique_user_job') then
+    alter table pipeline add constraint unique_user_job unique (user_id, title, company);
+  end if;
+end $$;
+
 alter table pipeline enable row level security;
 
 drop policy if exists "Users can view own pipeline" on pipeline;
