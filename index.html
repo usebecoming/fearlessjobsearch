@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fearless Job Search · by Live for Yourself Consulting</title>
+  <meta name="description" content="AI-powered job search tool for senior leaders navigating their next career move.">
+  <meta name="theme-color" content="#C9A84C">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 400;
+      background: #0D0F1A;
+      color: #E8E6DF;
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: #C9A84C; text-decoration: none; transition: color 0.2s; }
+    a:hover { color: #E8C96D; }
+    button { cursor: pointer; font-family: inherit; border: none; outline: none; }
+    input, textarea { font-family: inherit; outline: none; }
+
+    /* ── Typography ── */
+    h1, h2, h3 { font-family: 'Playfair Display', serif; font-weight: 700; color: #C9A84C; }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.35s ease-out forwards; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid #252840;
+      border-top-color: #C9A84C;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Nav ── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 32px;
+      background: #141624;
+      border-bottom: 1px solid #252840;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 12px;
+      font-family: 'Playfair Display', serif; font-weight: 800;
+      font-size: 1.15rem; color: #C9A84C;
+    }
+    .nav-brand img {
+      width: 36px; height: 36px;
+      filter: drop-shadow(0 0 8px rgba(201,168,76,0.35));
+    }
+    .nav-brand span { letter-spacing: 0.5px; }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-btn {
+      background: transparent; color: #B8B6C4; border: 1px solid #252840;
+      padding: 8px 18px; border-radius: 8px; font-size: 0.85rem;
+      font-family: 'IBM Plex Mono', monospace; font-weight: 400;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover { border-color: #C9A84C; color: #C9A84C; }
+    .nav-btn.active { border-color: #C9A84C; color: #C9A84C; background: rgba(201,168,76,0.08); }
+
+    /* ── Step Indicator ── */
+    .steps-bar {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; padding: 28px 0 8px;
+    }
+    .step-dot {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; font-weight: 500;
+      background: #1C1F33; color: #62607A;
+      border: 2px solid #252840;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .step-dot.active { background: #C9A84C; color: #0D0F1A; border-color: #C9A84C; }
+    .step-dot.completed { background: #4CAF82; color: #fff; border-color: #4CAF82; }
+    .step-line { width: 60px; height: 2px; background: #252840; transition: background 0.3s; }
+    .step-line.completed { background: #4CAF82; }
+    .step-labels {
+      display: flex; justify-content: center; gap: 48px;
+      padding: 8px 0 24px;
+    }
+    .step-label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem;
+      color: #62607A; text-align: center; width: 80px;
+      transition: color 0.3s;
+    }
+    .step-label.active { color: #C9A84C; }
+
+    /* ── Section containers ── */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: #141624; border: 1px solid #252840;
+      border-radius: 12px; padding: 24px;
+      transition: all 0.25s;
+    }
+    .card:hover { border-color: #2E3255; }
+
+    /* ── Form elements ── */
+    .form-group { margin-bottom: 22px; }
+    .form-label {
+      display: block; margin-bottom: 8px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      font-weight: 500; color: #B8B6C4; text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .form-input {
+      width: 100%; padding: 12px 16px;
+      background: #1C1F33; border: 1px solid #252840;
+      border-radius: 8px; color: #E8E6DF; font-size: 0.92rem;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: #C9A84C; }
+    .form-input::placeholder { color: #62607A; }
+    textarea.form-input { min-height: 120px; resize: vertical; }
+
+    /* ── Tag input ── */
+    .tag-input-wrap {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      padding: 8px 12px;
+      background: #1C1F33; border: 1px solid #252840;
+      border-radius: 8px; min-height: 46px;
+      transition: border-color 0.2s;
+    }
+    .tag-input-wrap:focus-within { border-color: #C9A84C; }
+    .tag {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.25);
+      border-radius: 6px; padding: 4px 10px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+      color: #E8C96D;
+    }
+    .tag-remove {
+      background: none; border: none; color: #E8C96D; font-size: 1rem;
+      padding: 0 2px; cursor: pointer; line-height: 1;
+      transition: color 0.2s;
+    }
+    .tag-remove:hover { color: #E05C5C; }
+    .tag-field {
+      border: none; background: transparent; color: #E8E6DF;
+      font-size: 0.92rem; flex: 1; min-width: 140px;
+      padding: 4px 0;
+    }
+    .tag-field::placeholder { color: #62607A; }
+    .tag-field:focus { outline: none; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, #C9A84C, #B8952F);
+      color: #0D0F1A; padding: 14px 32px;
+      border-radius: 10px; font-weight: 500; font-size: 0.95rem;
+      font-family: 'IBM Plex Mono', monospace;
+      transition: all 0.25s;
+      border: none;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #E8C96D, #C9A84C); transform: translateY(-1px); }
+    .btn-primary:disabled {
+      opacity: 0.4; cursor: not-allowed; transform: none;
+      background: linear-gradient(135deg, #C9A84C, #B8952F);
+    }
+    .btn-secondary {
+      background: transparent; border: 1px solid #252840;
+      color: #B8B6C4; padding: 10px 22px; border-radius: 8px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: #C9A84C; color: #C9A84C; }
+    .btn-small {
+      padding: 6px 14px; font-size: 0.75rem; border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .btn-copy {
+      background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.2);
+      color: #C9A84C; padding: 6px 14px; border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+      transition: all 0.2s;
+    }
+    .btn-copy:hover { background: rgba(201,168,76,0.2); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem;
+      font-weight: 500; letter-spacing: 0.3px;
+    }
+    .badge-green { background: rgba(76,175,130,0.15); color: #4CAF82; border: 1px solid rgba(76,175,130,0.3); }
+    .badge-gold { background: rgba(201,168,76,0.15); color: #E8C96D; border: 1px solid rgba(201,168,76,0.3); }
+    .badge-red { background: rgba(224,92,92,0.15); color: #E05C5C; border: 1px solid rgba(224,92,92,0.3); }
+    .badge-blue { background: rgba(91,141,238,0.15); color: #5B8DEE; border: 1px solid rgba(91,141,238,0.3); }
+
+    /* ── Job Cards ── */
+    .job-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
+    .job-card {
+      background: #141624; border: 1px solid #252840;
+      border-radius: 12px; padding: 22px; cursor: pointer;
+      transition: all 0.25s; position: relative;
+    }
+    .job-card:hover { border-color: #2E3255; transform: translateY(-1px); }
+    .job-card.selected { border-color: #C9A84C; background: rgba(201,168,76,0.04); }
+    .job-card.selected::after {
+      content: '✓'; position: absolute; top: 14px; right: 16px;
+      background: #C9A84C; color: #0D0F1A; width: 24px; height: 24px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700;
+    }
+    .job-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .job-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #E8E6DF; font-weight: 700; }
+    .job-company { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; color: #C9A84C; margin: 4px 0; }
+    .job-meta {
+      display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: #9896A0;
+    }
+    .job-meta span { display: flex; align-items: center; gap: 4px; }
+    .fit-reason {
+      margin-top: 12px; padding-top: 12px; border-top: 1px solid #252840;
+      font-size: 0.82rem; color: #B8B6C4; font-style: italic;
+    }
+
+    /* ── Contact Cards ── */
+    .contacts-group { margin-bottom: 32px; }
+    .contacts-group-header {
+      font-family: 'Playfair Display', serif; font-size: 1.05rem;
+      color: #E8E6DF; margin-bottom: 6px;
+    }
+    .contacts-group-sub {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+      color: #C9A84C; margin-bottom: 16px;
+    }
+    .contact-card {
+      background: #141624; border: 1px solid #252840;
+      border-radius: 10px; padding: 18px; margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+    .contact-card:hover { border-color: #2E3255; }
+    .contact-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .contact-name { font-weight: 500; font-size: 0.95rem; }
+    .contact-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: #9896A0; margin-bottom: 6px; }
+    .contact-note { font-size: 0.82rem; color: #B8B6C4; margin-bottom: 12px; font-style: italic; }
+    .contact-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ── Outreach Sequences ── */
+    .sequence-group { margin-bottom: 36px; }
+    .sequence-header {
+      background: #141624; border: 1px solid #252840;
+      border-radius: 10px 10px 0 0; padding: 18px 22px;
+    }
+    .sequence-contact { font-weight: 500; font-size: 0.95rem; }
+    .sequence-track {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+      color: #9896A0; margin-top: 4px;
+    }
+    .message-card {
+      background: #1C1F33; border: 1px solid #252840;
+      border-top: none; padding: 20px 22px;
+    }
+    .message-card:last-child { border-radius: 0 0 10px 10px; }
+    .message-meta {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .message-step {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+      font-weight: 500; color: #C9A84C;
+    }
+    .message-timing {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: #9896A0;
+    }
+    .message-body {
+      font-size: 0.88rem; color: #E8E6DF; line-height: 1.65;
+      white-space: pre-wrap; margin-bottom: 12px;
+    }
+
+    /* ── Pipeline Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(13,15,26,0.85); z-index: 200;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #141624; border: 1px solid #252840;
+      border-radius: 16px; width: 90%; max-width: 860px;
+      max-height: 80vh; overflow-y: auto;
+      padding: 32px;
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px;
+    }
+    .modal-close {
+      background: none; border: none; color: #9896A0;
+      font-size: 1.4rem; cursor: pointer; transition: color 0.2s;
+    }
+    .modal-close:hover { color: #E8E6DF; }
+
+    /* ── Pipeline Table ── */
+    .pipeline-table { width: 100%; border-collapse: collapse; }
+    .pipeline-table th {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
+      text-transform: uppercase; color: #9896A0; font-weight: 500;
+      text-align: left; padding: 10px 12px;
+      border-bottom: 1px solid #252840; letter-spacing: 0.5px;
+    }
+    .pipeline-table td {
+      padding: 12px; border-bottom: 1px solid #1C1F33;
+      font-size: 0.85rem; vertical-align: middle;
+    }
+    .pipeline-status-select {
+      background: #1C1F33; border: 1px solid #252840;
+      color: #E8E6DF; padding: 5px 10px; border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+    }
+    .pipeline-empty {
+      text-align: center; padding: 48px 0; color: #62607A;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
+    }
+
+    /* ── Loading & Error ── */
+    .loading-state {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 16px; padding: 60px 0; color: #9896A0;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
+    }
+    .error-box {
+      background: rgba(224,92,92,0.1); border: 1px solid rgba(224,92,92,0.3);
+      border-radius: 10px; padding: 18px 22px; color: #E05C5C;
+      font-size: 0.88rem; margin: 16px 0;
+    }
+    .error-box button { margin-top: 10px; }
+
+    /* ── Selection bar ── */
+    .selection-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 0; margin-top: 12px;
+    }
+    .selection-count {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: #9896A0;
+    }
+
+    /* ── Section titles ── */
+    .section-title {
+      font-size: 1.6rem; margin-bottom: 6px;
+    }
+    .section-sub {
+      font-size: 0.88rem; color: #B8B6C4; margin-bottom: 28px;
+    }
+
+    /* ── File upload ── */
+    .file-upload-area {
+      border: 2px dashed #252840; border-radius: 10px;
+      padding: 28px; text-align: center; cursor: pointer;
+      transition: all 0.25s; margin-bottom: 12px;
+    }
+    .file-upload-area:hover { border-color: #C9A84C; background: rgba(201,168,76,0.03); }
+    .file-upload-area.has-file { border-color: #4CAF82; background: rgba(76,175,130,0.05); }
+    .file-upload-area p { font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: #9896A0; }
+    .file-upload-area .file-name { color: #4CAF82; font-weight: 500; margin-top: 6px; }
+    .file-upload-area input { display: none; }
+
+    /* ── Resume hint ── */
+    .resume-hint {
+      background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 8px; padding: 12px 16px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      color: #E8C96D; margin-top: 8px;
+    }
+
+    /* ── Back button ── */
+    .back-row { margin-bottom: 20px; }
+    .btn-back {
+      background: none; border: none; color: #9896A0;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
+      cursor: pointer; transition: color 0.2s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-back:hover { color: #C9A84C; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      nav { padding: 14px 16px; }
+      .nav-brand { font-size: 0.95rem; }
+      .container { padding: 0 16px; }
+      .section-title { font-size: 1.3rem; }
+      .step-line { width: 32px; }
+      .step-labels { gap: 20px; }
+      .modal { padding: 20px; width: 95%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav ── -->
+  <nav>
+    <div class="nav-brand">
+      <img src="assets/phoenix-logo.png" alt="Fearless Job Search" onerror="this.style.display='none'">
+      <span>FEARLESS JOB SEARCH</span>
+    </div>
+    <div class="nav-right">
+      <button class="nav-btn" onclick="openPipeline()">Pipeline</button>
+    </div>
+  </nav>
+
+  <!-- ── Step Indicator ── -->
+  <div class="container">
+    <div class="steps-bar">
+      <div class="step-dot active" id="dot-1">1</div>
+      <div class="step-line" id="line-1"></div>
+      <div class="step-dot" id="dot-2">2</div>
+      <div class="step-line" id="line-2"></div>
+      <div class="step-dot" id="dot-3">3</div>
+      <div class="step-line" id="line-3"></div>
+      <div class="step-dot" id="dot-4">4</div>
+    </div>
+    <div class="step-labels">
+      <div class="step-label active" id="label-1">Search</div>
+      <div class="step-label" id="label-2">Jobs</div>
+      <div class="step-label" id="label-3">Contacts</div>
+      <div class="step-label" id="label-4">Outreach</div>
+    </div>
+  </div>
+
+  <!-- ── Step 1: Search Setup ── -->
+  <div class="container">
+    <div class="section active" id="section-1">
+      <h2 class="section-title">Define Your Search</h2>
+      <p class="section-sub">Tell us what you're looking for. We'll find roles that match your leadership profile.</p>
+
+      <!-- Target Titles -->
+      <div class="form-group">
+        <label class="form-label">Target Job Titles</label>
+        <div class="tag-input-wrap" id="titlesWrap">
+          <input type="text" class="tag-field" id="titlesField" placeholder="e.g. VP of Marketing — press Enter to add">
+        </div>
+      </div>
+
+      <!-- Location -->
+      <div class="form-group">
+        <label class="form-label">Location</label>
+        <input type="text" class="form-input" id="locationInput" placeholder="e.g. New York, NY · Remote · Hybrid">
+      </div>
+
+      <!-- Anchor Links -->
+      <div class="form-group">
+        <label class="form-label">Anchor Job Links <span style="color:#62607A;font-weight:300">(optional — up to 3)</span></label>
+        <input type="url" class="form-input" id="anchor1" placeholder="https://linkedin.com/jobs/..." style="margin-bottom:8px">
+        <input type="url" class="form-input" id="anchor2" placeholder="Second job link (optional)" style="margin-bottom:8px">
+        <input type="url" class="form-input" id="anchor3" placeholder="Third job link (optional)">
+      </div>
+
+      <!-- Resume -->
+      <div class="form-group">
+        <label class="form-label">Resume</label>
+        <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('resumeFile').click()">
+          <p>Drop a file here or click to upload</p>
+          <p style="font-size:0.72rem;color:#62607A;margin-top:4px">TXT, PDF, or DOCX</p>
+          <input type="file" id="resumeFile" accept=".txt,.pdf,.docx">
+        </div>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#62607A;text-align:center;margin-bottom:8px">— or paste your resume below —</p>
+        <textarea class="form-input" id="resumeText" placeholder="Paste your resume text here..."></textarea>
+        <div class="resume-hint" id="resumeHint" style="display:none">
+          Adding your resume significantly improves fit scoring and outreach personalization.
+        </div>
+      </div>
+
+      <button class="btn-primary" id="searchBtn" disabled onclick="runSearch()">
+        Search Jobs
+      </button>
+    </div>
+
+    <!-- ── Step 2: Job Listings ── -->
+    <div class="section" id="section-2">
+      <div class="back-row"><button class="btn-back" onclick="goToStep(1)">← Back to search</button></div>
+      <h2 class="section-title">Job Listings</h2>
+      <p class="section-sub">Select the roles that interest you to surface decision-makers.</p>
+      <div id="jobsContainer"></div>
+      <div class="selection-bar" id="selectionBar" style="display:none">
+        <span class="selection-count" id="selectionCount">0 selected</span>
+        <button class="btn-primary" id="contactsBtn" disabled onclick="runContacts()">
+          Find Decision-Makers →
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Step 3: Decision-Makers ── -->
+    <div class="section" id="section-3">
+      <div class="back-row"><button class="btn-back" onclick="goToStep(2)">← Back to jobs</button></div>
+      <h2 class="section-title">Decision-Makers</h2>
+      <p class="section-sub">Direct contacts at each company — no recruiting agencies.</p>
+      <div id="contactsContainer"></div>
+      <div class="selection-bar">
+        <span></span>
+        <button class="btn-primary" onclick="runOutreach()">
+          Generate Outreach →
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Step 4: Outreach Sequences ── -->
+    <div class="section" id="section-4">
+      <div class="back-row"><button class="btn-back" onclick="goToStep(3)">← Back to contacts</button></div>
+      <h2 class="section-title">Outreach Sequences</h2>
+      <p class="section-sub">Personalized 4-message sequences for each contact. Copy and send.</p>
+      <div id="outreachContainer"></div>
+    </div>
+  </div>
+
+  <!-- ── Pipeline Modal ── -->
+  <div class="modal-overlay" id="pipelineModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 style="font-size:1.3rem">Your Pipeline</h2>
+        <button class="modal-close" onclick="closePipeline()">✕</button>
+      </div>
+      <div id="pipelineContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // ── State ──
+    const state = {
+      titles: [],
+      location: '',
+      anchors: [],
+      resumeText: '',
+      jobs: [],
+      selectedJobs: [],
+      contacts: {},
+      sequences: [],
+      pipeline: [],
+      currentStep: 1
+    };
+
+    // ── Init ──
+    (function init() {
+      loadPipeline();
+      validateSearch();
+    })();
+
+    // ── Tag input ──
+    const titlesField = document.getElementById('titlesField');
+    const titlesWrap = document.getElementById('titlesWrap');
+
+    titlesField.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = titlesField.value.trim();
+        if (val && !state.titles.includes(val)) {
+          state.titles.push(val);
+          renderTags();
+          titlesField.value = '';
+        }
+        validateSearch();
+      }
+    });
+
+    function renderTags() {
+      titlesWrap.querySelectorAll('.tag').forEach(t => t.remove());
+      state.titles.forEach((title, i) => {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.innerHTML = `${esc(title)}<button class="tag-remove" onclick="removeTitle(${i})">×</button>`;
+        titlesWrap.insertBefore(tag, titlesField);
+      });
+    }
+
+    function removeTitle(i) {
+      state.titles.splice(i, 1);
+      renderTags();
+      validateSearch();
+    }
+
+    // ── Resume file upload ──
+    const resumeFile = document.getElementById('resumeFile');
+    const fileUploadArea = document.getElementById('fileUploadArea');
+
+    resumeFile.addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        state.resumeText = text;
+        document.getElementById('resumeText').value = text;
+        fileUploadArea.classList.add('has-file');
+        fileUploadArea.innerHTML = `<p>📄 <span class="file-name">${esc(file.name)}</span></p><p style="font-size:0.72rem;color:#4CAF82;margin-top:4px">File loaded successfully</p>`;
+      } catch {
+        state.resumeText = '';
+      }
+    });
+
+    // ── Validation ──
+    function validateSearch() {
+      const btn = document.getElementById('searchBtn');
+      btn.disabled = state.titles.length === 0;
+    }
+
+    document.getElementById('resumeText').addEventListener('input', e => {
+      state.resumeText = e.target.value;
+    });
+
+    // ── Step Navigation ──
+    function goToStep(n) {
+      state.currentStep = n;
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(`section-${n}`).classList.add('active');
+      for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        const label = document.getElementById(`label-${i}`);
+        dot.className = 'step-dot';
+        label.className = 'step-label';
+        if (i < n) dot.classList.add('completed');
+        if (i === n) { dot.classList.add('active'); label.classList.add('active'); }
+        if (i <= 3) {
+          document.getElementById(`line-${i}`).className = 'step-line' + (i < n ? ' completed' : '');
+        }
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ── API Call Helper ──
+    async function callClaude(systemPrompt, userPrompt) {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userPrompt }]
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Something went wrong (${res.status})`);
+      }
+      const data = await res.json();
+      let text = data.content[0].text;
+      // Strip markdown fences
+      text = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+      return JSON.parse(text);
+    }
+
+    // ── Step 2: Search ──
+    async function runSearch() {
+      state.location = document.getElementById('locationInput').value.trim();
+      state.resumeText = document.getElementById('resumeText').value.trim();
+      state.anchors = [
+        document.getElementById('anchor1').value.trim(),
+        document.getElementById('anchor2').value.trim(),
+        document.getElementById('anchor3').value.trim()
+      ].filter(Boolean);
+
+      goToStep(2);
+      const container = document.getElementById('jobsContainer');
+      container.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Searching for matching roles...</span></div>';
+      document.getElementById('selectionBar').style.display = 'none';
+
+      const resumeSummary = state.resumeText.substring(0, 1200);
+      const systemPrompt = 'You are a job search assistant for senior leaders. Respond ONLY with a JSON array. No markdown, no explanation, no extra text.';
+      const userPrompt = `Generate 8-10 realistic active job listings posted within the last 5 days. Direct employers only — absolutely no staffing agencies or third-party recruiters.
+
+Target titles: ${JSON.stringify(state.titles)}
+Location: ${state.location || 'Any'}
+${state.anchors.length ? 'Anchor job links for reference: ' + state.anchors.join(', ') : ''}
+${resumeSummary ? 'Candidate resume summary (score fit against this):\n' + resumeSummary : 'No resume provided — assign fitScore of 50 to all.'}
+
+Return a JSON array of objects with these exact fields:
+- id (string, unique)
+- title (string)
+- company (string, real or realistic company)
+- location (string)
+- type (string: "Full-time", "Contract", etc.)
+- industry (string)
+- posted (string: "1 day ago", "3 days ago", etc.)
+- fitScore (number 0-100)
+- fitReason (string, one sentence)
+- salary (string or null)
+- highlights (array of 2-3 strings)
+- source (string: "LinkedIn", "Indeed", or "Glassdoor")`;
+
+      try {
+        const jobs = await callClaude(systemPrompt, userPrompt);
+        state.jobs = jobs;
+        state.selectedJobs = [];
+        renderJobs();
+      } catch (err) {
+        container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runSearch()">Try again</button></div>`;
+      }
+    }
+
+    function renderJobs() {
+      const container = document.getElementById('jobsContainer');
+      container.innerHTML = '';
+      const grid = document.createElement('div');
+      grid.className = 'job-grid';
+
+      state.jobs.forEach((job, i) => {
+        const card = document.createElement('div');
+        card.className = 'job-card fade-up' + (state.selectedJobs.includes(job.id) ? ' selected' : '');
+        card.style.animationDelay = `${i * 0.06}s`;
+        card.onclick = () => toggleJobSelection(job.id);
+
+        const fitBadge = job.fitScore >= 80 ? 'badge-green' :
+                         job.fitScore >= 60 ? 'badge-gold' : 'badge-red';
+        const fitLabel = job.fitScore >= 80 ? 'Strong Match' :
+                         job.fitScore >= 60 ? 'Good Match' : 'Stretch';
+
+        card.innerHTML = `
+          <div class="job-card-header">
+            <div>
+              <div class="job-title">${esc(job.title)}</div>
+              <div class="job-company">${esc(job.company)}</div>
+            </div>
+            <span class="badge ${fitBadge}">${job.fitScore} · ${fitLabel}</span>
+          </div>
+          <div class="job-meta">
+            <span>📍 ${esc(job.location)}</span>
+            <span>🏢 ${esc(job.industry)}</span>
+            <span>📅 ${esc(job.posted)}</span>
+            ${job.salary ? `<span>💰 ${esc(job.salary)}</span>` : ''}
+            <span class="mono" style="color:#62607A">${esc(job.source)}</span>
+          </div>
+          ${job.highlights ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${job.highlights.map(h => `<span style="font-size:0.75rem;color:#B8B6C4;background:#1C1F33;padding:3px 8px;border-radius:4px">${esc(h)}</span>`).join('')}</div>` : ''}
+          <div class="fit-reason">"${esc(job.fitReason)}"</div>
+        `;
+        grid.appendChild(card);
+      });
+
+      container.appendChild(grid);
+      document.getElementById('selectionBar').style.display = 'flex';
+      updateSelectionCount();
+    }
+
+    function toggleJobSelection(id) {
+      const idx = state.selectedJobs.indexOf(id);
+      if (idx === -1) state.selectedJobs.push(id);
+      else state.selectedJobs.splice(idx, 1);
+      renderJobs();
+    }
+
+    function updateSelectionCount() {
+      const n = state.selectedJobs.length;
+      document.getElementById('selectionCount').textContent = `${n} selected`;
+      document.getElementById('contactsBtn').disabled = n === 0;
+    }
+
+    // ── Step 3: Contacts ──
+    async function runContacts() {
+      goToStep(3);
+      const container = document.getElementById('contactsContainer');
+      container.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Surfacing decision-makers...</span></div>';
+
+      const selectedJobData = state.jobs
+        .filter(j => state.selectedJobs.includes(j.id))
+        .map(j => ({ job_id: j.id, title: j.title, company: j.company, industry: j.industry, location: j.location }));
+
+      const systemPrompt = 'You are a networking assistant for senior leaders. Respond ONLY with a JSON object. No markdown, no explanation.';
+      const userPrompt = `Surface 3-6 direct company contacts for each of the following roles. Include: internal recruiter/TA, most likely hiring manager, and a skip-level leader (their manager or C-suite peer). NO recruiting agencies. Provide realistic names, work email, LinkedIn URL, and one-line rationale.
+
+Jobs:
+${JSON.stringify(selectedJobData, null, 2)}
+
+Return a JSON object with a "results" array. Each result:
+{
+  "job_id": "string",
+  "company": "string",
+  "job_title": "string",
+  "contacts": [
+    {
+      "name": "string",
+      "title": "string",
+      "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
+      "email": "string (firstname.lastname@company.com format)",
+      "linkedin": "string (linkedin.com/in/firstname-lastname format)",
+      "note": "string (one-line rationale)"
+    }
+  ]
+}`;
+
+      try {
+        const data = await callClaude(systemPrompt, userPrompt);
+        state.contacts = data;
+        // Save to pipeline
+        selectedJobData.forEach(sj => {
+          const job = state.jobs.find(j => j.id === sj.job_id);
+          if (job && !state.pipeline.find(p => p.jobId === job.id)) {
+            state.pipeline.push({
+              jobId: job.id,
+              title: job.title,
+              company: job.company,
+              location: job.location,
+              fitScore: job.fitScore,
+              addedAt: new Date().toISOString().split('T')[0],
+              status: 'Researching'
+            });
+          }
+        });
+        savePipeline();
+        renderContacts(data);
+      } catch (err) {
+        container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runContacts()">Try again</button></div>`;
+      }
+    }
+
+    function renderContacts(data) {
+      const container = document.getElementById('contactsContainer');
+      container.innerHTML = '';
+
+      (data.results || []).forEach((group, gi) => {
+        const div = document.createElement('div');
+        div.className = 'contacts-group fade-up';
+        div.style.animationDelay = `${gi * 0.1}s`;
+
+        let html = `<h3 class="contacts-group-header">${esc(group.job_title)}</h3>
+                     <p class="contacts-group-sub">${esc(group.company)}</p>`;
+
+        (group.contacts || []).forEach(c => {
+          const roleBadge = c.role === 'Recruiter / TA' ? 'badge-blue' :
+                            c.role === 'Hiring Manager' ? 'badge-green' : 'badge-gold';
+          html += `
+            <div class="contact-card">
+              <div class="contact-header">
+                <span class="contact-name">${esc(c.name)}</span>
+                <span class="badge ${roleBadge}">${esc(c.role)}</span>
+              </div>
+              <div class="contact-title">${esc(c.title)}</div>
+              <div class="contact-note">${esc(c.note)}</div>
+              <div class="contact-actions">
+                <button class="btn-copy" onclick="copyText('${esc(c.email)}', this)">Copy Email</button>
+                <a href="https://${esc(c.linkedin)}" target="_blank" class="btn-copy" style="text-decoration:none">LinkedIn →</a>
+              </div>
+            </div>`;
+        });
+
+        div.innerHTML = html;
+        container.appendChild(div);
+      });
+    }
+
+    // ── Step 4: Outreach ──
+    async function runOutreach() {
+      goToStep(4);
+      const container = document.getElementById('outreachContainer');
+      container.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Generating personalized outreach sequences...</span></div>';
+
+      const resumeSummary = state.resumeText.substring(0, 1500);
+      const targets = (state.contacts.results || []).map(g => ({
+        job_id: g.job_id,
+        company: g.company,
+        job_title: g.job_title,
+        contacts: g.contacts.map(c => ({ name: c.name, title: c.title, role: c.role }))
+      }));
+
+      const systemPrompt = 'You are a senior executive outreach copywriter. Respond ONLY with a JSON object. No markdown, no explanation.';
+      const userPrompt = `Write personalized 4-message outreach sequences for each contact below. Two tracks:
+- Recruiter / TA track opener: "I noticed your organization is hiring for [role]..."
+- Hiring Manager / Skip-Level track opener: "I noticed your team is expanding..."
+
+Each message must include one specific brand value statement extracted from the resume. Voice: direct, confident, peer-level, short. Senior people skim — connection request under 300 characters.
+
+NEVER use these phrases: "I hope this message finds you well", "I'm reaching out because", "I wanted to connect", "synergy", "leverage"
+
+Sign with first name only.
+
+Targets:
+${JSON.stringify(targets, null, 2)}
+
+${resumeSummary ? 'Candidate resume:\n' + resumeSummary : 'No resume provided — use generic leadership value statements.'}
+
+Return a JSON object with a "sequences" array. Each sequence:
+{
+  "job_id": "string",
+  "company": "string",
+  "job_title": "string",
+  "contact_name": "string",
+  "contact_role": "string",
+  "track": "Recruiter" | "Hiring Manager",
+  "messages": [
+    {
+      "step": "Connection Request" | "Follow-Up" | "Re-Engage" | "Final Circle Back",
+      "channel": "LinkedIn" | "LinkedIn DM" | "Email",
+      "timing": "Day 1" | "Day 2" | "Day 8" | "Day 14",
+      "body": "string"
+    }
+  ]
+}`;
+
+      try {
+        const data = await callClaude(systemPrompt, userPrompt);
+        state.sequences = data;
+        // Update pipeline status
+        state.pipeline.forEach(p => {
+          if (state.selectedJobs.includes(p.jobId)) {
+            p.status = 'Outreach Ready';
+          }
+        });
+        savePipeline();
+        renderOutreach(data);
+      } catch (err) {
+        container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runOutreach()">Try again</button></div>`;
+      }
+    }
+
+    function renderOutreach(data) {
+      const container = document.getElementById('outreachContainer');
+      container.innerHTML = '';
+
+      (data.sequences || []).forEach((seq, si) => {
+        const div = document.createElement('div');
+        div.className = 'sequence-group fade-up';
+        div.style.animationDelay = `${si * 0.08}s`;
+
+        const trackBadge = seq.track === 'Recruiter' ? 'badge-blue' : 'badge-green';
+
+        let html = `
+          <div class="sequence-header">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div class="sequence-contact">${esc(seq.contact_name)}</div>
+                <div class="sequence-track">${esc(seq.job_title)} · ${esc(seq.company)}</div>
+              </div>
+              <span class="badge ${trackBadge}">${esc(seq.track)} Track</span>
+            </div>
+          </div>`;
+
+        (seq.messages || []).forEach(msg => {
+          html += `
+            <div class="message-card">
+              <div class="message-meta">
+                <span class="message-step">${esc(msg.step)}</span>
+                <div style="display:flex;gap:10px;align-items:center">
+                  <span class="message-timing">${esc(msg.channel)} · ${esc(msg.timing)}</span>
+                  <button class="btn-copy" onclick="copyText(this.closest('.message-card').querySelector('.message-body').textContent, this)">Copy</button>
+                </div>
+              </div>
+              <div class="message-body">${esc(msg.body)}</div>
+            </div>`;
+        });
+
+        div.innerHTML = html;
+        container.appendChild(div);
+      });
+    }
+
+    // ── Pipeline ──
+    function loadPipeline() {
+      try {
+        const raw = localStorage.getItem('fjs_pipeline');
+        if (raw) state.pipeline = JSON.parse(raw);
+      } catch {}
+    }
+
+    function savePipeline() {
+      try {
+        localStorage.setItem('fjs_pipeline', JSON.stringify(state.pipeline));
+      } catch {}
+    }
+
+    function openPipeline() {
+      renderPipelineTable();
+      document.getElementById('pipelineModal').classList.add('active');
+    }
+
+    function closePipeline() {
+      document.getElementById('pipelineModal').classList.remove('active');
+    }
+
+    document.getElementById('pipelineModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closePipeline();
+    });
+
+    function renderPipelineTable() {
+      const container = document.getElementById('pipelineContent');
+      if (state.pipeline.length === 0) {
+        container.innerHTML = '<div class="pipeline-empty">No jobs in your pipeline yet.<br>Search and select jobs to add them.</div>';
+        return;
+      }
+
+      const statuses = ['Researching', 'Outreach Ready', 'Contacted', 'In Process', 'Closed'];
+      let html = `<table class="pipeline-table">
+        <thead><tr>
+          <th>Role</th><th>Company</th><th>Location</th><th>Fit</th><th>Added</th><th>Status</th><th></th>
+        </tr></thead><tbody>`;
+
+      state.pipeline.forEach((p, i) => {
+        const fitBadge = p.fitScore >= 80 ? 'badge-green' :
+                         p.fitScore >= 60 ? 'badge-gold' : 'badge-red';
+        html += `<tr>
+          <td>${esc(p.title)}</td>
+          <td style="color:#C9A84C">${esc(p.company)}</td>
+          <td style="color:#9896A0">${esc(p.location)}</td>
+          <td><span class="badge ${fitBadge}">${p.fitScore}</span></td>
+          <td class="mono" style="color:#9896A0;font-size:0.78rem">${esc(p.addedAt)}</td>
+          <td>
+            <select class="pipeline-status-select" onchange="updatePipelineStatus(${i}, this.value)">
+              ${statuses.map(s => `<option value="${s}" ${s === p.status ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </td>
+          <td><button class="btn-back" style="font-size:0.72rem;color:#E05C5C" onclick="removePipelineItem(${i})">Remove</button></td>
+        </tr>`;
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function updatePipelineStatus(i, val) {
+      state.pipeline[i].status = val;
+      savePipeline();
+    }
+
+    function removePipelineItem(i) {
+      state.pipeline.splice(i, 1);
+      savePipeline();
+      renderPipelineTable();
+    }
+
+    // ── Utils ──
+    function esc(s) {
+      if (!s) return '';
+      const div = document.createElement('div');
+      div.textContent = String(s);
+      return div.innerHTML;
+    }
+
+    function copyText(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.color = '#4CAF82';
+        setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
+      });
+    }
+
+    // ── PWA Registration ──
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

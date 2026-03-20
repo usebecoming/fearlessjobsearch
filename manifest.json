@@ -1,0 +1,16 @@
+{
+  "name": "Fearless Job Search",
+  "short_name": "Fearless",
+  "description": "AI-powered job search tool for senior leaders — by Live for Yourself Consulting",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0F1A",
+  "theme_color": "#C9A84C",
+  "icons": [
+    {
+      "src": "assets/phoenix-logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ]
+}
