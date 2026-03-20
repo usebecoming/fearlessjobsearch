@@ -266,18 +266,19 @@ Return JSON array only:
         // Post-Claude quality filters
         const beforeFilter = verifiedContacts.length;
         verifiedContacts = verifiedContacts.filter(c => {
-          // Fix 2: Reject vague titles
-          if (isTitleTooVague(c.title)) {
+          const roleType = c.role || c.role_type || '';
+          // Reject vague titles (generous - only truly empty)
+          if (isTitleTooVague(c.title, roleType)) {
             console.log(`  ❌ Vague title rejected: ${c.name} — "${c.title}"`);
             return false;
           }
-          // Fix 3: Reject former employees
+          // Reject former employees
           if (isFormerEmployee(c.title, c.note)) {
             console.log(`  ❌ Former employee rejected: ${c.name} — "${c.title}"`);
             return false;
           }
-          // Fix 4: Function relevance check
-          if (!isFunctionRelevant(c.title, derived.func)) {
+          // Function relevance (generous - only rejects clearly wrong)
+          if (!isFunctionRelevant(c.title, derived.func, roleType)) {
             console.log(`  ❌ Wrong function rejected: ${c.name} — "${c.title}" not relevant to ${derived.func}`);
             return false;
           }
@@ -781,40 +782,76 @@ function inferTitleFromSlug(slug) {
   return '';
 }
 
-// Fix 2: Vague title check
-function isTitleTooVague(title) {
+// Vague title check - generous, only rejects truly empty titles
+function isTitleTooVague(title, roleType) {
   if (!title) return true;
   const t = title.toLowerCase().trim();
-  const vague = ['employee', 'team member', 'staff', 'professional', 'works at', 'member at'];
-  if (vague.some(v => t.includes(v))) {
-    return !/(manager|director|vp|president|officer|analyst|specialist|partner|lead|head|coordinator|recruiter|advisor|consultant|engineer|developer|designer)/i.test(title);
-  }
+
+  // Never reject C-suite
+  if (/(ceo|coo|cto|cmo|cfo|chro|cpo|president|founder)/i.test(t)) return false;
+
+  // Never reject Skip-Level (executives often have generic snippet titles)
+  if (roleType === 'Skip-Level') return false;
+
+  // Accept partial titles with function signals
+  const acceptable = ['hr', 'human resources', 'people', 'talent', 'chro', 'cpo', 'hrbp',
+    'phr', 'sphr', 'shrm', 'executive', 'senior', 'vp', 'vice president', 'svp', 'evp',
+    'director', 'president', 'chief', 'leader', 'marketing', 'engineering', 'product',
+    'sales', 'finance', 'operations', 'legal', 'recruiting', 'recruiter'];
+  if (acceptable.some(a => t.includes(a))) return false;
+
+  // Only reject truly vague
+  const trulyVague = ['employee at', 'team member', 'works at', 'staff at'];
+  if (trulyVague.some(v => t.startsWith(v) || t === v.trim())) return true;
+  if (/^employee$/i.test(t) || /^professional$/i.test(t) || /^associate$/i.test(t)) return true;
   if (t.length < 3) return true;
+
   return false;
 }
 
-// Fix 3: Former employee check
+// Former employee check
 function isFormerEmployee(title, note) {
   const text = `${title || ''} ${note || ''}`;
   return /\bformer\b|\bex-|\bpreviously\b|\bretired\b|\balumni\b|\bemeritus\b/i.test(text);
 }
 
-// Fix 4: Function relevance check
-function isFunctionRelevant(title, jobFunction) {
+// Function relevance - generous, only rejects clearly wrong functions
+function isFunctionRelevant(title, jobFunction, roleType) {
   if (!title) return false;
   const t = title.toLowerCase();
-  if (/(ceo|coo|president|chief executive|chief operating|founder|co-founder|managing director|chairman)/i.test(t)) return true;
-  if (/(vp|vice president|svp|evp|chief)/i.test(t)) return true;
+
+  // Skip-Level always relevant
+  if (roleType === 'Skip-Level') return true;
+
+  // C-suite and senior leadership always relevant
+  if (/(ceo|coo|cto|cmo|cfo|chro|cpo|president|founder|co-founder|managing director|chairman)/i.test(t)) return true;
+  if (/(executive|vp|vice president|svp|evp|director|senior leader|leader)/i.test(t)) return true;
+
+  // HR certifications = always HR relevant
+  if (/(phr|sphr|shrm|hrbp)/i.test(t)) return true;
+
+  // General function = accept anything
+  if (jobFunction === 'General') return true;
+
+  // Check clearly wrong function (hard reject)
+  const clearlyWrong = {
+    'People': ['athletics', 'sports', 'coach', 'athletic director', 'custodial', 'groundskeeper', 'plumber', 'electrician', 'mechanic'],
+    'Marketing': ['software engineer', 'developer', 'devops', 'accountant', 'auditor', 'attorney'],
+    'Engineering': ['marketing manager', 'brand manager', 'accountant', 'attorney', 'hr manager'],
+  };
+  const wrongList = clearlyWrong[jobFunction] || [];
+  if (wrongList.some(w => t.includes(w))) return false;
+
+  // Function-specific keywords
   const funcKeywords = {
-    'People': ['hr', 'human resources', 'people', 'talent', 'learning', 'training', 'organizational', 'culture', 'workforce', 'recruiting', 'recruiter', 'hrbp', 'compensation', 'benefits'],
+    'People': ['hr', 'human resources', 'people', 'talent', 'learning', 'training', 'organizational', 'culture', 'workforce', 'recruiting', 'recruiter', 'hrbp', 'compensation', 'benefits', 'od', 'l&d', 'hris', 'employee'],
     'Marketing': ['marketing', 'brand', 'growth', 'demand', 'content', 'communications', 'pr', 'creative', 'campaign'],
-    'Engineering': ['engineering', 'software', 'technology', 'technical', 'developer', 'devops', 'infrastructure', 'platform', 'data', 'security'],
-    'Product': ['product', 'ux', 'user experience', 'design', 'research'],
+    'Engineering': ['engineering', 'software', 'technology', 'technical', 'developer', 'devops', 'infrastructure', 'platform', 'data', 'security', 'architect'],
+    'Product': ['product', 'ux', 'user experience', 'design', 'research', 'program'],
     'Sales': ['sales', 'revenue', 'account', 'business development', 'partnerships', 'commercial'],
     'Finance': ['finance', 'financial', 'accounting', 'treasury', 'fp&a', 'controller'],
     'Operations': ['operations', 'ops', 'supply chain', 'logistics', 'facilities', 'procurement'],
     'Legal': ['legal', 'counsel', 'compliance', 'risk', 'regulatory', 'attorney'],
-    'General': [] // accept anything
   };
   const keywords = funcKeywords[jobFunction] || [];
   if (keywords.length === 0) return true;
