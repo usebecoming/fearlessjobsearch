@@ -2577,23 +2577,28 @@
 
     // ── Step 2: Search ──
     async function runSearch() {
-      // Check usage limits before searching
+      // Check usage limits before searching (with 3s timeout so it doesn't block)
       try {
-        const sess = supabase ? await supabase.auth.getSession() : null;
-        const userId = sess?.data?.session?.user?.id;
-        const userEmail = sess?.data?.session?.user?.email || state.userEmail;
-
-        if (userId) {
-          const usageRes = await fetch('/api/check-usage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, email: userEmail })
-          });
-          if (usageRes.ok) {
-            const usage = await usageRes.json();
-            if (!usage.allowed) {
-              openUpgradeModal();
-              return;
+        const userEmail = state.userEmail;
+        if (userEmail && !ADMIN_EMAILS.includes(userEmail)) {
+          const controller = new AbortController();
+          const timeout = setTimeout(function() { controller.abort(); }, 3000);
+          const sess = supabase ? await supabase.auth.getSession() : null;
+          const userId = sess?.data?.session?.user?.id;
+          if (userId) {
+            const usageRes = await fetch('/api/check-usage', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: userId, email: userEmail }),
+              signal: controller.signal
+            });
+            clearTimeout(timeout);
+            if (usageRes.ok) {
+              const usage = await usageRes.json();
+              if (!usage.allowed) {
+                openUpgradeModal();
+                return;
+              }
             }
           }
         }
