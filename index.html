@@ -2168,7 +2168,7 @@
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           if (error.message.includes('Invalid login')) {
-            document.getElementById('loginError').textContent = 'No account found with those credentials. Need to create one?';
+            document.getElementById('loginError').textContent = 'Incorrect email or password. Try again or create a new account.';
           } else {
             document.getElementById('loginError').textContent = error.message;
           }
