@@ -2124,7 +2124,7 @@ Return a JSON array of objects with these exact fields:
       saveBtn.textContent = 'Saving...';
       saveBtn.disabled = true;
 
-      const { error } = await supabase.from('search_profiles').insert({
+      const { data, error } = await supabase.from('search_profiles').insert({
         user_id: user.id,
         name,
         titles: state.titles,
@@ -2137,7 +2137,7 @@ Return a JSON array of objects with these exact fields:
           document.getElementById('anchor2').value.trim(),
           document.getElementById('anchor3').value.trim()
         ].filter(Boolean)
-      });
+      }).select();
 
       if (error) {
         console.error('Save search error:', error);
