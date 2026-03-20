@@ -2123,6 +2123,26 @@
       alert('To delete your account, please email support@lfyconsulting.com with the subject "Delete my account" from your registered email address. We will process your request within 30 days.');
     }
 
+    // Detect private/incognito browsing
+    function checkIncognito() {
+      try {
+        localStorage.setItem('_test', '1');
+        localStorage.removeItem('_test');
+        return false;
+      } catch(e) {
+        return true;
+      }
+    }
+    if (checkIncognito()) {
+      // Show warning on the auth modal
+      setTimeout(function() {
+        var warning = document.createElement('div');
+        warning.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#C94444;color:#fff;padding:12px 20px;text-align:center;font-family:"IBM Plex Mono",monospace;font-size:0.85rem;z-index:9999';
+        warning.textContent = 'Private/incognito mode is not supported. Please use a regular browser window to sign in.';
+        document.body.prepend(warning);
+      }, 500);
+    }
+
     async function handleLogin() {
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
@@ -2132,7 +2152,7 @@
         return;
       }
       if (!supabase) {
-        document.getElementById('loginError').textContent = 'Connection error. Please refresh and try again.';
+        document.getElementById('loginError').textContent = 'Connection error. Please use a regular browser window (not incognito).';
         return;
       }
       try {
