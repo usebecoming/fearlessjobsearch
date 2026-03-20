@@ -8,18 +8,19 @@
   <meta name="theme-color" content="#B8A88A">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 16px; scroll-behavior: smooth; }
     body {
       font-family: 'IBM Plex Sans', sans-serif;
-      font-weight: 400;
+      font-weight: 500;
       background: #FFF8F2;
       color: #111111;
       min-height: 100vh;
-      line-height: 1.6;
+      line-height: 1.65;
+      font-size: 16px;
       -webkit-font-smoothing: antialiased;
     }
     a { color: #B8A88A; text-decoration: none; transition: color 0.2s; }
@@ -122,14 +123,14 @@
     .form-group { margin-bottom: 22px; }
     .form-label {
       display: block; margin-bottom: 8px;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
-      font-weight: 500; color: #6E6E6E; text-transform: uppercase;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+      font-weight: 600; color: #444444; text-transform: uppercase;
       letter-spacing: 0.8px;
     }
     .form-input {
       width: 100%; padding: 12px 16px;
       background: #FFFFFF; border: 1px solid #E5E4E2;
-      border-radius: 8px; color: #111111; font-size: 0.92rem;
+      border-radius: 8px; color: #111111; font-size: 0.95rem; font-weight: 500;
       transition: border-color 0.2s;
     }
     .form-input:focus { border-color: #B8A88A; }
@@ -220,11 +221,59 @@
     }
     .job-card:hover { border-color: #B8A88A; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
     .job-card.selected { border-color: #B8A88A; background: rgba(184,168,138,0.04); box-shadow: 0 0 0 1px #B8A88A; }
-    .job-card.selected::after {
-      content: '✓'; position: absolute; top: 14px; right: 16px;
-      background: #111111; color: #FFFFFF; width: 24px; height: 24px;
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      font-size: 0.8rem; font-weight: 700;
+    .job-card.selected .job-select-check {
+      background: #111111; color: #FFFFFF; border-color: #111111;
+    }
+    .job-card-actions {
+      position: absolute; top: 14px; right: 16px;
+      display: flex; gap: 8px; align-items: center;
+    }
+    .job-fav-btn {
+      background: none; border: none; font-size: 1.2rem; cursor: pointer;
+      color: #D0CEC8; transition: all 0.2s; padding: 2px;
+    }
+    .job-fav-btn:hover { color: #E05C5C; transform: scale(1.15); }
+    .job-fav-btn.favorited { color: #E05C5C; }
+    .job-select-check {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 2px solid #E5E4E2; background: #FFFFFF;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; color: transparent;
+      transition: all 0.2s; cursor: pointer;
+    }
+    .job-select-check:hover { border-color: #B8A88A; }
+    .job-view-btn {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+      color: #B8A88A; background: none; border: none;
+      cursor: pointer; font-weight: 500; transition: color 0.2s;
+      margin-top: 10px; padding: 0;
+    }
+    .job-view-btn:hover { color: #111111; }
+
+    /* ── Job Detail Modal ── */
+    .job-detail-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(17,17,17,0.4); z-index: 200;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .job-detail-modal.active { display: flex; }
+    .job-detail-panel {
+      background: #FFFFFF; border: 1px solid #E5E4E2;
+      border-radius: 16px; width: 90%; max-width: 680px;
+      max-height: 85vh; overflow-y: auto; padding: 36px;
+    }
+    .job-detail-panel h2 { font-size: 1.4rem; margin-bottom: 4px; }
+    .job-detail-section {
+      margin-top: 20px; padding-top: 16px; border-top: 1px solid #EEEEED;
+    }
+    .job-detail-section h3 {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+      font-weight: 600; color: #444444; text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 10px;
+    }
+    .job-detail-actions {
+      display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap;
     }
     .job-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
     .job-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #111111; font-weight: 700; }
@@ -236,7 +285,7 @@
     .job-meta span { display: flex; align-items: center; gap: 4px; }
     .fit-reason {
       margin-top: 12px; padding-top: 12px; border-top: 1px solid #EEEEED;
-      font-size: 0.82rem; color: #6E6E6E; font-style: italic;
+      font-size: 0.85rem; color: #555555; font-style: italic; font-weight: 500;
     }
 
     /* ── Contact Cards ── */
@@ -256,9 +305,9 @@
     }
     .contact-card:hover { border-color: #B8A88A; }
     .contact-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .contact-name { font-weight: 500; font-size: 0.95rem; color: #111111; }
-    .contact-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: #858585; margin-bottom: 6px; }
-    .contact-note { font-size: 0.82rem; color: #6E6E6E; margin-bottom: 12px; font-style: italic; }
+    .contact-name { font-weight: 600; font-size: 0.95rem; color: #111111; }
+    .contact-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; color: #666666; margin-bottom: 6px; font-weight: 500; }
+    .contact-note { font-size: 0.85rem; color: #555555; margin-bottom: 12px; font-style: italic; }
     .contact-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
     /* ── Outreach Sequences ── */
@@ -289,7 +338,7 @@
       font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: #858585;
     }
     .message-body {
-      font-size: 0.88rem; color: #111111; line-height: 1.65;
+      font-size: 0.92rem; color: #111111; line-height: 1.7; font-weight: 500;
       white-space: pre-wrap; margin-bottom: 12px;
     }
 
@@ -366,7 +415,7 @@
       font-size: 1.6rem; margin-bottom: 6px;
     }
     .section-sub {
-      font-size: 0.88rem; color: #6E6E6E; margin-bottom: 28px;
+      font-size: 0.92rem; color: #555555; margin-bottom: 28px; font-weight: 500;
     }
 
     /* ── File upload ── */
@@ -520,7 +569,7 @@
       <div class="form-group">
         <label class="form-label">Target Job Titles</label>
         <div class="tag-input-wrap" id="titlesWrap">
-          <input type="text" class="tag-field" id="titlesField" placeholder="e.g. VP of Marketing — press Enter to add">
+          <input type="text" class="tag-field" id="titlesField" placeholder="e.g. VP of Marketing, press Enter to add">
         </div>
       </div>
 
@@ -570,7 +619,7 @@
 
       <!-- Anchor Links -->
       <div class="form-group">
-        <label class="form-label">Anchor Job Links <span style="color:#858585;font-weight:300">(optional — up to 3)</span></label>
+        <label class="form-label">Anchor Job Links <span style="color:#858585;font-weight:300">(optional, up to 3)</span></label>
         <input type="url" class="form-input" id="anchor1" placeholder="https://linkedin.com/jobs/..." style="margin-bottom:8px">
         <input type="url" class="form-input" id="anchor2" placeholder="Second job link (optional)" style="margin-bottom:8px">
         <input type="url" class="form-input" id="anchor3" placeholder="Third job link (optional)">
@@ -584,7 +633,7 @@
           <p style="font-size:0.72rem;color:#858585;margin-top:4px">TXT, PDF, or DOCX</p>
           <input type="file" id="resumeFile" accept=".txt,.pdf,.docx">
         </div>
-        <p style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#858585;text-align:center;margin-bottom:8px">— or paste your resume below —</p>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#858585;text-align:center;margin-bottom:8px">or paste your resume below</p>
         <textarea class="form-input" id="resumeText" placeholder="Paste your resume text here..."></textarea>
         <div class="resume-hint" id="resumeHint" style="display:none">
           Adding your resume significantly improves fit scoring and outreach personalization.
@@ -614,7 +663,7 @@
     <div class="section" id="section-3">
       <div class="back-row"><button class="btn-back" onclick="goToStep(2)">← Back to jobs</button></div>
       <h2 class="section-title">Decision-Makers</h2>
-      <p class="section-sub">Direct contacts at each company — no recruiting agencies.</p>
+      <p class="section-sub">Direct contacts at each company. No recruiting agencies.</p>
       <div class="export-bar" id="exportBar" style="display:none">
         <button class="btn-secondary btn-small" onclick="copyAllLinkedIn()">Copy All LinkedIn URLs</button>
         <button class="btn-secondary btn-small" onclick="exportCSV()">Export CSV</button>
@@ -635,6 +684,11 @@
       <p class="section-sub">Personalized 4-message sequences for each contact. Copy and send.</p>
       <div id="outreachContainer"></div>
     </div>
+  </div>
+
+  <!-- ── Job Detail Modal ── -->
+  <div class="job-detail-modal" id="jobDetailModal">
+    <div class="job-detail-panel" id="jobDetailPanel"></div>
   </div>
 
   <!-- ── Pipeline Modal ── -->
@@ -683,6 +737,7 @@
       resumeText: '',
       jobs: [],
       selectedJobs: [],
+      favorites: [],
       contacts: {},
       sequences: [],
       pipeline: [],
@@ -692,6 +747,7 @@
     // ── Init ──
     (function init() {
       loadPipeline();
+      loadFavorites();
       validateSearch();
     })();
 
@@ -823,14 +879,15 @@
 
       const resumeSummary = state.resumeText.substring(0, 1200);
       const systemPrompt = 'You are a job search assistant for senior leaders. Respond ONLY with a JSON array. No markdown, no explanation, no extra text.';
-      const userPrompt = `Generate 8-10 realistic active job listings posted within the last 5 days. Direct employers only — absolutely no staffing agencies or third-party recruiters.
+      const userPrompt = `Generate 8-10 realistic active job listings posted within the last 5 days. Direct employers only. No staffing agencies or third-party recruiters.
 
 Target titles: ${JSON.stringify(state.titles)}
 Location: ${state.location || 'Any'}
 Work type: ${workTypes.length ? workTypes.join(', ') : 'Any'}
 ${salaryStr ? 'Salary range: ' + salaryStr : ''}
 ${state.anchors.length ? 'Anchor job links for reference: ' + state.anchors.join(', ') : ''}
-${resumeSummary ? 'Candidate resume summary (score fit against this):\n' + resumeSummary : 'No resume provided — assign fitScore of 50 to all.'}
+${resumeSummary ? 'Candidate resume summary (score fit against this):\n' + resumeSummary : 'No resume provided. Assign fitScore of 50 to all.'}
+${getFavoriteContext()}
 
 Return a JSON array of objects with these exact fields:
 - id (string, unique)
@@ -866,15 +923,19 @@ Return a JSON array of objects with these exact fields:
         const card = document.createElement('div');
         card.className = 'job-card fade-up' + (state.selectedJobs.includes(job.id) ? ' selected' : '');
         card.style.animationDelay = `${i * 0.06}s`;
-        card.onclick = () => toggleJobSelection(job.id);
 
         const fitBadge = job.fitScore >= 80 ? 'badge-green' :
                          job.fitScore >= 60 ? 'badge-gold' : 'badge-red';
         const fitLabel = job.fitScore >= 80 ? 'Strong Match' :
                          job.fitScore >= 60 ? 'Good Match' : 'Stretch';
+        const isFav = state.favorites.some(f => f.title === job.title && f.company === job.company);
 
         card.innerHTML = `
-          <div class="job-card-header">
+          <div class="job-card-actions">
+            <button class="job-fav-btn ${isFav ? 'favorited' : ''}" onclick="event.stopPropagation();toggleFavorite('${esc(job.id)}')" title="Favorite this role">&#9829;</button>
+            <div class="job-select-check" onclick="event.stopPropagation();toggleJobSelection('${esc(job.id)}')">&#10003;</div>
+          </div>
+          <div class="job-card-header" style="padding-right:70px">
             <div>
               <div class="job-title">${esc(job.title)}</div>
               <div class="job-company">${esc(job.company)}</div>
@@ -888,9 +949,11 @@ Return a JSON array of objects with these exact fields:
             ${job.salary ? `<span>${esc(job.salary)}</span>` : ''}
             <span class="mono" style="color:#858585">${esc(job.source)}</span>
           </div>
-          ${job.highlights ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${job.highlights.map(h => `<span style="font-size:0.75rem;color:#6E6E6E;background:#F9F6F1;padding:3px 8px;border-radius:4px;border:1px solid #EEEEED">${esc(h)}</span>`).join('')}</div>` : ''}
+          ${job.highlights ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${job.highlights.map(h => `<span style="font-size:0.75rem;color:#555555;background:#F9F6F1;padding:3px 8px;border-radius:4px;border:1px solid #EEEEED;font-weight:500">${esc(h)}</span>`).join('')}</div>` : ''}
           <div class="fit-reason">"${esc(job.fitReason)}"</div>
+          <button class="job-view-btn" onclick="event.stopPropagation();openJobDetail('${esc(job.id)}')">View details + apply</button>
         `;
+        card.onclick = () => toggleJobSelection(job.id);
         grid.appendChild(card);
       });
 
@@ -904,6 +967,141 @@ Return a JSON array of objects with these exact fields:
       if (idx === -1) state.selectedJobs.push(id);
       else state.selectedJobs.splice(idx, 1);
       renderJobs();
+    }
+
+    // ── Favorites ──
+    function loadFavorites() {
+      try {
+        const raw = localStorage.getItem('fjs_favorites');
+        if (raw) state.favorites = JSON.parse(raw);
+      } catch {}
+    }
+
+    function saveFavorites() {
+      try {
+        localStorage.setItem('fjs_favorites', JSON.stringify(state.favorites));
+      } catch {}
+    }
+
+    function toggleFavorite(jobId) {
+      const job = state.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      const idx = state.favorites.findIndex(f => f.title === job.title && f.company === job.company);
+      if (idx === -1) {
+        state.favorites.push({
+          title: job.title,
+          company: job.company,
+          industry: job.industry,
+          location: job.location,
+          fitScore: job.fitScore,
+          highlights: job.highlights || []
+        });
+      } else {
+        state.favorites.splice(idx, 1);
+      }
+      saveFavorites();
+      renderJobs();
+    }
+
+    function getFavoriteContext() {
+      if (state.favorites.length === 0) return '';
+      const summary = state.favorites.map(f =>
+        `${f.title} at ${f.company} (${f.industry}, ${f.location})`
+      ).join('; ');
+      const allHighlights = [...new Set(state.favorites.flatMap(f => f.highlights))].slice(0, 10);
+      return `\nThe user has favorited these roles in past searches: ${summary}.\nKey themes they prefer: ${allHighlights.join(', ')}.\nPrioritize similar roles, industries, company sizes, and seniority levels.`;
+    }
+
+    // ── Job Detail Modal ──
+    function openJobDetail(jobId) {
+      const job = state.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      const panel = document.getElementById('jobDetailPanel');
+
+      const fitBadge = job.fitScore >= 80 ? 'badge-green' :
+                       job.fitScore >= 60 ? 'badge-gold' : 'badge-red';
+      const fitLabel = job.fitScore >= 80 ? 'Strong Match' :
+                       job.fitScore >= 60 ? 'Good Match' : 'Stretch';
+      const isFav = state.favorites.some(f => f.title === job.title && f.company === job.company);
+      const isSelected = state.selectedJobs.includes(job.id);
+
+      panel.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <h2>${esc(job.title)}</h2>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;color:#B8A88A;font-weight:500;margin-top:4px">${esc(job.company)}</div>
+          </div>
+          <button class="modal-close" onclick="closeJobDetail()">&times;</button>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#555555;font-weight:500">
+          <span>${esc(job.location)}</span>
+          <span>${esc(job.type || 'Full-time')}</span>
+          <span>${esc(job.industry)}</span>
+          <span>Posted ${esc(job.posted)}</span>
+          ${job.salary ? `<span>${esc(job.salary)}</span>` : ''}
+        </div>
+
+        <div class="job-detail-section">
+          <h3>Fit Score</h3>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="badge ${fitBadge}" style="font-size:0.85rem;padding:6px 14px">${job.fitScore} / 100 · ${fitLabel}</span>
+          </div>
+          <p style="margin-top:8px;font-size:0.88rem;color:#555555;font-style:italic;font-weight:500">${esc(job.fitReason)}</p>
+        </div>
+
+        ${job.highlights ? `
+        <div class="job-detail-section">
+          <h3>Key Highlights</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            ${job.highlights.map(h => `<span style="font-size:0.82rem;color:#555555;background:#F9F6F1;padding:5px 12px;border-radius:6px;border:1px solid #EEEEED;font-weight:500">${esc(h)}</span>`).join('')}
+          </div>
+        </div>` : ''}
+
+        <div class="job-detail-section">
+          <h3>Source</h3>
+          <p style="font-size:0.88rem;color:#555555;font-weight:500">${esc(job.source)}</p>
+        </div>
+
+        <div class="job-detail-actions">
+          <button class="btn-primary" onclick="toggleJobSelection('${esc(job.id)}');closeJobDetail()">
+            ${isSelected ? 'Remove from Selection' : 'Select for Outreach'}
+          </button>
+          <button class="btn-secondary" onclick="toggleFavorite('${esc(job.id)}');openJobDetail('${esc(job.id)}')">
+            ${isFav ? '&#9829; Favorited' : '&#9825; Add to Favorites'}
+          </button>
+          <button class="btn-secondary" onclick="saveToPipeline('${esc(job.id)}');openJobDetail('${esc(job.id)}')">
+            Save to Pipeline
+          </button>
+        </div>
+      `;
+
+      document.getElementById('jobDetailModal').classList.add('active');
+    }
+
+    function closeJobDetail() {
+      document.getElementById('jobDetailModal').classList.remove('active');
+    }
+
+    document.getElementById('jobDetailModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeJobDetail();
+    });
+
+    function saveToPipeline(jobId) {
+      const job = state.jobs.find(j => j.id === jobId);
+      if (!job) return;
+      if (!state.pipeline.find(p => p.jobId === job.id)) {
+        state.pipeline.push({
+          jobId: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          fitScore: job.fitScore,
+          addedAt: new Date().toISOString().split('T')[0],
+          status: 'Researching'
+        });
+        savePipeline();
+      }
     }
 
     function updateSelectionCount() {
@@ -1025,7 +1223,7 @@ Return a JSON object with a "results" array. Each result:
 - Recruiter / TA track opener: "I noticed your organization is hiring for [role]..."
 - Hiring Manager / Skip-Level track opener: "I noticed your team is expanding..."
 
-Each message must include one specific brand value statement extracted from the resume. Voice: direct, confident, peer-level, short. Senior people skim — connection request under 300 characters.
+Each message must include one specific brand value statement extracted from the resume. Voice: direct, confident, peer-level, short. Senior people skim. Connection request under 300 characters.
 
 NEVER use these phrases: "I hope this message finds you well", "I'm reaching out because", "I wanted to connect", "synergy", "leverage"
 
@@ -1034,7 +1232,7 @@ Sign with first name only.
 Targets:
 ${JSON.stringify(targets, null, 2)}
 
-${resumeSummary ? 'Candidate resume:\n' + resumeSummary : 'No resume provided — use generic leadership value statements.'}
+${resumeSummary ? 'Candidate resume:\n' + resumeSummary : 'No resume provided. Use generic leadership value statements.'}
 
 Return a JSON object with a "sequences" array. Each sequence:
 {
