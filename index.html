@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -766,7 +766,14 @@
     // ── Supabase Init ──
     const SUPABASE_URL = 'https://tgicomrycbhrinobvnlr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnaWNvbXJ5Y2Jocmlub2J2bmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NzcwOTMsImV4cCI6MjA4OTU1MzA5M30.nmC38E3meTH6mS0yjhyXaSYlwLc28mxqxLNf5e1KSdg';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let sb = null;
+    try {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch (e) {
+      console.error('Supabase init failed:', e);
+    }
+    const supabase = sb;
 
     // ── Auth ──
     function showLogin() {
@@ -789,13 +796,21 @@
         document.getElementById('loginError').textContent = 'Please enter email and password';
         return;
       }
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        if (error.message.includes('Invalid login')) {
-          document.getElementById('loginError').textContent = 'No account found with those credentials. Need to create one?';
-        } else {
-          document.getElementById('loginError').textContent = error.message;
+      if (!supabase) {
+        document.getElementById('loginError').textContent = 'Connection error. Please refresh and try again.';
+        return;
+      }
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          if (error.message.includes('Invalid login')) {
+            document.getElementById('loginError').textContent = 'No account found with those credentials. Need to create one?';
+          } else {
+            document.getElementById('loginError').textContent = error.message;
+          }
         }
+      } catch (e) {
+        document.getElementById('loginError').textContent = 'Connection error. Please try again.';
       }
     }
 
@@ -812,17 +827,25 @@
         document.getElementById('signupError').textContent = 'Password must be at least 6 characters';
         return;
       }
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        document.getElementById('signupError').textContent = error.message;
-      } else if (data?.user?.identities?.length === 0) {
-        document.getElementById('signupError').textContent = 'An account with this email already exists. Try signing in.';
-      } else if (data?.session) {
-        // Auto-signed in (email confirmation disabled)
-        // onAuthStateChange will handle showing the app
-      } else {
-        document.getElementById('signupSuccess').style.display = 'block';
-        document.getElementById('signupSuccess').textContent = 'Check your email to confirm your account, then sign in.';
+      if (!supabase) {
+        document.getElementById('signupError').textContent = 'Connection error. Please refresh and try again.';
+        return;
+      }
+      try {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+          document.getElementById('signupError').textContent = error.message;
+        } else if (data?.user?.identities?.length === 0) {
+          document.getElementById('signupError').textContent = 'An account with this email already exists. Try signing in.';
+        } else if (data?.session) {
+          // Auto-signed in (email confirmation disabled)
+          // onAuthStateChange will handle showing the app
+        } else {
+          document.getElementById('signupSuccess').style.display = 'block';
+          document.getElementById('signupSuccess').textContent = 'Check your email to confirm your account, then sign in.';
+        }
+      } catch (e) {
+        document.getElementById('signupError').textContent = 'Connection error. Please try again.';
       }
     }
 
