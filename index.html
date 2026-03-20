@@ -2360,7 +2360,8 @@ Return a JSON array of objects with these exact fields:
 - fitReason (string, one sentence)
 - salary (string or null)
 - highlights (array of 2-3 strings)
-- source (string: "LinkedIn", "Indeed", or "Glassdoor")`;
+- source (string: "LinkedIn", "Indeed", or "Glassdoor")
+- url (string: a realistic job listing URL on the source platform, e.g. "https://www.linkedin.com/jobs/view/..." or "https://www.indeed.com/viewjob?...")`;
 
       try {
         const jobs = await callClaude(systemPrompt, userPrompt);
@@ -2440,7 +2441,10 @@ Return a JSON array of objects with these exact fields:
           <div class="fit-reason">"${esc(job.fitReason)}"</div>
           ${stretchNote}
           ${noListingNote}
-          <button class="job-view-btn" onclick="event.stopPropagation();openJobDetail('${esc(job.id)}')">${isNoListing ? 'Select to get contacts' : 'View details'}</button>
+          <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
+            <button class="job-view-btn" onclick="event.stopPropagation();openJobDetail('${esc(job.id)}')" style="margin:0">${isNoListing ? 'Select to get contacts' : 'View details'}</button>
+            ${!isNoListing && job.url ? `<a href="${esc(job.url)}" target="_blank" onclick="event.stopPropagation()" class="job-view-btn" style="margin:0;color:#5A7A9A">View listing &#8599;</a>` : ''}
+          </div>
         `;
         card.onclick = () => toggleJobSelection(job.id);
         grid.appendChild(card);
@@ -2749,15 +2753,16 @@ Return a JSON array of objects with these exact fields:
           </div>
         </div>` : ''}
 
-        <div class="job-detail-section">
+        ${job.source ? `<div class="job-detail-section">
           <h3>Source</h3>
-          <p style="font-size:0.88rem;color:#555555;font-weight:500">${esc(job.source)}</p>
-        </div>
+          <p style="font-size:0.88rem;color:#555555;font-weight:500">${esc(job.source)}${job.url ? ` &middot; <a href="${esc(job.url)}" target="_blank" style="color:#B8A88A">View original listing &#8599;</a>` : ''}</p>
+        </div>` : ''}
 
         <div class="job-detail-actions">
           <button class="btn-primary" onclick="toggleJobSelection('${esc(job.id)}');closeJobDetail()">
             ${isSelected ? 'Remove from Selection' : 'Select for Outreach'}
           </button>
+          ${job.url ? `<a href="${esc(job.url)}" target="_blank" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center">View Listing &#8599;</a>` : ''}
           <button class="btn-secondary" onclick="saveToPipeline('${esc(job.id)}');openJobDetail('${esc(job.id)}')">
             Save to Pipeline
           </button>
