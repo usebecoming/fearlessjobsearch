@@ -1210,7 +1210,7 @@
     </div>
     <div class="nav-right">
       <button class="nav-btn" onclick="openPipeline()">Pipeline</button>
-      <button class="nav-btn" style="border-color:#B8A88A;color:#B8A88A" onclick="openUpgradeModal()">Upgrade</button>
+      <button class="nav-btn" id="navUpgradeBtn" style="border-color:#B8A88A;color:#B8A88A" onclick="openUpgradeModal()">Upgrade</button>
       <span class="user-email" id="navUserEmail"></span>
       <button class="nav-signout" onclick="doSignOut()">Sign Out</button>
     </div>
@@ -1677,6 +1677,13 @@
       document.getElementById('mainApp').style.display = 'block';
       document.getElementById('appContent').style.display = 'block';
       document.getElementById('navUserEmail').textContent = user.email;
+
+      // Hide upgrade UI for admins/paid users
+      if (ADMIN_EMAILS.includes(user.email)) {
+        state.hasPaid = true;
+        document.getElementById('navUpgradeBtn').style.display = 'none';
+        document.getElementById('upgradeBanner').style.display = 'none';
+      }
     }
 
     // Listen for auth changes
