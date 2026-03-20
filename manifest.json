@@ -4,8 +4,8 @@
   "description": "AI-powered job search tool for senior leaders — by Live for Yourself Consulting",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0D0F1A",
-  "theme_color": "#C9A84C",
+  "background_color": "#FFF8F2",
+  "theme_color": "#B8A88A",
   "icons": [
     {
       "src": "assets/phoenix-logo.png",
