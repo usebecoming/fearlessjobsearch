@@ -67,21 +67,23 @@ export default async function handler(req, res) {
         'Hiring Manager'
       );
 
-      // Query 2: Broader hiring manager - just department + leadership level
+      // Query 2: Broader hiring manager - department + adjacent terms + leadership
+      const deptVariations = getDeptSearchTerms(dept);
       await searchWithFallback(
-        co => `site:linkedin.com/in "${co}" ${dept} VP OR Director OR Head OR SVP OR Chief`,
+        co => `site:linkedin.com/in "${co}" (${deptVariations}) (VP OR Director OR Head OR SVP OR Chief)`,
         'Hiring Manager'
       );
 
-      // Query 3: Recruiters - keep it simple, just recruiter at company
+      // Query 3: Recruiters - generic + department context
       await searchWithFallback(
-        co => `site:linkedin.com/in "${co}" recruiter OR "talent acquisition" OR "talent partner" OR "people partner"`,
+        co => `site:linkedin.com/in "${co}" recruiter OR "talent acquisition" OR "talent partner" OR "people partner" OR "HR business partner"`,
         'Recruiter / TA'
       );
 
-      // Query 4: Skip-level - C-suite and top leadership
+      // Query 4: Skip-level - C-suite including department-specific chiefs
+      const csuiteTerms = getCsuiteSearchTerms(dept);
       await searchWithFallback(
-        co => `site:linkedin.com/in "${co}" CEO OR COO OR CTO OR CMO OR CPO OR CRO OR President OR "Chief"`,
+        co => `site:linkedin.com/in "${co}" ${csuiteTerms}`,
         'Skip-Level'
       );
 
@@ -158,6 +160,20 @@ function deriveTitles(jobTitle) {
     skipLevel = [deptShort ? `C${deptShort}O` : 'COO', 'CEO', 'President'];
   } else if (title.includes('vp') || title.includes('vice president')) {
     hiringManager = [`SVP ${dept}`, `Senior Vice President ${dept}`, `EVP ${dept}`, deptShort ? `C${deptShort}O` : `Chief ${dept} Officer`];
+    // Add department-specific C-suite variations
+    if (dept === 'People' || dept === 'People') {
+      hiringManager.push('CHRO', 'Chief People Officer', 'CPO', 'SVP HR', 'SVP Human Resources');
+    } else if (dept === 'Marketing') {
+      hiringManager.push('CMO', 'Chief Marketing Officer');
+    } else if (dept === 'Engineering') {
+      hiringManager.push('CTO', 'Chief Technology Officer');
+    } else if (dept === 'Finance') {
+      hiringManager.push('CFO', 'Chief Financial Officer');
+    } else if (dept === 'Product') {
+      hiringManager.push('CPO', 'Chief Product Officer');
+    } else if (dept === 'Revenue' || dept === 'Sales') {
+      hiringManager.push('CRO', 'Chief Revenue Officer');
+    }
     skipLevel = ['CEO', 'President', 'COO', 'Founder'];
   } else if (title.includes('svp') || title.includes('senior vice president') || title.includes('evp')) {
     hiringManager = [deptShort ? `C${deptShort}O` : `Chief ${dept} Officer`, 'CEO', 'President'];
@@ -186,7 +202,7 @@ function extractDepartment(jobTitle) {
     [['sales', 'business development', 'account'], 'Sales'],
     [['finance', 'accounting', 'controller'], 'Finance'],
     [['operations', 'supply chain', 'logistics'], 'Operations'],
-    [['people', 'hr', 'human resources', 'talent'], 'People'],
+    [['people', 'hr', 'human resources', 'talent', 'learning', 'organizational development', 'leadership development', 'talent development', 'training'], 'People'],
     [['data', 'analytics', 'insights', 'intelligence'], 'Data'],
     [['design', 'creative', 'ux', 'ui'], 'Design'],
     [['legal', 'compliance', 'regulatory'], 'Legal'],
@@ -323,6 +339,40 @@ function extractNameFromUrl(url) {
   if (parts.length < 2) return '';
 
   return parts.slice(0, 3).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+}
+
+// Get broader search terms for a department (catches variations)
+function getDeptSearchTerms(dept) {
+  const map = {
+    'People': '"People" OR "HR" OR "Human Resources" OR "Talent" OR "Learning" OR "Organizational Development"',
+    'Marketing': '"Marketing" OR "Growth" OR "Brand" OR "Demand Gen"',
+    'Engineering': '"Engineering" OR "Software" OR "Technology" OR "Development"',
+    'Sales': '"Sales" OR "Business Development" OR "Revenue"',
+    'Finance': '"Finance" OR "Accounting" OR "FP&A"',
+    'Product': '"Product" OR "Product Management"',
+    'Operations': '"Operations" OR "Supply Chain"',
+    'Data': '"Data" OR "Analytics" OR "Insights"',
+    'Design': '"Design" OR "UX" OR "Creative"',
+    'Customer Success': '"Customer Success" OR "Client Success" OR "Customer Experience"',
+    'Revenue': '"Revenue" OR "Sales" OR "Commercial"',
+  };
+  return map[dept] || `"${dept}"`;
+}
+
+// Get C-suite search terms relevant to a department
+function getCsuiteSearchTerms(dept) {
+  const base = 'CEO OR COO OR President';
+  const map = {
+    'People': `CHRO OR "Chief People Officer" OR CPO OR "Chief Human Resources" OR ${base}`,
+    'Marketing': `CMO OR "Chief Marketing Officer" OR ${base}`,
+    'Engineering': `CTO OR "Chief Technology Officer" OR "Chief Engineering" OR ${base}`,
+    'Sales': `CRO OR "Chief Revenue Officer" OR "Chief Sales" OR ${base}`,
+    'Finance': `CFO OR "Chief Financial Officer" OR ${base}`,
+    'Product': `CPO OR "Chief Product Officer" OR ${base}`,
+    'Data': `CDO OR "Chief Data Officer" OR CTO OR ${base}`,
+    'Operations': `COO OR "Chief Operating Officer" OR ${base}`,
+  };
+  return map[dept] || base;
 }
 
 function dedupeContacts(contacts) {
