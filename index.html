@@ -390,6 +390,26 @@
       color: #7A6C52; margin-top: 8px;
     }
 
+    /* ── Work type checkboxes ── */
+    .work-type-option {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
+      color: #6E6E6E; cursor: pointer; padding: 8px 16px;
+      background: #FFFFFF; border: 1px solid #E5E4E2;
+      border-radius: 8px; transition: all 0.2s;
+    }
+    .work-type-option:has(input:checked) {
+      border-color: #B8A88A; color: #111111; background: rgba(184,168,138,0.06);
+    }
+    .work-type-option input { accent-color: #B8A88A; }
+
+    /* ── Export bar ── */
+    .export-bar {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      padding: 16px 0; margin-bottom: 16px;
+      border-bottom: 1px solid #EEEEED;
+    }
+
     /* ── Back button ── */
     .back-row { margin-bottom: 20px; }
     .btn-back {
@@ -507,7 +527,45 @@
       <!-- Location -->
       <div class="form-group">
         <label class="form-label">Location</label>
-        <input type="text" class="form-input" id="locationInput" placeholder="e.g. New York, NY · Remote · Hybrid">
+        <input type="text" class="form-input" id="locationInput" placeholder="e.g. New York, NY · Chicago, IL">
+      </div>
+
+      <!-- Work Type -->
+      <div class="form-group">
+        <label class="form-label">Work Type</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <label class="work-type-option"><input type="checkbox" value="Remote" checked> Remote</label>
+          <label class="work-type-option"><input type="checkbox" value="Hybrid"> Hybrid</label>
+          <label class="work-type-option"><input type="checkbox" value="In-Person"> In-Person</label>
+        </div>
+      </div>
+
+      <!-- Salary Range -->
+      <div class="form-group">
+        <label class="form-label">Salary Range</label>
+        <div style="display:flex;gap:12px;align-items:center">
+          <select class="form-input" id="salaryMin" style="width:auto">
+            <option value="">No minimum</option>
+            <option value="100000">$100,000</option>
+            <option value="150000">$150,000</option>
+            <option value="200000" selected>$200,000</option>
+            <option value="250000">$250,000</option>
+            <option value="300000">$300,000</option>
+            <option value="400000">$400,000</option>
+            <option value="500000">$500,000</option>
+          </select>
+          <span style="color:#858585;font-family:'IBM Plex Mono',monospace;font-size:0.8rem">to</span>
+          <select class="form-input" id="salaryMax" style="width:auto">
+            <option value="">No maximum</option>
+            <option value="200000">$200,000</option>
+            <option value="250000">$250,000</option>
+            <option value="300000">$300,000</option>
+            <option value="400000">$400,000</option>
+            <option value="500000" selected>$500,000</option>
+            <option value="750000">$750,000</option>
+            <option value="1000000">$1,000,000+</option>
+          </select>
+        </div>
       </div>
 
       <!-- Anchor Links -->
@@ -557,6 +615,10 @@
       <div class="back-row"><button class="btn-back" onclick="goToStep(2)">← Back to jobs</button></div>
       <h2 class="section-title">Decision-Makers</h2>
       <p class="section-sub">Direct contacts at each company — no recruiting agencies.</p>
+      <div class="export-bar" id="exportBar" style="display:none">
+        <button class="btn-secondary btn-small" onclick="copyAllLinkedIn()">Copy All LinkedIn URLs</button>
+        <button class="btn-secondary btn-small" onclick="exportCSV()">Export CSV</button>
+      </div>
       <div id="contactsContainer"></div>
       <div class="selection-bar">
         <span></span>
@@ -744,6 +806,16 @@
         document.getElementById('anchor3').value.trim()
       ].filter(Boolean);
 
+      // Work type
+      const workTypes = [...document.querySelectorAll('.work-type-option input:checked')].map(cb => cb.value);
+      // Salary
+      const salaryMin = document.getElementById('salaryMin').value;
+      const salaryMax = document.getElementById('salaryMax').value;
+      let salaryStr = '';
+      if (salaryMin && salaryMax) salaryStr = `$${Number(salaryMin).toLocaleString()} – $${Number(salaryMax).toLocaleString()}`;
+      else if (salaryMin) salaryStr = `$${Number(salaryMin).toLocaleString()}+`;
+      else if (salaryMax) salaryStr = `Up to $${Number(salaryMax).toLocaleString()}`;
+
       goToStep(2);
       const container = document.getElementById('jobsContainer');
       container.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Searching for matching roles...</span></div>';
@@ -755,6 +827,8 @@
 
 Target titles: ${JSON.stringify(state.titles)}
 Location: ${state.location || 'Any'}
+Work type: ${workTypes.length ? workTypes.join(', ') : 'Any'}
+${salaryStr ? 'Salary range: ' + salaryStr : ''}
 ${state.anchors.length ? 'Anchor job links for reference: ' + state.anchors.join(', ') : ''}
 ${resumeSummary ? 'Candidate resume summary (score fit against this):\n' + resumeSummary : 'No resume provided — assign fitScore of 50 to all.'}
 
@@ -899,6 +973,7 @@ Return a JSON object with a "results" array. Each result:
     function renderContacts(data) {
       const container = document.getElementById('contactsContainer');
       container.innerHTML = '';
+      document.getElementById('exportBar').style.display = 'flex';
 
       (data.results || []).forEach((group, gi) => {
         const div = document.createElement('div');
@@ -1107,6 +1182,45 @@ Return a JSON object with a "sequences" array. Each sequence:
       state.pipeline.splice(i, 1);
       savePipeline();
       renderPipelineTable();
+    }
+
+    // ── Export Functions ──
+    function getAllContacts() {
+      const all = [];
+      (state.contacts.results || []).forEach(group => {
+        (group.contacts || []).forEach(c => {
+          all.push({ ...c, company: group.company, job_title: group.job_title });
+        });
+      });
+      return all;
+    }
+
+    function copyAllLinkedIn() {
+      const urls = getAllContacts().map(c => 'https://' + c.linkedin).join('\n');
+      navigator.clipboard.writeText(urls).then(() => {
+        const btn = document.querySelector('[onclick="copyAllLinkedIn()"]');
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.color = '#3A8A5C';
+        setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
+      });
+    }
+
+    function exportCSV() {
+      const contacts = getAllContacts();
+      const headers = ['Name', 'Title', 'Role', 'Email', 'LinkedIn', 'Company', 'Job Title', 'Note'];
+      const rows = contacts.map(c => [
+        c.name, c.title, c.role, c.email,
+        'https://' + c.linkedin, c.company, c.job_title, c.note
+      ].map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(','));
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'fearless-contacts-' + new Date().toISOString().split('T')[0] + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
     // ── Utils ──
