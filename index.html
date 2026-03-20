@@ -2786,18 +2786,20 @@ Skip-Level titles: ${(dt.slTitles || dt.skipLevel || []).join(', ')}
 Raw contacts found: ${r.raw_contacts.length}`;
             }).join('\n\n');
 
-            userPrompt2 = `You are verifying LinkedIn search results to find real people at target companies for networking.
-
-The user wants to BUILD RELATIONSHIPS at these companies. There may not be an active job opening. The goal is to identify the right people to connect with proactively.
+            userPrompt2 = `You are verifying LinkedIn search results to find real people at target companies for proactive networking. No active job opening required. Identify the right people to build relationships with.
 
 ${jobContexts}
 
-RULES:
-1. ONLY include people who CURRENTLY work at the exact company. If ambiguous, exclude.
-2. Assign roles: Hiring Manager (would manage someone at user's level), Skip-Level (senior leadership), Recruiter/TA (internal recruiter)
-3. Keep LinkedIn URLs exactly as provided. Do NOT fabricate.
-4. Quality over quantity. 1-2 verified contacts > 4-5 questionable ones.
-5. Write notes focused on relationship building, not job applications.
+Apply the SAME strict rules as job-targeted contact verification:
+- ONLY include people who CURRENTLY work at the exact company. Past tense = reject. Ambiguous = reject.
+- One contact per role type max (Hiring Manager, Skip-Level, Recruiter/TA).
+- Reject vague titles: "Employee", "Team Member", "Senior Executive", "Leader", "Professional".
+- Reject wrong function: a sales director is not relevant for HR networking.
+- Staffing companies: only include "Corporate Recruiter" or "Internal TA", not client-facing recruiters.
+- Company name must match exactly or with clear abbreviation. Different entities = reject.
+- Never fabricate URLs. Keep exactly as provided.
+- Quality over quantity. 1-2 verified > 4-5 questionable.
+- Notes should focus on relationship building, not job applications.
 
 Search results:
 ${JSON.stringify(braveResults.results, null, 2)}
@@ -2813,6 +2815,7 @@ Return a JSON object with a "results" array. Each result:
       "title": "string (current title)",
       "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
       "linkedin": "string (exact URL)",
+      "confidence": "high" | "medium",
       "note": "string (why connect with this person)"
     }
   ]
@@ -3505,27 +3508,61 @@ Skip-Level titles: ${(dt.slTitles || dt.skipLevel || []).join(', ')}
 Raw contacts found: ${r.raw_contacts.length}`;
           }).join('\n\n');
 
-          userPrompt = `You are a strict contact verification system. Your job is to filter LinkedIn search results down to ONLY the people who are genuinely useful for reaching out about a specific job.
+          userPrompt = `You are a strict contact verification system filtering LinkedIn search results to find ONLY genuinely relevant decision-makers.
 
-HIERARCHY for role assignment:
-Coordinator < Manager < Senior Manager < Director < Senior Director < VP < SVP/EVP < C-Suite < CEO
+HIERARCHY: Coordinator < Manager < Senior Manager < Director < Senior Director < VP < SVP/EVP < C-Suite < CEO
 
-For each job:
-- Hiring Manager = someone whose title is ONE level above the open role in the SAME department. Example: if the job is "Director of HR", the hiring manager would be "VP of HR" or "VP People" or "CHRO". NOT a "Lead Digital Analyst". NOT someone in a completely different function.
-- Skip-Level = TWO levels above the open role in the same function, or a relevant C-suite executive.
-- Recruiter/TA = someone whose title explicitly contains "recruiter", "talent acquisition", "talent partner", or "HR business partner" AT this specific company.
+ROLE DEFINITIONS:
+- Hiring Manager = ONE level above the open role in the SAME function/department
+- Skip-Level = TWO levels above in the same function, following the function-to-skip-level mapping below
+- Recruiter/TA = internal recruiter at this company handling this level of hire
+
+FUNCTION-TO-SKIP-LEVEL MAPPING (skip-level must follow the job's function):
+- HR/People/Learning/Talent/OD: CHRO, CPO, Chief People Officer, COO, CEO. NEVER CFO, CTO, CMO, CRO.
+- Marketing/Brand/Growth: CMO, Chief Marketing Officer, CEO, President, COO. NEVER CFO, CTO, CHRO.
+- Engineering/Product/Technology: CTO, CIO, CEO, COO, CPO. NEVER CMO, CFO, CHRO.
+- Sales/Revenue/BD: CRO, Chief Revenue Officer, CEO, President, COO. NEVER CTO, CHRO, CMO.
+- Finance/Accounting/FP&A: CFO, CEO, COO, President. NEVER CTO, CMO, CHRO.
+- Operations/Supply Chain: COO, CEO, President. NEVER CMO, CTO, CHRO.
+- Legal/Compliance: CLO, General Counsel, CEO, COO, CFO. NEVER CMO, CTO, CHRO.
+- Design/UX/Creative: CPO, CMO, CTO, CEO. NEVER CFO, CHRO, CRO.
 
 ${jobContexts}
 
-STRICT FILTERING RULES:
-1. The person MUST currently work at the EXACT company listed. Not a similarly named company ("Phase2 Labs" is NOT "Phase2 Technology"). If the snippet doesn't clearly confirm current employment at this specific company, EXCLUDE.
-2. The person's function MUST directly relate to the job being hired for. For HR/Talent/People roles, only include contacts in HR, People, Talent, Recruiting, or C-suite. A digital analyst, sales director, or generic "employee" is NEVER valid for an HR role.
-3. For Hiring Manager specifically: their function must directly own or oversee the department the role sits in. For an HR role, the hiring manager is a CHRO, CPO, VP of People, or Head of HR. Not a sales director. Not an analyst.
-4. REJECT anyone with no identifiable title beyond "Employee", "Team Member", "Senior Executive", or other vague titles. These provide no signal.
-5. REJECT any contact where "could provide insights" or "could provide internal perspective" is the best rationale. The note must explain a DIRECT connection to the hiring decision.
-6. Keep LinkedIn URLs EXACTLY as provided. Do NOT modify or fabricate URLs.
-7. Do NOT invent contacts. Return an empty contacts array rather than include questionable matches.
-8. It is better to return 1-2 verified relevant contacts than 4-5 questionable ones. Never fill slots just to hit a number.
+STAFFING COMPANY RULE:
+If the target company is a staffing/recruiting firm (Insight Global, Robert Half, Korn Ferry, Randstad, ManpowerGroup, Kelly Services, Adecco, Allegis, or similar), only include contacts with titles like "Corporate Recruiter", "Internal Recruiter", "Internal Talent Acquisition". Reject "Professional Recruiter", "Staffing Consultant", "Account Manager" as these are client-facing, not internal hiring.
+
+ONE CONTACT PER ROLE TYPE PER JOB:
+- Hiring Manager: pick the one whose title most directly owns the function. Priority: C-suite functional owner > SVP/EVP > VP > Director/Head.
+- Recruiter/TA: pick the most senior internal recruiter for this function. Priority: Head/Director of TA > Senior TA Partner > TA Manager.
+- Skip-Level: pick the most direct functional owner two levels up per mapping above. Priority: Functional C-suite > COO > CEO/President.
+
+TITLE VAGUENESS REJECTION (always reject these):
+"Senior Executive", "Employee", "Team Member", "Leader", "Professional", bare "Manager"/"Director"/"Associate" with no department, "Consultant" without function context.
+
+WRONG FUNCTION REJECTION:
+For HR roles: reject Sales Director, Digital Analyst, Finance Manager, Engineer, Developer, Designer, Marketing Manager, Account Manager.
+For Marketing roles: reject HR Director, Finance Manager, Engineer, Developer, Sales Ops.
+For Engineering roles: reject HR Director, Marketing Manager, Finance Manager, Sales Director.
+Apply same logic to all functions. If title function does not match job function, reject.
+
+COMPANY NAME MATCHING:
+Accept: exact match, common abbreviations, parent/subsidiary with clear relationship, slight formatting differences.
+Reject: different entity (Phase2 Labs vs Phase2 Technology), former employer (past tense), unclear match. When in doubt, reject.
+
+UNIVERSITY RULES: For universities, HR hiring manager = AVP HR, VP HR, CHRO, Director of HR. Academic roles = Dean, Department Chair. Never assign President as Hiring Manager. Skip-Level = Provost, COO, President.
+GOVERNMENT: Surface LinkedIn fallback links rather than guessing contacts.
+
+CONFIDENCE SCORING:
+High = snippet confirms employment + title matches function + company matches exactly.
+Medium = employment confirmed but title is adjacent, or company match needs interpretation.
+Never include = employment unconfirmed, or title function mismatch, or company mismatch, or vague title.
+
+FINAL OUTPUT RULES:
+- Maximum 3 contacts per job (one per role type)
+- If a role type cannot be filled with high/medium confidence, leave it empty
+- Never fabricate, modify, or construct LinkedIn URLs
+- Return valid JSON even if empty
 
 Search results:
 ${JSON.stringify(braveResults.results, null, 2)}
@@ -3538,10 +3575,11 @@ Return a JSON object with a "results" array. Each result:
   "contacts": [
     {
       "name": "string",
-      "title": "string (their actual current title, not a guess)",
+      "title": "string (actual current title)",
       "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
       "linkedin": "string (exact URL from search results)",
-      "note": "string (specific reason this person is relevant to THIS role)"
+      "confidence": "high" | "medium",
+      "note": "string (specific reason this person is relevant)"
     }
   ]
 }`;
