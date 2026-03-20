@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { system, messages } = req.body;
+    const { system, messages, temperature } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Invalid request body' });
@@ -32,6 +32,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 8192,
+        ...(typeof temperature === 'number' ? { temperature } : {}),
         system: system || '',
         messages
       })

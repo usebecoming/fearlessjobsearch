@@ -2651,14 +2651,18 @@
       return clean;
     }
 
-    async function callClaude(systemPrompt, userPrompt) {
+    async function callClaude(systemPrompt, userPrompt, options) {
+      var bodyData = {
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      };
+      if (options && typeof options.temperature === 'number') {
+        bodyData.temperature = options.temperature;
+      }
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userPrompt }]
-        })
+        body: JSON.stringify(bodyData)
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -2924,6 +2928,13 @@ Return a JSON object with a "results" array. Each result:
 
             const scoringPrompt = `Score each of the following real job listings against the candidate's resume. For each job, provide a fitScore (0-100) and a one-line fitReason explaining the match.
 
+Use this exact scoring rubric:
+90-100: 5+ direct skill matches, same industry, same seniority level, same scope
+80-89: 3-4 direct skill matches, adjacent industry or slight seniority gap
+70-79: 2-3 skill matches, different industry but transferable experience
+60-69: 1-2 skill matches, significant gaps in industry or seniority
+Below 60: Few matches, major gaps in skills, industry, or level
+
 Candidate resume:
 ${resumeSummary}
 ${getFavoriteContext()}
@@ -2936,7 +2947,8 @@ Return a JSON array with one object per job:
 
             scores = await callClaude(
               'You are a career fit scoring assistant. Respond ONLY with a JSON array. No markdown, no explanation.',
-              scoringPrompt
+              scoringPrompt,
+              { temperature: 0 }
             );
           }
 
