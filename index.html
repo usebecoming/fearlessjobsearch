@@ -562,7 +562,7 @@
         <button class="btn-primary" onclick="handleLogin()">Sign In</button>
         <div class="auth-error" id="loginError"></div>
         <div class="auth-toggle">
-          Don't have an account? <a onclick="showSignup()">Create one</a>
+          No account yet? <a href="#" onclick="event.preventDefault();showSignup()">Create one</a>
         </div>
       </div>
 
@@ -581,7 +581,7 @@
         <div class="auth-error" id="signupError"></div>
         <div class="auth-success" id="signupSuccess" style="display:none"></div>
         <div class="auth-toggle">
-          Already have an account? <a onclick="showLogin()">Sign in</a>
+          Already have an account? <a href="#" onclick="event.preventDefault();showLogin()">Sign in</a>
         </div>
       </div>
     </div>
