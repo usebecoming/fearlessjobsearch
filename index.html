@@ -3153,21 +3153,35 @@ Return a JSON array of objects with these exact fields:
 
         if (braveResults && braveResults.results && braveResults.results.some(r => r.raw_contacts && r.raw_contacts.length > 0)) {
           // We have real LinkedIn data - have Claude verify and organize
-          userPrompt = `I searched LinkedIn and found potential contacts for each company below. Each contact has a name, LinkedIn URL, and a snippet from their LinkedIn page.
+          const jobContexts = braveResults.results.map(r => {
+            const dt = r.derived_titles || { hiringManager: [], skipLevel: [] };
+            return `Job: ${r.job_title} at ${r.company} (${r.location || 'location unknown'})
+Hiring Manager titles to look for: ${dt.hiringManager.join(', ')}
+Skip-Level titles to look for: ${dt.skipLevel.join(', ')}
+Raw contacts found: ${r.raw_contacts.length}`;
+          }).join('\n\n');
 
-CRITICAL RULES:
-1. ONLY include people who CURRENTLY work at "${selectedJobData.map(j=>j.company).join('" or "')}" right now. Read the snippet carefully. If the snippet says they work at a DIFFERENT company, or says "former" or "ex-", EXCLUDE them immediately. When in doubt, exclude.
-2. Their role in the snippet must match what we searched for. A marketing person should not show up as a recruiter. A person at a completely different company should never appear.
-3. For each verified contact, determine their actual current title and assign a role type:
-   - "Hiring Manager" = the person who would directly manage whoever fills the open role (one level above the posted role)
-   - "Skip-Level" = the hiring manager's boss, or a relevant C-suite/SVP leader
-   - "Recruiter / TA" = internal recruiter, talent acquisition, talent partner, or HR business partner at the company
-4. Write a one-line note explaining why this specific person is relevant for this specific role.
-5. Keep the original LinkedIn URL exactly as provided. Do NOT modify or generate URLs.
-6. Do NOT make up or fabricate any contacts. If the search found no one verified at the company, return an empty contacts array for that job. It is better to return 0 contacts than wrong ones.
-7. Return 3-6 contacts per job maximum.
+          userPrompt = `You are verifying LinkedIn search results to find real decision-makers.
 
-Jobs and search results:
+Role definitions:
+- Hiring Manager = the person one level above the open role (Coordinator > Manager > Director > VP > SVP/EVP > C-Suite > CEO)
+- Skip-Level = two levels above the open role
+- Recruiter/TA = internal recruiter or talent acquisition partner at this company
+
+${jobContexts}
+
+Here are the raw search results for each job. Each result has a name, LinkedIn URL, snippet from the search page, and the role we were searching for.
+
+YOUR RULES:
+1. ONLY include contacts where the snippet confirms they CURRENTLY work at the company. Look for "at [Company]", "[Company] |", or the company name appearing with their current title. If ambiguous or past tense, EXCLUDE.
+2. Assign each contact the correct role type based on their title and the hierarchy above.
+3. Extract their current title from the snippet.
+4. Keep the LinkedIn URL EXACTLY as provided. Do NOT modify, shorten, or fabricate any URL.
+5. Do NOT invent any contacts. If fewer than 3 can be verified, return however many are confirmed.
+6. Do NOT include anyone whose employment appears to be past tense ("former", "ex-", "previously at").
+7. Write a one-line note explaining why this person is relevant for this specific role.
+
+Search results:
 ${JSON.stringify(braveResults.results, null, 2)}
 
 Return a JSON object with a "results" array. Each result:
@@ -3178,10 +3192,10 @@ Return a JSON object with a "results" array. Each result:
   "contacts": [
     {
       "name": "string",
-      "title": "string (their actual current title at the company)",
+      "title": "string (current title from snippet)",
       "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
-      "linkedin": "string (the exact linkedin URL from the search results)",
-      "note": "string (one-line rationale for reaching out)"
+      "linkedin": "string (exact URL from search results)",
+      "note": "string (why this person is relevant)"
     }
   ]
 }`;
@@ -3190,10 +3204,19 @@ Return a JSON object with a "results" array. Each result:
           stopProgress();
           container.innerHTML = `<div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:28px;text-align:center">
             <h3 style="font-size:1.1rem;margin-bottom:10px">No contacts found automatically</h3>
-            <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:16px;max-width:500px;margin-left:auto;margin-right:auto">We searched LinkedIn but couldn't find verified contacts at these companies. This can happen with smaller companies or uncommon titles.</p>
-            <p style="font-size:0.88rem;color:#555;font-weight:500;margin-bottom:20px">Try searching LinkedIn directly for people at these companies:</p>
-            <div style="display:flex;flex-direction:column;gap:8px;max-width:400px;margin:0 auto">
-              ${selectedJobData.map(j => `<a href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(j.company)}&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="btn-secondary" style="text-decoration:none;text-align:center">${esc(j.company)} on LinkedIn &#8599;</a>`).join('')}
+            <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:16px;max-width:500px;margin-left:auto;margin-right:auto">We couldn't automatically verify contacts for these roles. This can happen with smaller companies or niche titles. Search LinkedIn directly:</p>
+            <div style="display:flex;flex-direction:column;gap:12px;max-width:500px;margin:0 auto">
+              ${selectedJobData.map(j => {
+                const company = encodeURIComponent(j.company);
+                return `<div style="background:#F9F6F1;border-radius:10px;padding:14px 18px">
+                  <div style="font-weight:600;font-size:0.92rem;margin-bottom:8px">${esc(j.title)} at ${esc(j.company)}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <a href="https://www.linkedin.com/search/results/people/?keywords=${company}+VP+Director+Head&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Hiring Managers &#8599;</a>
+                    <a href="https://www.linkedin.com/search/results/people/?keywords=${company}+recruiter+talent&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters &#8599;</a>
+                    <a href="https://www.linkedin.com/search/results/people/?keywords=${company}+CEO+COO+President&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives &#8599;</a>
+                  </div>
+                </div>`;
+              }).join('')}
             </div>
             <div style="margin-top:20px"><button class="btn-secondary" onclick="goToStep(2)">← Back to opportunities</button></div>
           </div>`;
