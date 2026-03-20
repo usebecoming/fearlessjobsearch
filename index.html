@@ -3304,6 +3304,18 @@ Return a JSON object with a "results" array. Each result:
         let html = `<h3 class="contacts-group-header">${esc(group.job_title)}</h3>
                      <p class="contacts-group-sub">${esc(group.company)}</p>`;
 
+        // Show message if no contacts found for this job
+        if (!group.contacts || group.contacts.length === 0) {
+          const co = encodeURIComponent(group.company || '');
+          html += `<div style="background:#F9F6F1;border:1px solid #E5E4E2;border-radius:10px;padding:16px 20px;margin-bottom:16px">
+            <p style="font-size:0.88rem;color:#555;font-weight:500;margin-bottom:10px">${!group.company || group.company === 'Unknown' ? 'No company name listed for this role. We need a company name to find contacts.' : 'No verified contacts found at ' + esc(group.company) + '. Try searching LinkedIn directly:'}</p>
+            ${group.company && group.company !== 'Unknown' ? `<div style="display:flex;gap:8px;flex-wrap:wrap">
+              <a href="https://www.linkedin.com/search/results/people/?keywords=${co}+VP+Director+Head&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Search Leadership &#8599;</a>
+              <a href="https://www.linkedin.com/search/results/people/?keywords=${co}+recruiter+talent&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Search Recruiters &#8599;</a>
+            </div>` : ''}
+          </div>`;
+        }
+
         (group.contacts || []).forEach(c => {
           const cId = `contact-${contactIdx}`;
           state.selectedContacts.add(cId);
