@@ -10,6 +10,8 @@
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -976,14 +978,44 @@
     resumeFile.addEventListener('change', async e => {
       const file = e.target.files[0];
       if (!file) return;
+      const ext = file.name.split('.').pop().toLowerCase();
+
+      fileUploadArea.classList.remove('has-file');
+      fileUploadArea.innerHTML = `<p style="color:#858585">Processing ${esc(file.name)}...</p>`;
+
       try {
-        const text = await file.text();
+        let text = '';
+
+        if (ext === 'pdf') {
+          // Parse PDF with pdf.js
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          const pages = [];
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            pages.push(content.items.map(item => item.str).join(' '));
+          }
+          text = pages.join('\n\n');
+        } else if (ext === 'docx') {
+          // Parse DOCX with mammoth
+          const arrayBuffer = await file.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          text = result.value;
+        } else {
+          // Plain text
+          text = await file.text();
+        }
+
+        text = text.replace(/\s+/g, ' ').trim();
         state.resumeText = text;
         document.getElementById('resumeText').value = text;
         fileUploadArea.classList.add('has-file');
         fileUploadArea.innerHTML = `<p><span class="file-name">${esc(file.name)}</span></p><p style="font-size:0.72rem;color:#3A8A5C;margin-top:4px">File loaded successfully</p>`;
         saveResume();
-      } catch {
+      } catch (err) {
+        console.error('Resume parse error:', err);
+        fileUploadArea.innerHTML = `<p style="color:#C94444">Could not read file. Try pasting your resume text below instead.</p>`;
         state.resumeText = '';
       }
     });
