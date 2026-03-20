@@ -9,6 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -469,36 +470,59 @@
     }
     .btn-back:hover { color: #111111; }
 
-    /* ── Password Gate ── */
-    .password-gate {
+    /* ── Auth Gate ── */
+    .auth-gate {
       position: fixed; inset: 0; z-index: 999;
       background: #FFF8F2;
       display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 24px;
+      flex-direction: column; gap: 20px;
     }
-    .password-gate.hidden { display: none; }
-    .password-gate h1 {
+    .auth-gate.hidden { display: none; }
+    .auth-gate h1 {
       font-family: 'Playfair Display', serif; font-size: 2rem;
       color: #111111; text-align: center;
     }
-    .password-gate p {
+    .auth-gate .auth-subtitle {
       font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
       color: #6E6E6E; text-align: center; margin-top: -8px;
     }
-    .password-gate .pw-form {
-      display: flex; gap: 10px; align-items: center;
+    .auth-box {
+      background: #FFFFFF; border: 1px solid #E5E4E2;
+      border-radius: 12px; padding: 32px;
+      width: 360px; max-width: 90vw;
     }
-    .password-gate input {
-      padding: 12px 18px; background: #FFFFFF;
-      border: 1px solid #E5E4E2; border-radius: 8px;
-      font-size: 0.95rem; color: #111111; width: 260px;
-      font-family: 'IBM Plex Sans', sans-serif;
+    .auth-box h2 {
+      font-size: 1.2rem; margin-bottom: 20px; text-align: center;
     }
-    .password-gate input:focus { border-color: #B8A88A; }
-    .password-gate .pw-error {
+    .auth-box .form-group { margin-bottom: 16px; }
+    .auth-box .form-label { font-size: 0.75rem; margin-bottom: 6px; }
+    .auth-box .form-input { font-size: 0.9rem; }
+    .auth-box .btn-primary { width: 100%; justify-content: center; margin-top: 8px; }
+    .auth-toggle {
       font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
-      color: #C94444; height: 20px;
+      color: #6E6E6E; text-align: center; margin-top: 16px;
     }
+    .auth-toggle a { color: #B8A88A; cursor: pointer; font-weight: 500; }
+    .auth-toggle a:hover { color: #111111; }
+    .auth-error {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      color: #C94444; text-align: center; margin-top: 10px; min-height: 20px;
+    }
+    .auth-success {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      color: #3A8A5C; text-align: center; margin-top: 10px;
+    }
+    .user-email {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      color: #6E6E6E; max-width: 120px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .nav-signout {
+      background: none; border: none; color: #858585;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+      cursor: pointer; transition: color 0.2s;
+    }
+    .nav-signout:hover { color: #C94444; }
 
     /* ── Responsive ── */
     @media (max-width: 640px) {
@@ -517,16 +541,50 @@
 </head>
 <body>
 
-  <!-- ── Password Gate ── -->
-  <div class="password-gate" id="passwordGate">
+  <!-- ── Auth Gate ── -->
+  <div class="auth-gate" id="authGate">
     <img src="assets/phoenix-logo.png" alt="Fearless Job Search" style="width:64px;height:64px;margin-bottom:8px" onerror="this.style.display='none'">
     <h1>Fearless Job Search</h1>
-    <p>by Live for Yourself Consulting</p>
-    <div class="pw-form">
-      <input type="password" id="pwInput" placeholder="Enter access password" onkeydown="if(event.key==='Enter')checkPassword()">
-      <button class="btn-primary" onclick="checkPassword()">Enter</button>
+    <p class="auth-subtitle">by Live for Yourself Consulting</p>
+
+    <div class="auth-box" id="authBox">
+      <!-- Login form (default) -->
+      <div id="loginForm">
+        <h2>Sign In</h2>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="loginPassword" placeholder="Your password" onkeydown="if(event.key==='Enter')handleLogin()">
+        </div>
+        <button class="btn-primary" onclick="handleLogin()">Sign In</button>
+        <div class="auth-error" id="loginError"></div>
+        <div class="auth-toggle">
+          Don't have an account? <a onclick="showSignup()">Create one</a>
+        </div>
+      </div>
+
+      <!-- Signup form -->
+      <div id="signupForm" style="display:none">
+        <h2>Create Account</h2>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="signupEmail" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="signupPassword" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')handleSignup()">
+        </div>
+        <button class="btn-primary" onclick="handleSignup()">Create Account</button>
+        <div class="auth-error" id="signupError"></div>
+        <div class="auth-success" id="signupSuccess" style="display:none"></div>
+        <div class="auth-toggle">
+          Already have an account? <a onclick="showLogin()">Sign in</a>
+        </div>
+      </div>
     </div>
-    <div class="pw-error" id="pwError"></div>
   </div>
 
   <!-- ── Nav ── -->
@@ -537,6 +595,8 @@
     </div>
     <div class="nav-right">
       <button class="nav-btn" onclick="openPipeline()">Pipeline</button>
+      <span class="user-email" id="navUserEmail"></span>
+      <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
     </div>
   </nav>
 
@@ -703,31 +763,93 @@
   </div>
 
   <script>
-    // ── Password Gate ──
-    const PASS_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'; // sha256 of 'password' — replaced at runtime
+    // ── Supabase Init ──
+    const SUPABASE_URL = 'https://tgicomrycbhrinobvnlr.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnaWNvbXJ5Y2Jocmlub2J2bmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NzcwOTMsImV4cCI6MjA4OTU1MzA5M30.nmC38E3meTH6mS0yjhyXaSYlwLc28mxqxLNf5e1KSdg';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    function checkPassword() {
-      const input = document.getElementById('pwInput').value;
-      if (input === 'liveforyou') {
-        sessionStorage.setItem('fjs_auth', '1');
-        showApp();
-      } else {
-        document.getElementById('pwError').textContent = 'Incorrect password';
-        document.getElementById('pwInput').value = '';
+    // ── Auth ──
+    function showLogin() {
+      document.getElementById('loginForm').style.display = 'block';
+      document.getElementById('signupForm').style.display = 'none';
+      document.getElementById('loginError').textContent = '';
+    }
+    function showSignup() {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('signupForm').style.display = 'block';
+      document.getElementById('signupError').textContent = '';
+      document.getElementById('signupSuccess').style.display = 'none';
+    }
+
+    async function handleLogin() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      document.getElementById('loginError').textContent = '';
+      if (!email || !password) {
+        document.getElementById('loginError').textContent = 'Please enter email and password';
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        document.getElementById('loginError').textContent = error.message;
       }
     }
 
-    function showApp() {
-      document.getElementById('passwordGate').classList.add('hidden');
+    async function handleSignup() {
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      document.getElementById('signupError').textContent = '';
+      document.getElementById('signupSuccess').style.display = 'none';
+      if (!email || !password) {
+        document.getElementById('signupError').textContent = 'Please enter email and password';
+        return;
+      }
+      if (password.length < 6) {
+        document.getElementById('signupError').textContent = 'Password must be at least 6 characters';
+        return;
+      }
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        document.getElementById('signupError').textContent = error.message;
+      } else {
+        document.getElementById('signupSuccess').style.display = 'block';
+        document.getElementById('signupSuccess').textContent = 'Check your email to confirm your account, then sign in.';
+      }
+    }
+
+    async function handleSignOut() {
+      await supabase.auth.signOut();
+      document.getElementById('authGate').classList.remove('hidden');
+      document.getElementById('mainNav').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'none';
+      document.getElementById('appContent').style.display = 'none';
+    }
+
+    function showApp(user) {
+      document.getElementById('authGate').classList.add('hidden');
       document.getElementById('mainNav').style.display = 'flex';
       document.getElementById('mainApp').style.display = 'block';
       document.getElementById('appContent').style.display = 'block';
+      document.getElementById('navUserEmail').textContent = user.email;
     }
 
-    // Check if already authenticated this session
-    if (sessionStorage.getItem('fjs_auth') === '1') {
-      showApp();
-    }
+    // Listen for auth changes
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        showApp(session.user);
+        await loadUserData();
+      }
+    });
+
+    // Check existing session on load
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        showApp(session.user);
+        await loadUserData();
+      }
+      validateSearch();
+    })();
 
     // ── State ──
     const state = {
@@ -743,13 +865,6 @@
       pipeline: [],
       currentStep: 1
     };
-
-    // ── Init ──
-    (function init() {
-      loadPipeline();
-      loadFavorites();
-      validateSearch();
-    })();
 
     // ── Tag input ──
     const titlesField = document.getElementById('titlesField');
@@ -797,6 +912,7 @@
         document.getElementById('resumeText').value = text;
         fileUploadArea.classList.add('has-file');
         fileUploadArea.innerHTML = `<p><span class="file-name">${esc(file.name)}</span></p><p style="font-size:0.72rem;color:#3A8A5C;margin-top:4px">File loaded successfully</p>`;
+        saveResume();
       } catch {
         state.resumeText = '';
       }
@@ -808,8 +924,11 @@
       btn.disabled = state.titles.length === 0;
     }
 
+    let resumeSaveTimeout;
     document.getElementById('resumeText').addEventListener('input', e => {
       state.resumeText = e.target.value;
+      clearTimeout(resumeSaveTimeout);
+      resumeSaveTimeout = setTimeout(() => saveResume(), 1500);
     });
 
     // ── Step Navigation ──
@@ -971,36 +1090,72 @@ Return a JSON array of objects with these exact fields:
 
     // ── Favorites ──
     function loadFavorites() {
-      try {
-        const raw = localStorage.getItem('fjs_favorites');
-        if (raw) state.favorites = JSON.parse(raw);
-      } catch {}
+      // Handled by loadUserData on auth
     }
 
-    function saveFavorites() {
-      try {
-        localStorage.setItem('fjs_favorites', JSON.stringify(state.favorites));
-      } catch {}
-    }
-
-    function toggleFavorite(jobId) {
+    async function toggleFavorite(jobId) {
       const job = state.jobs.find(j => j.id === jobId);
       if (!job) return;
       const idx = state.favorites.findIndex(f => f.title === job.title && f.company === job.company);
+      const { data: { user } } = await supabase.auth.getUser();
+
       if (idx === -1) {
-        state.favorites.push({
+        const fav = {
           title: job.title,
           company: job.company,
           industry: job.industry,
           location: job.location,
           fitScore: job.fitScore,
           highlights: job.highlights || []
-        });
+        };
+        if (user) {
+          const { data } = await supabase.from('favorites').insert({
+            user_id: user.id,
+            title: fav.title,
+            company: fav.company,
+            industry: fav.industry,
+            location: fav.location,
+            fit_score: fav.fitScore,
+            highlights: fav.highlights
+          }).select().single();
+          if (data) fav.dbId = data.id;
+        }
+        state.favorites.push(fav);
       } else {
+        const removed = state.favorites[idx];
         state.favorites.splice(idx, 1);
+        if (removed.dbId) {
+          await supabase.from('favorites').delete().eq('id', removed.dbId);
+        }
       }
-      saveFavorites();
       renderJobs();
+    }
+
+    // ── Pipeline Helpers ──
+    async function addToPipeline(job) {
+      const { data: { user } } = await supabase.auth.getUser();
+      const item = {
+        jobId: job.id,
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        fitScore: job.fitScore,
+        addedAt: new Date().toISOString().split('T')[0],
+        status: 'Researching'
+      };
+      if (user) {
+        const { data } = await supabase.from('pipeline').insert({
+          user_id: user.id,
+          job_id: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          fit_score: job.fitScore,
+          status: 'Researching'
+        }).select().single();
+        if (data) item.dbId = data.id;
+      }
+      state.pipeline.push(item);
     }
 
     function getFavoriteContext() {
@@ -1087,20 +1242,11 @@ Return a JSON array of objects with these exact fields:
       if (e.target === e.currentTarget) closeJobDetail();
     });
 
-    function saveToPipeline(jobId) {
+    async function saveToPipeline(jobId) {
       const job = state.jobs.find(j => j.id === jobId);
       if (!job) return;
       if (!state.pipeline.find(p => p.jobId === job.id)) {
-        state.pipeline.push({
-          jobId: job.id,
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          fitScore: job.fitScore,
-          addedAt: new Date().toISOString().split('T')[0],
-          status: 'Researching'
-        });
-        savePipeline();
+        await addToPipeline(job);
       }
     }
 
@@ -1147,21 +1293,12 @@ Return a JSON object with a "results" array. Each result:
         const data = await callClaude(systemPrompt, userPrompt);
         state.contacts = data;
         // Save to pipeline
-        selectedJobData.forEach(sj => {
+        for (const sj of selectedJobData) {
           const job = state.jobs.find(j => j.id === sj.job_id);
           if (job && !state.pipeline.find(p => p.jobId === job.id)) {
-            state.pipeline.push({
-              jobId: job.id,
-              title: job.title,
-              company: job.company,
-              location: job.location,
-              fitScore: job.fitScore,
-              addedAt: new Date().toISOString().split('T')[0],
-              status: 'Researching'
-            });
+            await addToPipeline(job);
           }
-        });
-        savePipeline();
+        }
         renderContacts(data);
       } catch (err) {
         container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runContacts()">Try again</button></div>`;
@@ -1256,12 +1393,14 @@ Return a JSON object with a "sequences" array. Each sequence:
         const data = await callClaude(systemPrompt, userPrompt);
         state.sequences = data;
         // Update pipeline status
-        state.pipeline.forEach(p => {
+        for (const p of state.pipeline) {
           if (state.selectedJobs.includes(p.jobId)) {
             p.status = 'Outreach Ready';
+            if (p.dbId) {
+              await supabase.from('pipeline').update({ status: 'Outreach Ready' }).eq('id', p.dbId);
+            }
           }
-        });
-        savePipeline();
+        }
         renderOutreach(data);
       } catch (err) {
         container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runOutreach()">Try again</button></div>`;
@@ -1309,18 +1448,74 @@ Return a JSON object with a "sequences" array. Each sequence:
       });
     }
 
-    // ── Pipeline ──
-    function loadPipeline() {
-      try {
-        const raw = localStorage.getItem('fjs_pipeline');
-        if (raw) state.pipeline = JSON.parse(raw);
-      } catch {}
+    // ── Supabase Data Sync ──
+    async function loadUserData() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Load pipeline
+      const { data: pipelineData } = await supabase
+        .from('pipeline')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (pipelineData) {
+        state.pipeline = pipelineData.map(p => ({
+          dbId: p.id,
+          jobId: p.job_id,
+          title: p.title,
+          company: p.company,
+          location: p.location,
+          fitScore: p.fit_score,
+          addedAt: p.added_at,
+          status: p.status
+        }));
+      }
+
+      // Load favorites
+      const { data: favData } = await supabase
+        .from('favorites')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (favData) {
+        state.favorites = favData.map(f => ({
+          dbId: f.id,
+          title: f.title,
+          company: f.company,
+          industry: f.industry,
+          location: f.location,
+          fitScore: f.fit_score,
+          highlights: f.highlights || []
+        }));
+      }
+
+      // Load resume
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('resume_text')
+        .eq('id', user.id)
+        .single();
+      if (profile?.resume_text) {
+        state.resumeText = profile.resume_text;
+        document.getElementById('resumeText').value = profile.resume_text;
+      }
     }
 
-    function savePipeline() {
-      try {
-        localStorage.setItem('fjs_pipeline', JSON.stringify(state.pipeline));
-      } catch {}
+    async function saveResume() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase
+        .from('profiles')
+        .update({ resume_text: state.resumeText, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+    }
+
+    // ── Pipeline ──
+    async function loadPipeline() {
+      // Handled by loadUserData on auth
+    }
+
+    async function savePipeline() {
+      // Individual operations handle their own saves
     }
 
     function openPipeline() {
@@ -1371,14 +1566,19 @@ Return a JSON object with a "sequences" array. Each sequence:
       container.innerHTML = html;
     }
 
-    function updatePipelineStatus(i, val) {
+    async function updatePipelineStatus(i, val) {
       state.pipeline[i].status = val;
-      savePipeline();
+      if (state.pipeline[i].dbId) {
+        await supabase.from('pipeline').update({ status: val }).eq('id', state.pipeline[i].dbId);
+      }
     }
 
-    function removePipelineItem(i) {
+    async function removePipelineItem(i) {
+      const item = state.pipeline[i];
       state.pipeline.splice(i, 1);
-      savePipeline();
+      if (item.dbId) {
+        await supabase.from('pipeline').delete().eq('id', item.dbId);
+      }
       renderPipelineTable();
     }
 
