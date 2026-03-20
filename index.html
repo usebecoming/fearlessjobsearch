@@ -575,13 +575,58 @@
       font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       color: #6E6E6E; max-width: 120px; overflow: hidden;
       text-overflow: ellipsis; white-space: nowrap;
+      display: none;
     }
     .nav-signout {
       background: none; border: none; color: #777777;
       font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       cursor: pointer; transition: color 0.2s;
+      display: none;
     }
     .nav-signout:hover { color: #C94444; }
+
+    /* ── Account Dropdown ── */
+    .account-wrapper { position: relative; }
+    .account-btn {
+      background: none; border: 1px solid #E5E4E2; color: #6E6E6E;
+      padding: 8px 14px; border-radius: 8px; font-size: 0.82rem;
+      font-family: 'IBM Plex Mono', monospace; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+    }
+    .account-btn:hover { border-color: #B8A88A; color: #111; }
+    .account-btn .account-icon {
+      width: 22px; height: 22px; border-radius: 50%; background: #B8A88A; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 600; flex-shrink: 0;
+    }
+    .account-dropdown {
+      display: none; position: absolute; top: calc(100% + 8px); right: 0;
+      background: #FFFFFF; border: 1px solid #E5E4E2; border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1); min-width: 260px; z-index: 200;
+      padding: 16px; animation: fadeUp 0.2s ease-out;
+    }
+    .account-dropdown.open { display: block; }
+    .account-dropdown-item {
+      padding: 8px 0; font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+      color: #555; display: flex; justify-content: space-between; align-items: center;
+    }
+    .account-dropdown-item .label { color: #999; font-size: 0.75rem; }
+    .account-dropdown-item .value { color: #333; font-weight: 500; }
+    .account-dropdown-item.email-row {
+      word-break: break-all; flex-direction: column; align-items: flex-start; gap: 2px;
+      border-bottom: 1px solid #F0EFED; padding-bottom: 12px; margin-bottom: 4px;
+    }
+    .account-dropdown-item a {
+      color: #B8A88A; text-decoration: none; font-weight: 500;
+    }
+    .account-dropdown-item a:hover { color: #9A8B6E; }
+    .account-signout {
+      display: block; width: 100%; margin-top: 8px; padding: 10px;
+      background: none; border: 1px solid #E5E4E2; border-radius: 6px;
+      color: #777; font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+      cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .account-signout:hover { color: #C94444; border-color: #C94444; }
 
     /* ── Landing Page ── */
     .landing { display: block; }
@@ -909,25 +954,159 @@
     }
 
     /* ── Responsive ── */
+    /* ── Hamburger Button ── */
+    .hamburger-btn {
+      display: none; background: none; border: none; cursor: pointer;
+      padding: 8px; flex-direction: column; gap: 4px; z-index: 110;
+    }
+    .hamburger-btn span {
+      display: block; width: 22px; height: 2px; background: #333;
+      border-radius: 2px; transition: all 0.3s;
+    }
+    .hamburger-btn.open span:nth-child(1) { transform: rotate(45deg) translate(4px, 4px); }
+    .hamburger-btn.open span:nth-child(2) { opacity: 0; }
+    .hamburger-btn.open span:nth-child(3) { transform: rotate(-45deg) translate(4px, -4px); }
+
     @media (max-width: 640px) {
-      nav { padding: 14px 16px; }
-      .nav-brand { font-size: 0.95rem; }
-      .container { padding: 0 16px; }
-      .section-title { font-size: 1.3rem; }
-      .step-line { width: 32px; }
-      .step-labels { gap: 20px; }
-      .step-label { font-size: 0.82rem; }
-      .modal { padding: 24px; width: 95%; }
-      .hero { padding: 60px 16px 48px; }
-      .hero h1 { font-size: 2rem; }
-      .hero p { font-size: 1rem; }
-      .pricing-amount { font-size: 2.4rem; }
-      .credibility-section { padding: 60px 16px; }
-      .credibility-section h2 { font-size: 1.6rem; }
-      .credibility-quote { font-size: 1.1rem; padding: 16px 20px; }
-      .proof-badge { font-size: 0.82rem; padding: 8px 14px; }
-      .features-section, .screenshots-section, .problem-section { padding: 60px 16px; }
-      .pricing-section { padding: 60px 16px 80px; }
+      /* Nav */
+      nav { padding: 12px 16px; }
+      .nav-brand { font-size: 0.9rem; }
+      .nav-brand img { width: 28px; height: 28px; }
+      .hamburger-btn { display: flex; }
+      #mainNav .nav-right {
+        display: none; flex-direction: column; align-items: stretch;
+        position: absolute; top: 100%; left: 0; right: 0;
+        background: #FFFFFF; border-bottom: 1px solid #E5E4E2;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08); padding: 12px 16px; gap: 4px;
+        z-index: 105;
+      }
+      #mainNav .nav-right.mobile-open { display: flex; }
+      #mainNav .nav-right .nav-link {
+        text-align: left; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem;
+      }
+      #mainNav .nav-right .nav-link:hover { background: #F9F6F1; }
+      #mainNav .nav-right .nav-divider { display: none; }
+      #mainNav .nav-right .account-wrapper { width: 100%; }
+      #mainNav .nav-right .account-btn { width: 100%; justify-content: center; padding: 12px; }
+      #mainNav .nav-right .account-dropdown { position: static; margin-top: 8px; box-shadow: none; border: 1px solid #E5E4E2; }
+      /* Hide Home button on mobile nav to save space */
+      #mainNav > div:first-child .nav-link { display: none; }
+
+      /* Container */
+      .container { padding: 0 12px; }
+
+      /* Steps */
+      .steps-bar { padding: 20px 0 6px; }
+      .step-dot { width: 32px; height: 32px; font-size: 0.75rem; }
+      .step-line { width: 24px; }
+      .step-labels { gap: 12px; padding: 6px 0 16px; }
+      .step-label { font-size: 0.72rem; width: 60px; }
+
+      /* Section titles */
+      .section-title { font-size: 1.2rem; }
+      .section-sub { font-size: 0.88rem; }
+
+      /* Hero */
+      .hero { padding: 48px 16px 40px; }
+      .hero h1 { font-size: 1.7rem; line-height: 1.3; }
+      .hero p { font-size: 0.95rem; }
+      .hero-badge { font-size: 0.75rem; padding: 6px 14px; }
+      .hero-cta { flex-direction: column; gap: 12px; }
+      .hero-cta .btn-primary,
+      .hero-cta .btn-secondary { width: 100%; text-align: center; justify-content: center; }
+
+      /* Feature cards */
+      .features-grid { grid-template-columns: 1fr; gap: 16px; }
+      .feature-card { padding: 24px; }
+      .feature-card h3 { font-size: 1rem; }
+      .feature-card p { font-size: 0.88rem; }
+      .features-section, .screenshots-section, .problem-section { padding: 48px 16px; }
+      .features-section h2, .problem-section h2 { font-size: 1.5rem; }
+
+      /* Pricing */
+      .pricing-section { padding: 48px 16px 60px; }
+      .pricing-section h2 { font-size: 1.5rem; }
+      .pricing-amount { font-size: 2.2rem; }
+      .pricing-card { padding: 28px 20px; }
+
+      /* Credibility */
+      .credibility-section { padding: 48px 16px; }
+      .credibility-section h2 { font-size: 1.4rem; }
+      .credibility-quote { font-size: 1rem; padding: 14px 16px; }
+      .proof-badge { font-size: 0.78rem; padding: 6px 12px; }
+
+      /* App wrapper */
+      .app-wrapper { padding: 20px 16px; margin: 16px auto; border-radius: 12px; }
+
+      /* Job cards */
+      .card { padding: 20px 16px; }
+
+      /* Tags */
+      .tag-input-wrap { flex-wrap: wrap; }
+
+      /* Modals */
+      .modal { padding: 20px 16px; width: 96%; max-height: 90vh; border-radius: 12px; }
+
+      /* Buttons */
+      .btn-primary, .btn-secondary { font-size: 0.9rem; }
+      .saved-profiles-bar .btn-secondary { padding: 8px 12px; font-size: 0.78rem; }
+      .saved-profiles-bar input,
+      .saved-profiles-bar select { min-width: 0 !important; width: 100% !important; }
+      .saved-profiles-bar > div { flex-direction: column; width: 100%; }
+
+      /* Form inputs */
+      .form-input { font-size: 0.9rem; }
+
+      /* Search mode toggle */
+      .search-mode-toggle { flex-wrap: wrap; }
+      .search-mode-btn { flex: 1; min-width: 120px; font-size: 0.82rem; }
+
+      /* Social proof */
+      .social-proof { font-size: 0.78rem; padding: 12px 16px; }
+
+      /* Problem section */
+      .problem-item { padding: 16px; }
+      .problem-item p { font-size: 0.9rem; }
+    }
+
+    /* ── Very small phones ── */
+    @media (max-width: 480px) {
+      nav { padding: 10px 12px; }
+      .nav-brand { font-size: 0.8rem; gap: 6px; }
+      .nav-brand img { width: 24px; height: 24px; }
+
+      .hero { padding: 36px 12px 32px; }
+      .hero h1 { font-size: 1.4rem; }
+      .hero p { font-size: 0.88rem; }
+
+      .step-dot { width: 28px; height: 28px; font-size: 0.7rem; }
+      .step-line { width: 18px; }
+      .step-labels { gap: 6px; }
+      .step-label { font-size: 0.65rem; width: 50px; }
+
+      .section-title { font-size: 1.05rem; }
+      .section-sub { font-size: 0.82rem; }
+
+      .app-wrapper { padding: 16px 12px; }
+      .card { padding: 16px 12px; }
+
+      .modal { padding: 16px 12px; width: 98%; }
+
+      .features-section h2, .problem-section h2, .pricing-section h2 { font-size: 1.3rem; }
+      .feature-card { padding: 20px 16px; }
+      .pricing-card { padding: 24px 16px; }
+      .pricing-amount { font-size: 1.9rem; }
+
+      .btn-primary { padding: 14px 20px; font-size: 0.88rem; }
+      .btn-secondary { padding: 10px 16px; font-size: 0.84rem; }
+
+      .account-dropdown { min-width: 220px; padding: 12px; }
+      .account-dropdown-item { font-size: 0.75rem; }
+
+      .form-input { font-size: 0.85rem; padding: 10px 12px; }
+      .form-label { font-size: 0.82rem; }
+
+      .landing-footer { padding: 32px 12px; font-size: 0.78rem; }
     }
   </style>
 </head>
@@ -1289,7 +1468,7 @@
         </div>
 
       </div>
-      <p style="text-align:center;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777;max-width:500px;margin-left:auto;margin-right:auto">By completing your purchase you agree to our <a href="/policies" style="color:#B8A88A">Refund &amp; Cancellation Policy</a>. Subscriptions can be cancelled anytime. Resume and LinkedIn services are non-refundable once booked. Rescheduling available with 48+ hours notice.</p>
+      <p style="text-align:center;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777;max-width:500px;margin-left:auto;margin-right:auto">By completing your purchase you agree to our <a href="/policies" style="color:#B8A88A">Refund &amp; Cancellation Policy</a>. Subscriptions can be cancelled anytime.</p>
     </div>
 
     <!-- Final CTA -->
@@ -1359,6 +1538,9 @@
       </div>
       <button class="nav-link" onclick="doSignOut()" title="Back to home page" style="font-size:0.85rem;color:#777777">&#8962; Home</button>
     </div>
+    <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()">
+      <span></span><span></span><span></span>
+    </button>
     <div class="nav-right">
       <button class="nav-link" onclick="goToStep(1)">Search</button>
       <button class="nav-link" onclick="openPipeline()">Pipeline</button>
@@ -1367,6 +1549,31 @@
       <button class="nav-link accent" id="navUpgradeBtn" onclick="openUpgradeModal()">Upgrade</button>
       <span class="user-email" id="navUserEmail"></span>
       <button class="nav-signout" onclick="doSignOut()">Sign Out</button>
+      <div class="account-wrapper">
+        <button class="account-btn" onclick="toggleAccountDropdown(event)">
+          <span class="account-icon" id="accountInitial">?</span>
+          <span>Account</span>
+        </button>
+        <div class="account-dropdown" id="accountDropdown">
+          <div class="account-dropdown-item email-row">
+            <span class="label">Signed in as</span>
+            <span class="value" id="accountEmail">—</span>
+          </div>
+          <div class="account-dropdown-item">
+            <span class="label">Plan</span>
+            <span class="value">Free</span>
+          </div>
+          <div class="account-dropdown-item">
+            <span class="label">Searches this month</span>
+            <span class="value">0</span>
+          </div>
+          <div class="account-dropdown-item" style="border-top:1px solid #F0EFED;padding-top:12px;margin-top:4px">
+            <span class="label">Support</span>
+            <span class="value"><a href="mailto:support@lfyconsulting.com">support@lfyconsulting.com</a></span>
+          </div>
+          <button class="account-signout" onclick="doSignOut()">Sign Out</button>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -1737,6 +1944,25 @@
     }
 
     // ── Sign Out (defined early so it always works) ──
+    function toggleMobileMenu() {
+      const btn = document.getElementById('hamburgerBtn');
+      const navRight = document.querySelector('#mainNav .nav-right');
+      btn.classList.toggle('open');
+      navRight.classList.toggle('mobile-open');
+    }
+
+    function toggleAccountDropdown(e) {
+      e.stopPropagation();
+      const dd = document.getElementById('accountDropdown');
+      dd.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      const dd = document.getElementById('accountDropdown');
+      if (dd && !e.target.closest('.account-wrapper')) {
+        dd.classList.remove('open');
+      }
+    });
+
     function doSignOut() {
       // Hide app
       document.getElementById('landingPage').classList.remove('hidden');
@@ -1916,6 +2142,8 @@
       document.getElementById('mainApp').style.display = 'block';
       document.getElementById('appContent').style.display = 'block';
       document.getElementById('navUserEmail').textContent = user.email;
+      document.getElementById('accountEmail').textContent = user.email;
+      document.getElementById('accountInitial').textContent = user.email.charAt(0).toUpperCase();
 
       // Hide upgrade UI for admins/paid users
       if (ADMIN_EMAILS.includes(user.email)) {
@@ -2623,79 +2851,91 @@ Return a JSON array of objects with these exact fields:
     }
 
     async function saveSearchProfile() {
-      const nameInput = document.getElementById('profileName');
-      const saveBtn = document.getElementById('saveSearchBtn');
-      const name = nameInput.value.trim();
-
-      if (!name) {
-        nameInput.style.borderColor = '#C94444';
-        nameInput.placeholder = 'Enter a name first';
-        setTimeout(() => { nameInput.style.borderColor = ''; nameInput.placeholder = 'Name this search'; }, 2000);
-        return;
-      }
-
-      if (!supabase) {
-        alert('Could not save. Please refresh and try again.');
-        return;
-      }
-
-      let user;
+      console.log('saveSearchProfile() called');
       try {
-        const resp = await supabase.auth.getUser();
-        user = resp.data.user;
-      } catch (e) {
-        console.error('Auth error:', e);
+        const nameInput = document.getElementById('profileName');
+        const saveBtn = document.getElementById('saveSearchBtn');
+        const name = nameInput.value.trim();
+
+        if (!name) {
+          nameInput.style.borderColor = '#C94444';
+          nameInput.placeholder = 'Enter a name first';
+          setTimeout(() => { nameInput.style.borderColor = ''; nameInput.placeholder = 'Name this search'; }, 2000);
+          return;
+        }
+
+        if (!supabase) {
+          alert('Could not save. Please refresh and try again.');
+          return;
+        }
+
+        let user;
+        try {
+          const resp = await supabase.auth.getUser();
+          user = resp.data.user;
+        } catch (e) {
+          console.error('Auth error:', e);
+        }
+
+        if (!user) {
+          alert('Please sign in to save searches.');
+          return;
+        }
+
+        const workTypes = [...document.querySelectorAll('.work-type-option input:checked')].map(cb => cb.value);
+        saveBtn.textContent = 'Saving...';
+        saveBtn.disabled = true;
+
+        const insertData = {
+          user_id: user.id,
+          name,
+          titles: state.titles,
+          locations: state.locations,
+          work_types: workTypes,
+          salary_min: document.getElementById('salaryMin').value || '',
+          salary_max: document.getElementById('salaryMax').value || '',
+          anchors: [
+            document.getElementById('anchor1').value.trim(),
+            document.getElementById('anchor2').value.trim(),
+            document.getElementById('anchor3').value.trim()
+          ].filter(Boolean)
+        };
+
+        console.log('Saving search profile:', insertData);
+
+        const { data, error } = await supabase
+          .from('search_profiles')
+          .insert(insertData)
+          .select();
+
+        console.log('Save result:', { data, error });
+
+        if (error) {
+          console.error('Save search error:', error);
+          saveBtn.textContent = 'Error. Try again.';
+          saveBtn.style.color = '#C94444';
+          setTimeout(() => { saveBtn.textContent = 'Save Current Search'; saveBtn.style.color = ''; saveBtn.disabled = false; }, 2000);
+          return;
+        }
+
+        nameInput.value = '';
+        saveBtn.textContent = 'Saved!';
+        saveBtn.style.color = '#3A8A5C';
+        saveBtn.style.borderColor = '#3A8A5C';
+        setTimeout(() => { saveBtn.textContent = 'Save Current Search'; saveBtn.style.color = ''; saveBtn.style.borderColor = ''; saveBtn.disabled = false; }, 2000);
+        // Refresh the dropdown
+        await loadSearchProfiles();
+        await loadSearchProfiles();
+      } catch (err) {
+        console.error('saveSearchProfile() caught error:', err);
+        alert('Save failed: ' + (err.message || String(err)));
+        const saveBtn = document.getElementById('saveSearchBtn');
+        if (saveBtn) {
+          saveBtn.textContent = 'Save Current Search';
+          saveBtn.style.color = '';
+          saveBtn.disabled = false;
+        }
       }
-
-      if (!user) {
-        alert('Please sign in to save searches.');
-        return;
-      }
-
-      const workTypes = [...document.querySelectorAll('.work-type-option input:checked')].map(cb => cb.value);
-      saveBtn.textContent = 'Saving...';
-      saveBtn.disabled = true;
-
-      const insertData = {
-        user_id: user.id,
-        name,
-        titles: state.titles,
-        locations: state.locations,
-        work_types: workTypes,
-        salary_min: document.getElementById('salaryMin').value || '',
-        salary_max: document.getElementById('salaryMax').value || '',
-        anchors: [
-          document.getElementById('anchor1').value.trim(),
-          document.getElementById('anchor2').value.trim(),
-          document.getElementById('anchor3').value.trim()
-        ].filter(Boolean)
-      };
-
-      console.log('Saving search profile:', insertData);
-
-      const { data, error } = await supabase
-        .from('search_profiles')
-        .insert(insertData)
-        .select();
-
-      console.log('Save result:', { data, error });
-
-      if (error) {
-        console.error('Save search error:', error);
-        saveBtn.textContent = 'Error. Try again.';
-        saveBtn.style.color = '#C94444';
-        setTimeout(() => { saveBtn.textContent = 'Save Current Search'; saveBtn.style.color = ''; saveBtn.disabled = false; }, 2000);
-        return;
-      }
-
-      nameInput.value = '';
-      saveBtn.textContent = 'Saved!';
-      saveBtn.style.color = '#3A8A5C';
-      saveBtn.style.borderColor = '#3A8A5C';
-      setTimeout(() => { saveBtn.textContent = 'Save Current Search'; saveBtn.style.color = ''; saveBtn.style.borderColor = ''; saveBtn.disabled = false; }, 2000);
-      // Refresh the dropdown
-      await loadSearchProfiles();
-      await loadSearchProfiles();
     }
 
     function loadSearchProfile() {
