@@ -3186,27 +3186,18 @@ Return a JSON object with a "results" array. Each result:
   ]
 }`;
         } else {
-          // Brave search returned nothing - fall back to Claude generating contacts
-          userPrompt = `Surface 3-6 direct company contacts for each of the following roles. Include: internal recruiter/TA, most likely hiring manager (the person who would manage whoever fills this role), and a skip-level leader. NO recruiting agencies. Provide realistic names, titles, LinkedIn URLs, and one-line rationale.
-
-Jobs:
-${JSON.stringify(selectedJobData, null, 2)}
-
-Return a JSON object with a "results" array. Each result:
-{
-  "job_id": "string",
-  "company": "string",
-  "job_title": "string",
-  "contacts": [
-    {
-      "name": "string",
-      "title": "string",
-      "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
-      "linkedin": "string (linkedin.com/in/firstname-lastname format)",
-      "note": "string (one-line rationale)"
-    }
-  ]
-}`;
+          // Brave search returned nothing - tell user to search manually
+          stopProgress();
+          container.innerHTML = `<div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:28px;text-align:center">
+            <h3 style="font-size:1.1rem;margin-bottom:10px">No contacts found automatically</h3>
+            <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:16px;max-width:500px;margin-left:auto;margin-right:auto">We searched LinkedIn but couldn't find verified contacts at these companies. This can happen with smaller companies or uncommon titles.</p>
+            <p style="font-size:0.88rem;color:#555;font-weight:500;margin-bottom:20px">Try searching LinkedIn directly for people at these companies:</p>
+            <div style="display:flex;flex-direction:column;gap:8px;max-width:400px;margin:0 auto">
+              ${selectedJobData.map(j => `<a href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(j.company)}&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="btn-secondary" style="text-decoration:none;text-align:center">${esc(j.company)} on LinkedIn &#8599;</a>`).join('')}
+            </div>
+            <div style="margin-top:20px"><button class="btn-secondary" onclick="goToStep(2)">← Back to opportunities</button></div>
+          </div>`;
+          return;
         }
 
         const data = await callClaude(systemPrompt, userPrompt);

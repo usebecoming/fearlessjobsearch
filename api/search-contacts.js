@@ -24,24 +24,34 @@ export default async function handler(req, res) {
 
       // Search 1: People at this company in this department (leadership)
       const deptQuery = `site:linkedin.com/in "${company}" "${department}" (VP OR Director OR Head OR SVP OR Chief)`;
+      console.log('Brave query 1:', deptQuery);
       const deptResults = await braveSearch(deptQuery, braveKey);
+      console.log('Brave results 1:', deptResults.length, 'contacts');
       contacts.push(...deptResults);
 
       // Search 2: Recruiters at this company
       const recQuery = `site:linkedin.com/in "${company}" (recruiter OR "talent acquisition" OR "talent partner" OR "people partner")`;
+      console.log('Brave query 2:', recQuery);
       const recResults = await braveSearch(recQuery, braveKey);
+      console.log('Brave results 2:', recResults.length, 'contacts');
       contacts.push(...recResults);
 
       // Search 3: C-suite at this company
       const csuiteQuery = `site:linkedin.com/in "${company}" (CEO OR COO OR "Chief" OR President OR "General Manager")`;
+      console.log('Brave query 3:', csuiteQuery);
       const csuiteResults = await braveSearch(csuiteQuery, braveKey);
+      console.log('Brave results 3:', csuiteResults.length, 'contacts');
       contacts.push(...csuiteResults);
+
+      const dedupedContacts = dedupeContacts(contacts).slice(0, 12);
+      console.log('Total contacts for', company, ':', dedupedContacts.length);
+      console.log('Contact URLs:', dedupedContacts.map(c => c.linkedin));
 
       results.push({
         job_id: job.job_id,
         company: job.company,
         job_title: job.title,
-        raw_contacts: dedupeContacts(contacts).slice(0, 12)
+        raw_contacts: dedupedContacts
       });
     }
 
