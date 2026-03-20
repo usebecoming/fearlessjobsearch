@@ -1557,11 +1557,11 @@
           </div>
           <div class="account-dropdown-item">
             <span class="label">Plan</span>
-            <span class="value">Free</span>
+            <span class="value" id="accountPlan">Free</span>
           </div>
           <div class="account-dropdown-item">
             <span class="label">Searches this month</span>
-            <span class="value">0</span>
+            <span class="value" id="accountSearches">0</span>
           </div>
           <div class="account-dropdown-item" style="border-top:1px solid #F0EFED;padding-top:12px;margin-top:4px">
             <a href="mailto:support@lfyconsulting.com" style="color:#B8A88A;font-size:0.82rem">Contact Support</a>
@@ -2140,7 +2140,29 @@
         state.hasPaid = true;
         document.getElementById('navUpgradeBtn').style.display = 'none';
         document.getElementById('upgradeBanner').style.display = 'none';
+        document.getElementById('accountPlan').textContent = 'Admin';
       }
+
+      // Load plan info from server
+      fetch('/api/check-usage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, email: user.email })
+      }).then(function(r) { return r.json(); }).then(function(usage) {
+        if (usage.admin) {
+          document.getElementById('accountPlan').textContent = 'Admin (Unlimited)';
+          document.getElementById('accountSearches').textContent = 'Unlimited';
+        } else {
+          var planNames = { free: 'Free', starter: 'Starter', pro: 'Pro', unlimited: 'Unlimited' };
+          document.getElementById('accountPlan').textContent = planNames[usage.plan] || 'Free';
+          document.getElementById('accountSearches').textContent = usage.searches_used + ' / ' + usage.searches_limit;
+          if (usage.plan !== 'free') {
+            state.hasPaid = true;
+            document.getElementById('navUpgradeBtn').style.display = 'none';
+            document.getElementById('upgradeBanner').style.display = 'none';
+          }
+        }
+      }).catch(function() {});
     }
 
     // Listen for auth changes
@@ -2549,6 +2571,30 @@
 
     // ── Step 2: Search ──
     async function runSearch() {
+      // Check usage limits before searching
+      try {
+        const sess = supabase ? await supabase.auth.getSession() : null;
+        const userId = sess?.data?.session?.user?.id;
+        const userEmail = sess?.data?.session?.user?.email || state.userEmail;
+
+        if (userId) {
+          const usageRes = await fetch('/api/check-usage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, email: userEmail })
+          });
+          if (usageRes.ok) {
+            const usage = await usageRes.json();
+            if (!usage.allowed) {
+              openUpgradeModal();
+              return;
+            }
+          }
+        }
+      } catch (e) {
+        console.log('Usage check skipped:', e.message);
+      }
+
       // Only read from textarea if no file was uploaded
       const textareaVal = document.getElementById('resumeText').value.trim();
       if (textareaVal) state.resumeText = textareaVal;
@@ -2657,6 +2703,13 @@ Return a JSON array with one object per job:
           state.selectedJobs = [];
           renderJobs();
           logUsage('job_search', { mode: 'job_target', titles: state.titles, locations: state.locations, results: scoredJobs.length });
+          // Increment search count
+          try {
+            const s = supabase ? await supabase.auth.getSession() : null;
+            if (s?.data?.session?.user?.id) {
+              fetch('/api/increment-usage', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({user_id: s.data.session.user.id}) }).catch(function(){});
+            }
+          } catch(e) {}
           return;
         } catch (err) {
           console.error('JSearch error, falling back to Claude:', err);
@@ -2696,6 +2749,13 @@ Return a JSON array of objects with these exact fields:
         state.selectedJobs = [];
         renderJobs();
         logUsage('job_search', { mode: state.searchMode, titles: state.titles, companies: state.companies, results: jobs.length });
+        // Increment search count
+        try {
+          const s = supabase ? await supabase.auth.getSession() : null;
+          if (s?.data?.session?.user?.id) {
+            fetch('/api/increment-usage', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({user_id: s.data.session.user.id}) }).catch(function(){});
+          }
+        } catch(e) {}
       } catch (err) {
         stopProgress();
         container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runSearch()">Try again</button></div>`;

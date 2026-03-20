@@ -1,13 +1,37 @@
 -- Fearless Job Search: Database Setup
 -- Run this in Supabase SQL Editor (Dashboard > SQL Editor > New Query)
 
--- 1. Profiles table (stores resume text per user)
+-- 1. Profiles table (stores resume text, plan, usage per user)
 create table if not exists profiles (
   id uuid references auth.users on delete cascade primary key,
   resume_text text default '',
+  plan text default 'free',
+  stripe_customer_id text default '',
+  subscription_status text default '',
+  search_count_month int default 0,
+  search_reset_date timestamptz default null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Add columns if table already exists
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_name='profiles' and column_name='plan') then
+    alter table profiles add column plan text default 'free';
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='profiles' and column_name='stripe_customer_id') then
+    alter table profiles add column stripe_customer_id text default '';
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='profiles' and column_name='subscription_status') then
+    alter table profiles add column subscription_status text default '';
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='profiles' and column_name='search_count_month') then
+    alter table profiles add column search_count_month int default 0;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='profiles' and column_name='search_reset_date') then
+    alter table profiles add column search_reset_date timestamptz default null;
+  end if;
+end $$;
 
 alter table profiles enable row level security;
 
