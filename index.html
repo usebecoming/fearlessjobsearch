@@ -1392,15 +1392,30 @@
     <div class="section" id="section-3">
       <div class="back-row"><button class="btn-back" onclick="goToStep(2)">← Back to jobs</button></div>
       <h2 class="section-title">Decision-Makers</h2>
-      <p class="section-sub">Direct contacts at each company. No recruiting agencies.</p>
-      <div class="export-bar" id="exportBar" style="display:none">
-        <button class="btn-secondary btn-small" onclick="copyAllLinkedIn()">Copy All LinkedIn URLs</button>
-        <button class="btn-secondary btn-small" onclick="exportCSV()">Export CSV</button>
+      <p class="section-sub">Select the contacts you want to reach out to, then generate personalized outreach sequences.</p>
+
+      <!-- Instructions -->
+      <div id="contactsInstructions" style="display:none;background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:20px;margin-bottom:20px">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+          <div style="flex:1;min-width:200px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">How to use</div>
+            <p style="font-size:0.85rem;color:#555;font-weight:500;line-height:1.6">Check the contacts you want to message. Click "Generate Outreach" to create personalized 4-message sequences for each selected contact.</p>
+          </div>
+          <div style="display:flex;gap:12px">
+            <button class="btn-secondary btn-small" onclick="selectAllContacts()">Select All</button>
+            <button class="btn-secondary btn-small" onclick="deselectAllContacts()">Deselect All</button>
+          </div>
+        </div>
+        <div class="export-bar" id="exportBar" style="display:flex;padding:0;margin:0;border:none">
+          <button class="btn-secondary btn-small" onclick="copyAllLinkedIn()">Copy All LinkedIn URLs</button>
+          <button class="btn-secondary btn-small" onclick="exportCSV()">Export CSV</button>
+        </div>
       </div>
+
       <div id="contactsContainer"></div>
-      <div class="selection-bar">
-        <span></span>
-        <button class="btn-primary" onclick="runOutreach()">
+      <div class="selection-bar" id="contactsSelectionBar" style="display:none">
+        <span class="selection-count" id="contactSelectionCount">0 contacts selected</span>
+        <button class="btn-primary" id="outreachBtn" disabled onclick="runOutreach()">
           Generate Outreach →
         </button>
       </div>
@@ -2466,10 +2481,18 @@ Return a JSON object with a "results" array. Each result:
       }
     }
 
+    // Track selected contacts
+    state.selectedContacts = new Set();
+
     function renderContacts(data) {
       const container = document.getElementById('contactsContainer');
       container.innerHTML = '';
-      document.getElementById('exportBar').style.display = 'flex';
+      document.getElementById('contactsInstructions').style.display = 'block';
+      document.getElementById('contactsSelectionBar').style.display = 'flex';
+
+      // Select all by default
+      state.selectedContacts.clear();
+      let contactIdx = 0;
 
       (data.results || []).forEach((group, gi) => {
         const div = document.createElement('div');
@@ -2480,35 +2503,76 @@ Return a JSON object with a "results" array. Each result:
                      <p class="contacts-group-sub">${esc(group.company)}</p>`;
 
         (group.contacts || []).forEach(c => {
+          const cId = `contact-${contactIdx}`;
+          state.selectedContacts.add(cId);
           const roleBadge = c.role === 'Recruiter / TA' ? 'badge-blue' :
                             c.role === 'Hiring Manager' ? 'badge-green' : 'badge-gold';
           html += `
-            <div class="contact-card">
+            <div class="contact-card" id="${cId}" style="cursor:pointer;border:2px solid #B8A88A" onclick="toggleContact('${cId}')">
               <div class="contact-header">
-                <span class="contact-name">${esc(c.name)}</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div class="job-select-check" style="background:#111;color:#fff;border-color:#111" id="${cId}-check">&#10003;</div>
+                  <span class="contact-name">${esc(c.name)}</span>
+                </div>
                 <span class="badge ${roleBadge}">${esc(c.role)}</span>
               </div>
               <div class="contact-title">${esc(c.title)}</div>
               <div class="contact-note">${esc(c.note)}</div>
-              <div class="contact-actions">
+              <div class="contact-actions" onclick="event.stopPropagation()">
                 <button class="btn-copy" onclick="copyText('${esc(c.email)}', this)">Copy Email</button>
                 <a href="https://${esc(c.linkedin)}" target="_blank" class="btn-copy" style="text-decoration:none">LinkedIn →</a>
               </div>
             </div>`;
+          contactIdx++;
         });
 
         div.innerHTML = html;
         container.appendChild(div);
       });
+
+      updateContactSelectionCount();
+    }
+
+    function toggleContact(cId) {
+      const card = document.getElementById(cId);
+      const check = document.getElementById(cId + '-check');
+      if (state.selectedContacts.has(cId)) {
+        state.selectedContacts.delete(cId);
+        card.style.borderColor = '#E5E4E2';
+        check.style.background = '#FFFFFF';
+        check.style.color = 'transparent';
+        check.style.borderColor = '#E5E4E2';
+      } else {
+        state.selectedContacts.add(cId);
+        card.style.borderColor = '#B8A88A';
+        check.style.background = '#111';
+        check.style.color = '#fff';
+        check.style.borderColor = '#111';
+      }
+      updateContactSelectionCount();
+    }
+
+    function selectAllContacts() {
+      document.querySelectorAll('[id^="contact-"]').forEach(el => {
+        if (el.id.includes('-check')) return;
+        if (!state.selectedContacts.has(el.id)) toggleContact(el.id);
+      });
+    }
+
+    function deselectAllContacts() {
+      [...state.selectedContacts].forEach(cId => toggleContact(cId));
+    }
+
+    function updateContactSelectionCount() {
+      const n = state.selectedContacts.size;
+      document.getElementById('contactSelectionCount').textContent = `${n} contact${n !== 1 ? 's' : ''} selected`;
+      document.getElementById('outreachBtn').disabled = n === 0;
     }
 
     // ── Step 4: Outreach ──
     async function runOutreach() {
       goToStep(4);
       const container = document.getElementById('outreachContainer');
-      const totalContacts = targets.reduce((sum, t) => sum + t.contacts.length, 0);
-      const outreachEstimate = Math.max(15, totalContacts * 3);
-      showProgress(container, 'Generating personalized outreach sequences...', outreachEstimate);
 
       const resumeSummary = state.resumeText.substring(0, 1500);
       const targets = (state.contacts.results || []).map(g => ({
@@ -2517,6 +2581,10 @@ Return a JSON object with a "results" array. Each result:
         job_title: g.job_title,
         contacts: g.contacts.map(c => ({ name: c.name, title: c.title, role: c.role }))
       }));
+
+      const totalContacts = targets.reduce((sum, t) => sum + t.contacts.length, 0);
+      const outreachEstimate = Math.max(20, totalContacts * 5);
+      showProgress(container, 'Generating personalized outreach sequences...', outreachEstimate);
 
       const systemPrompt = 'You are a senior executive outreach copywriter. Respond ONLY with a JSON object. No markdown, no explanation.';
       const userPrompt = `Write personalized 4-message outreach sequences for each contact below. Two tracks:
