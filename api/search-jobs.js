@@ -22,29 +22,41 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'At least one job title is required' });
     }
 
-    const location = (locations && locations.length > 0)
-      ? locations.filter(l => l.toLowerCase() !== 'remote').join(', ')
-      : '';
+    const physicalLocations = (locations && locations.length > 0)
+      ? locations.filter(l => l.toLowerCase() !== 'remote')
+      : [];
     const isRemote = locations && locations.some(l => l.toLowerCase() === 'remote');
 
-    // Run separate search per title for better results
+    // Build search combinations: each title x each location
+    // If no physical locations, search without location filter
+    const locationQueries = physicalLocations.length > 0 ? physicalLocations : [''];
+    // If remote is selected and there are also physical locations, add a remote-only search too
+    if (isRemote && physicalLocations.length > 0) locationQueries.push('__remote__');
+
     const allJobs = [];
     const seenJobIds = new Set();
 
     for (const title of titles) {
-      const params = new URLSearchParams({
-        query: title + (location ? ` in ${location}` : ''),
-        page: '1',
-        num_pages: '1',
-        date_posted: 'week',
-        employment_types: 'FULLTIME',
-      });
+      for (const loc of locationQueries) {
+        const isRemoteQuery = loc === '__remote__';
+        const locationStr = isRemoteQuery ? '' : loc;
 
-      if (isRemote) {
-        params.set('remote_jobs_only', 'true');
-      }
+        const params = new URLSearchParams({
+          query: title + (locationStr ? ` in ${locationStr}` : ''),
+          page: '1',
+          num_pages: '1',
+          date_posted: 'week',
+          employment_types: 'FULLTIME',
+        });
 
-      console.log('JSearch query:', title, location ? `in ${location}` : '', isRemote ? '(remote)' : '');
+        if (isRemote && !locationStr) {
+          params.set('remote_jobs_only', 'true');
+        }
+        if (isRemoteQuery) {
+          params.set('remote_jobs_only', 'true');
+        }
+
+        console.log('JSearch query:', title, locationStr ? `in ${locationStr}` : '', (isRemote && !locationStr) || isRemoteQuery ? '(remote)' : '');
 
       try {
         const response = await fetch(
@@ -75,9 +87,10 @@ export default async function handler(req, res) {
       } catch (e) {
         console.error('JSearch fetch error for', title, ':', e.message);
       }
+      }
     }
 
-    console.log(`Total unique jobs across ${titles.length} title(s): ${allJobs.length}`);
+    console.log(`Total unique jobs across ${titles.length} title(s) x ${locationQueries.length} location(s): ${allJobs.length}`);
     const jobs = allJobs.slice(0, 15);
 
     // Filter out staffing agencies and map to our format
