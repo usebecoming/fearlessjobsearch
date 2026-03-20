@@ -33,10 +33,22 @@ export default async function handler(req, res) {
     // If remote is selected and there are also physical locations, add a remote-only search too
     if (isRemote && physicalLocations.length > 0) locationQueries.push('__remote__');
 
+    // Expand title abbreviations so one input searches multiple variations
+    const expandedTitles = [];
+    const seen = new Set();
+    for (const title of titles) {
+      const variations = expandTitle(title);
+      for (const v of variations) {
+        const key = v.toLowerCase();
+        if (!seen.has(key)) { seen.add(key); expandedTitles.push(v); }
+      }
+    }
+    console.log('Expanded titles:', expandedTitles);
+
     const allJobs = [];
     const seenJobIds = new Set();
 
-    for (const title of titles) {
+    for (const title of expandedTitles) {
       for (const loc of locationQueries) {
         const isRemoteQuery = loc === '__remote__';
         const locationStr = isRemoteQuery ? '' : loc;
@@ -171,4 +183,64 @@ function extractHighlights(job) {
     if (years > 0) highlights.push(`${years}+ years`);
   }
   return highlights.slice(0, 3);
+}
+
+// Expand title abbreviations into search variations
+function expandTitle(title) {
+  const variations = [title];
+  const t = title.toLowerCase();
+
+  // VP <-> Vice President
+  if (t.startsWith('vp ') || t.startsWith('vp of ')) {
+    variations.push(title.replace(/^vp\b/i, 'Vice President'));
+  } else if (t.includes('vice president')) {
+    variations.push(title.replace(/vice president/i, 'VP'));
+  }
+
+  // SVP <-> Senior Vice President
+  if (t.startsWith('svp ') || t.startsWith('svp of ')) {
+    variations.push(title.replace(/^svp\b/i, 'Senior Vice President'));
+  } else if (t.includes('senior vice president')) {
+    variations.push(title.replace(/senior vice president/i, 'SVP'));
+  }
+
+  // EVP <-> Executive Vice President
+  if (t.startsWith('evp ') || t.startsWith('evp of ')) {
+    variations.push(title.replace(/^evp\b/i, 'Executive Vice President'));
+  } else if (t.includes('executive vice president')) {
+    variations.push(title.replace(/executive vice president/i, 'EVP'));
+  }
+
+  // Director <-> Dir
+  if (t.startsWith('dir ') || t.startsWith('dir of ')) {
+    variations.push(title.replace(/^dir\b/i, 'Director'));
+  }
+
+  // Head of <-> VP of (adjacent level, worth searching)
+  if (t.startsWith('head of ')) {
+    variations.push(title.replace(/^head of/i, 'VP of'));
+    variations.push(title.replace(/^head of/i, 'Director of'));
+  }
+
+  // Chief X Officer <-> CXO
+  const cxoMap = {
+    'cmo': 'Chief Marketing Officer',
+    'cto': 'Chief Technology Officer',
+    'cfo': 'Chief Financial Officer',
+    'coo': 'Chief Operating Officer',
+    'cpo': 'Chief Product Officer',
+    'cro': 'Chief Revenue Officer',
+    'chro': 'Chief Human Resources Officer',
+    'cio': 'Chief Information Officer',
+  };
+  if (cxoMap[t]) {
+    variations.push(cxoMap[t]);
+  }
+  for (const [abbr, full] of Object.entries(cxoMap)) {
+    if (t === full.toLowerCase()) {
+      variations.push(abbr.toUpperCase());
+    }
+  }
+
+  return variations;
 }
