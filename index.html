@@ -2814,38 +2814,16 @@ Return a JSON array of objects with these exact fields:
     }
 
     // ── Search Profiles ──
-    async function loadSearchProfiles() {
+    function loadSearchProfiles() {
       var select = document.getElementById('profileSelect');
       if (!select) return;
-      select.innerHTML = '<option value="">Load saved search...</option>';
+      select.innerHTML = '<option value="">Load a saved search...</option>';
 
-      // Load from localStorage first (instant)
-      var localProfiles = [];
-      try { localProfiles = JSON.parse(localStorage.getItem('fjs_search_profiles') || '[]'); } catch(e) {}
+      // Load from localStorage
+      var profiles = [];
+      try { profiles = JSON.parse(localStorage.getItem('fjs_search_profiles') || '[]'); } catch(e) {}
 
-      // Also try Supabase for cross-device profiles
-      var sbProfiles = [];
-      if (supabase) {
-        try {
-          var authResp = await supabase.auth.getUser();
-          if (authResp.data.user) {
-            var resp = await supabase.from('search_profiles').select('*').order('created_at', { ascending: false });
-            if (resp.data && resp.data.length > 0) sbProfiles = resp.data;
-          }
-        } catch(e) {}
-      }
-
-      // Merge: Supabase profiles first, then localStorage (deduped by name)
-      var seen = new Set();
-      var allProfiles = [];
-      sbProfiles.concat(localProfiles).forEach(function(p) {
-        if (!seen.has(p.name)) {
-          seen.add(p.name);
-          allProfiles.push(p);
-        }
-      });
-
-      allProfiles.forEach(function(p) {
+      profiles.forEach(function(p) {
         var opt = document.createElement('option');
         opt.value = p.id;
         opt.textContent = p.name;
