@@ -43,7 +43,9 @@ export default async function handler(req, res) {
         if (!seen.has(key)) { seen.add(key); expandedTitles.push(v); }
       }
     }
-    console.log('Expanded titles:', expandedTitles);
+    console.log(`📋 Original titles: ${titles.join(', ')}`);
+    console.log(`📋 Expanded to ${expandedTitles.length} search terms:`);
+    expandedTitles.forEach(t => console.log(`   • ${t}`));
 
     const allJobs = [];
     const seenJobIds = new Set();
@@ -97,9 +99,10 @@ export default async function handler(req, res) {
     }
 
     // Resume keyword search (additional query)
-    const { resumeKeywords } = req.body;
-    if (resumeKeywords && resumeKeywords.length > 10) {
-      console.log('Resume keyword search:', resumeKeywords.substring(0, 60));
+    const rawResumeText = req.body.resumeKeywords || '';
+    const resumeKeywords = extractResumeKeywords(rawResumeText);
+    if (resumeKeywords) {
+      console.log('Resume keyword search:', resumeKeywords);
       for (const loc of locationQueries) {
         const isRemoteQuery = loc === '__remote__';
         const locationStr = isRemoteQuery ? '' : loc;
@@ -205,56 +208,65 @@ function extractHighlights(job) {
   return highlights.slice(0, 3);
 }
 
-// ── 1. Keyword synonyms by function ──
-const FUNCTION_SYNONYMS = {
-  'talent development': ['Learning & Development', 'L&D', 'Training and Development', 'Organizational Development', 'OD', 'People Development', 'Talent Management'],
-  'hr': ['Human Resources', 'People Operations', 'People & Culture', 'Workforce'],
-  'human resources': ['HR', 'People Operations', 'People & Culture'],
-  'people operations': ['HR', 'Human Resources', 'People & Culture'],
-  'growth': ['Demand Generation', 'Demand Gen', 'Performance Marketing', 'Revenue Marketing', 'Growth Marketing'],
-  'demand gen': ['Growth', 'Demand Generation', 'Performance Marketing', 'Revenue Marketing'],
-  'demand generation': ['Growth', 'Demand Gen', 'Performance Marketing'],
-  'brand': ['Brand Marketing', 'Brand Strategy', 'Integrated Marketing', 'Creative'],
+// ── 1. Synonym map ──
+const SYNONYM_MAP = {
+  'learning and development': ['Learning and Development', 'L&D', 'Training and Development', 'Organizational Development', 'Talent Development', 'People Development', 'Leadership Development'],
+  'talent development': ['Talent Development', 'Learning and Development', 'L&D', 'Training and Development', 'Organizational Development', 'Leadership Development'],
+  'training': ['Training and Development', 'Learning and Development', 'L&D', 'Instructional Design', 'Talent Development'],
+  'l&d': ['Learning and Development', 'L&D', 'Training and Development', 'Talent Development'],
+  'hr': ['Human Resources', 'People Operations', 'People & Culture', 'HRBP', 'HR Business Partner'],
+  'human resources': ['HR', 'People Operations', 'People & Culture', 'Workforce'],
+  'talent acquisition': ['Recruiting', 'Talent Acquisition', 'HR Recruiting'],
+  'growth': ['Growth Marketing', 'Demand Generation', 'Demand Gen', 'Performance Marketing', 'Revenue Marketing'],
+  'brand': ['Brand Marketing', 'Brand Strategy', 'Integrated Marketing'],
   'content': ['Content Strategy', 'Content Marketing', 'Editorial', 'Communications'],
-  'product': ['Product Management', 'Product Strategy'],
-  'product management': ['Product', 'Product Strategy'],
-  'ux': ['User Experience', 'Product Design', 'UX Design'],
-  'user experience': ['UX', 'Product Design', 'UX Design'],
-  'engineering': ['Software Engineering', 'Software Development', 'Technology'],
-  'software engineering': ['Engineering', 'Software Development', 'Technology'],
-  'data': ['Data Science', 'Analytics', 'Business Intelligence', 'BI'],
-  'data science': ['Data', 'Analytics', 'Business Intelligence'],
-  'analytics': ['Data', 'Data Science', 'Business Intelligence'],
-  'sales': ['Business Development', 'BD', 'Revenue', 'Account Management', 'Enterprise Sales'],
-  'business development': ['Sales', 'BD', 'Partnerships', 'Strategic Alliances'],
-  'partnerships': ['Business Development', 'Strategic Alliances', 'Channel'],
-  'finance': ['FP&A', 'Financial Planning', 'Corporate Finance', 'Treasury'],
-  'fp&a': ['Finance', 'Financial Planning', 'Corporate Finance'],
-  'operations': ['Business Operations', 'BizOps', 'Strategy & Operations', 'Strategy and Operations'],
+  'marketing': ['Marketing', 'Growth Marketing', 'Demand Generation'],
+  'product': ['Product Management', 'Product Strategy', 'Product Lead'],
+  'ux': ['User Experience', 'UX Design', 'Product Design'],
+  'engineering': ['Software Engineering', 'Software Development'],
+  'data': ['Data Science', 'Analytics', 'Business Intelligence', 'Data Analytics'],
+  'sales': ['Sales', 'Business Development', 'Account Management', 'Enterprise Sales'],
+  'partnerships': ['Business Development', 'Strategic Partnerships', 'Channel Partnerships'],
+  'operations': ['Operations', 'Business Operations', 'Strategy and Operations'],
+  'finance': ['Finance', 'FP&A', 'Financial Planning and Analysis', 'Corporate Finance'],
 };
 
-// ── 2. Strip connectors ──
-function stripConnectors(title) {
-  return [
-    title,
-    title.replace(/\bof the\b/gi, '').replace(/\bof\b/gi, '').replace(/,\s*/g, ' ').replace(/\s+/g, ' ').trim(),
+// ── 2. Seniority prefix extraction ──
+function extractSeniorityPrefix(title) {
+  const prefixes = [
+    'Senior Vice President of', 'Senior Vice President',
+    'Executive Vice President of', 'Executive Vice President',
+    'Vice President of', 'Vice President',
+    'Senior Director of', 'Senior Director',
+    'Director of', 'Director',
+    'Head of',
+    'Senior Manager of', 'Senior Manager',
+    'Manager of', 'Manager',
+    'SVP of', 'SVP', 'EVP of', 'EVP', 'VP of', 'VP',
+    'Lead', 'Senior', 'Sr.',
+    'CMO', 'CTO', 'CPO', 'CHRO', 'CFO', 'COO', 'CEO'
   ];
+  for (const prefix of prefixes) {
+    if (title.toLowerCase().startsWith(prefix.toLowerCase())) {
+      return title.substring(0, prefix.length);
+    }
+  }
+  return '';
 }
 
-// Expand title with abbreviations + synonyms + connector stripping
+// ── 3. Clean title expansion ──
 function expandTitle(title) {
   const variations = new Set();
   variations.add(title);
   const t = title.toLowerCase();
 
-  // Title abbreviation expansion (VP, SVP, EVP, CXO, etc.)
+  // Abbreviation expansion
   if (/^vp\b/i.test(title)) variations.add(title.replace(/^vp\b/i, 'Vice President'));
   if (/vice president/i.test(title)) variations.add(title.replace(/vice president/i, 'VP'));
   if (/^svp\b/i.test(title)) variations.add(title.replace(/^svp\b/i, 'Senior Vice President'));
   if (/senior vice president/i.test(title)) variations.add(title.replace(/senior vice president/i, 'SVP'));
   if (/^evp\b/i.test(title)) variations.add(title.replace(/^evp\b/i, 'Executive Vice President'));
   if (/executive vice president/i.test(title)) variations.add(title.replace(/executive vice president/i, 'EVP'));
-  if (/^dir\b/i.test(title)) variations.add(title.replace(/^dir\b/i, 'Director'));
   if (/^head of/i.test(title)) {
     variations.add(title.replace(/^head of/i, 'VP of'));
     variations.add(title.replace(/^head of/i, 'Director of'));
@@ -266,32 +278,34 @@ function expandTitle(title) {
     if (t === full.toLowerCase()) variations.add(abbr.toUpperCase());
   }
 
-  // Function synonym expansion
-  for (const [keyword, synonyms] of Object.entries(FUNCTION_SYNONYMS)) {
+  // Synonym expansion with seniority prefix
+  const prefix = extractSeniorityPrefix(title);
+  for (const [keyword, synonyms] of Object.entries(SYNONYM_MAP)) {
     if (t.includes(keyword)) {
-      // Extract the level prefix (e.g. "VP of", "Director of", "Head of")
-      const match = title.match(/^(.*?)\b(of\s+|,\s*|\s+)(.*)/i);
-      if (match) {
-        const prefix = match[1].trim();
-        for (const syn of synonyms.slice(0, 3)) { // Limit to top 3 synonyms
-          variations.add(`${prefix} of ${syn}`);
+      for (const syn of synonyms) {
+        if (prefix) {
+          // Check if prefix already ends with "of"
+          const needsOf = !prefix.toLowerCase().endsWith(' of') && !prefix.toLowerCase().endsWith(',');
+          variations.add(needsOf ? `${prefix} of ${syn}` : `${prefix} ${syn}`);
+        } else {
+          variations.add(syn);
         }
       }
     }
   }
 
   // Strip connectors for all variations
-  const withStripped = new Set();
+  const final = new Set();
   for (const v of variations) {
-    for (const s of stripConnectors(v)) {
-      withStripped.add(s);
-    }
+    final.add(v);
+    const stripped = v.replace(/\bof the\b/gi, '').replace(/\bof\b/gi, '').replace(/,\s*/g, ' ').replace(/\s+/g, ' ').trim();
+    if (stripped !== v) final.add(stripped);
   }
 
-  return [...withStripped];
+  return [...final];
 }
 
-// ── 5. Seniority filter ──
+// ── 4. Seniority filter ──
 function getSeniority(title) {
   const t = title.toLowerCase();
   if (/\b(coordinator|specialist|associate|assistant)\b/.test(t)) return 'entry_level,mid_level';
@@ -302,23 +316,46 @@ function getSeniority(title) {
   return '';
 }
 
-// ── 4. Extract resume keywords ──
+// ── 5. Resume keyword extraction ──
 function extractResumeKeywords(resumeText) {
-  if (!resumeText || resumeText.length < 50) return '';
-  const t = resumeText.toLowerCase();
-  const keywords = [];
-
-  // Industry keywords
-  const industries = ['saas', 'b2b', 'b2c', 'fintech', 'healthtech', 'edtech', 'e-commerce', 'ecommerce', 'biotech', 'pharma', 'healthcare', 'financial services', 'consulting', 'media', 'retail', 'manufacturing', 'logistics', 'real estate', 'insurance', 'telecom'];
-  for (const ind of industries) {
-    if (t.includes(ind)) keywords.push(ind);
+  if (!resumeText || resumeText.length < 100) {
+    console.log('⚠️ Resume too short for keyword extraction');
+    return null;
   }
 
-  // Skill keywords
-  const skills = ['demand generation', 'pipeline', 'revenue growth', 'digital transformation', 'talent acquisition', 'organizational development', 'leadership development', 'change management', 'product strategy', 'go-to-market', 'GTM', 'enterprise sales', 'brand strategy', 'data analytics', 'machine learning', 'cloud', 'agile', 'devops', 'supply chain', 'M&A', 'fundraising', 'investor relations'];
-  for (const skill of skills) {
-    if (t.includes(skill.toLowerCase())) keywords.push(skill);
+  // Skip header (name, email, phone, address)
+  const bodyText = resumeText.slice(300);
+  const cleaned = bodyText
+    .replace(/\b[\w.+-]+@[\w-]+\.[\w.]+\b/g, '')
+    .replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '')
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/gi, '')
+    .replace(/\b(present|current|today)\b/gi, '');
+
+  const skillPatterns = [
+    /\b(leadership|coaching|facilitation|organizational development|talent management|learning|training|curriculum|instructional design)\b/gi,
+    /\b(marketing|demand generation|brand|content|SEO|paid media|analytics)\b/gi,
+    /\b(product management|roadmap|agile|scrum|user research)\b/gi,
+    /\b(engineering|software development|architecture|DevOps|cloud)\b/gi,
+    /\b(sales|business development|revenue|account management)\b/gi,
+    /\b(finance|FP&A|forecasting|budgeting|financial modeling)\b/gi,
+    /\b(operations|process improvement|project management|PMO)\b/gi,
+    /\b(SaaS|B2B|B2C|fintech|healthtech|edtech|ecommerce|enterprise)\b/gi,
+    /\b(executive|director|VP|vice president|C-suite|leadership team)\b/gi
+  ];
+
+  const keywords = new Set();
+  skillPatterns.forEach(pattern => {
+    const matches = cleaned.match(pattern) || [];
+    matches.forEach(m => keywords.add(m.trim()));
+  });
+
+  const keywordArray = Array.from(keywords).slice(0, 5);
+  if (keywordArray.length < 2) {
+    console.log('⚠️ Resume keyword extraction returned too few keywords — skipping resume search');
+    return null;
   }
 
-  return keywords.slice(0, 5).join(' ');
+  console.log(`📄 Resume keywords extracted: ${keywordArray.join(', ')}`);
+  return keywordArray.join(' ');
 }
