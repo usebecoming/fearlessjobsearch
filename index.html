@@ -1329,15 +1329,31 @@
       <!-- Resume -->
       <div class="form-group">
         <label class="form-label">Resume</label>
-        <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('resumeFile').click()">
-          <p>Drop a file here or click to upload</p>
-          <p style="font-size:0.72rem;color:#858585;margin-top:4px">TXT, PDF, or DOCX</p>
-          <input type="file" id="resumeFile" accept=".txt,.pdf,.docx">
+        <!-- Upload state -->
+        <div id="resumeUploadState">
+          <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('resumeFile').click()">
+            <p>Drop a file here or click to upload</p>
+            <p style="font-size:0.72rem;color:#858585;margin-top:4px">TXT, PDF, or DOCX</p>
+            <input type="file" id="resumeFile" accept=".txt,.pdf,.docx">
+          </div>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#858585;text-align:center;margin-bottom:8px">or paste your resume below</p>
+          <textarea class="form-input" id="resumeText" placeholder="Paste your resume text here..."></textarea>
         </div>
-        <p style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#858585;text-align:center;margin-bottom:8px">or paste your resume below</p>
-        <textarea class="form-input" id="resumeText" placeholder="Paste your resume text here..."></textarea>
-        <div class="resume-hint" id="resumeHint" style="display:none">
-          Adding your resume significantly improves fit scoring and outreach personalization.
+        <!-- Loaded state -->
+        <div id="resumeLoadedState" style="display:none">
+          <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#3A8A5C" id="resumeFileName">Resume loaded</span>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn-secondary btn-small" onclick="document.getElementById('resumeFile2').click()">Replace</button>
+                <button class="btn-secondary btn-small" style="color:#C94444;border-color:rgba(201,68,68,0.3)" onclick="clearResume()">Remove</button>
+                <input type="file" id="resumeFile2" accept=".txt,.pdf,.docx" style="display:none" onchange="handleResumeFile(this.files[0])">
+              </div>
+            </div>
+            <div id="resumePreview" style="font-size:0.82rem;color:#555;line-height:1.6;max-height:150px;overflow-y:auto;font-weight:500;white-space:pre-wrap;background:#F9F6F1;border-radius:8px;padding:14px;border:1px solid #EEEEED"></div>
+          </div>
         </div>
       </div>
 
@@ -1354,6 +1370,16 @@
       <h2 class="section-title">Job Listings</h2>
       <p class="section-sub">Select the roles that interest you to surface decision-makers.</p>
       <div id="jobsContainer"></div>
+      <!-- Free mode paywall -->
+      <div id="jobsPaywall" style="display:none">
+        <div style="position:relative;margin-top:-60px;padding-top:60px;background:linear-gradient(to bottom,rgba(255,248,242,0),#FFF8F2 40px)">
+          <div style="background:#FFFFFF;border:2px solid #B8A88A;border-radius:14px;padding:32px;text-align:center;box-shadow:0 8px 32px rgba(184,168,138,0.12)">
+            <h3 style="font-size:1.3rem;margin-bottom:8px">10 more matched roles available</h3>
+            <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto">Plus decision-maker contacts, personalized outreach sequences, and pipeline tracking.</p>
+            <button class="btn-primary" style="padding:14px 32px" onclick="openUpgradeModal()">Unlock Full Access</button>
+          </div>
+        </div>
+      </div>
       <div class="selection-bar" id="selectionBar" style="display:none">
         <span class="selection-count" id="selectionCount">0 selected</span>
         <button class="btn-primary" id="contactsBtn" disabled onclick="runContacts()">
@@ -1450,6 +1476,12 @@
   </div>
 
   <script>
+    // ── Check checkout success ──
+    if (window.location.search.includes('checkout=success')) {
+      // Remove query param
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
     // ── Sign Out (defined early so it always works) ──
     function doSignOut() {
       // Hide app
@@ -1664,7 +1696,8 @@
       contacts: {},
       sequences: [],
       pipeline: [],
-      currentStep: 1
+      currentStep: 1,
+      hasPaid: false
     };
 
     // ── Tag input ──
@@ -1798,8 +1831,9 @@
     const resumeFile = document.getElementById('resumeFile');
     const fileUploadArea = document.getElementById('fileUploadArea');
 
-    resumeFile.addEventListener('change', async e => {
-      const file = e.target.files[0];
+    resumeFile.addEventListener('change', e => handleResumeFile(e.target.files[0]));
+
+    async function handleResumeFile(file) {
       if (!file) return;
       const ext = file.name.split('.').pop().toLowerCase();
 
@@ -1810,7 +1844,6 @@
         let text = '';
 
         if (ext === 'pdf') {
-          // Parse PDF with pdf.js
           const arrayBuffer = await file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
           const pages = [];
@@ -1821,27 +1854,41 @@
           }
           text = pages.join('\n\n');
         } else if (ext === 'docx') {
-          // Parse DOCX with mammoth
           const arrayBuffer = await file.arrayBuffer();
           const result = await mammoth.extractRawText({ arrayBuffer });
           text = result.value;
         } else {
-          // Plain text
           text = await file.text();
         }
 
         text = text.replace(/\s+/g, ' ').trim();
         state.resumeText = text;
-        document.getElementById('resumeText').value = text;
-        fileUploadArea.classList.add('has-file');
-        fileUploadArea.innerHTML = `<p><span class="file-name">${esc(file.name)}</span></p><p style="font-size:0.72rem;color:#3A8A5C;margin-top:4px">File loaded successfully</p>`;
+        showResumeLoaded(file.name, text);
         saveResume();
       } catch (err) {
         console.error('Resume parse error:', err);
         fileUploadArea.innerHTML = `<p style="color:#C94444">Could not read file. Try pasting your resume text below instead.</p>`;
         state.resumeText = '';
       }
-    });
+    }
+
+    function showResumeLoaded(fileName, text) {
+      document.getElementById('resumeUploadState').style.display = 'none';
+      document.getElementById('resumeLoadedState').style.display = 'block';
+      document.getElementById('resumeFileName').textContent = fileName || 'Resume loaded';
+      document.getElementById('resumePreview').textContent = text;
+    }
+
+    function clearResume() {
+      state.resumeText = '';
+      document.getElementById('resumeUploadState').style.display = 'block';
+      document.getElementById('resumeLoadedState').style.display = 'none';
+      document.getElementById('resumeText').value = '';
+      fileUploadArea.classList.remove('has-file');
+      fileUploadArea.innerHTML = '<p>Drop a file here or click to upload</p><p style="font-size:0.72rem;color:#858585;margin-top:4px">TXT, PDF, or DOCX</p><input type="file" id="resumeFile" accept=".txt,.pdf,.docx">';
+      document.getElementById('resumeFile').addEventListener('change', e => handleResumeFile(e.target.files[0]));
+      saveResume();
+    }
 
     // ── Validation ──
     function validateSearch() {
@@ -1958,13 +2005,22 @@ Return a JSON array of objects with these exact fields:
       }
     }
 
+    // Free preview: show 5 jobs, lock the rest
+    const FREE_JOB_LIMIT = 5;
+    function isFreeTier() { return !state.hasPaid; }
+
     function renderJobs() {
       const container = document.getElementById('jobsContainer');
       container.innerHTML = '';
       const grid = document.createElement('div');
       grid.className = 'job-grid';
+      const isFree = isFreeTier();
+      const visibleJobs = isFree ? state.jobs.slice(0, FREE_JOB_LIMIT) : state.jobs;
 
-      state.jobs.forEach((job, i) => {
+      // Show/hide paywall
+      document.getElementById('jobsPaywall').style.display = (isFree && state.jobs.length > FREE_JOB_LIMIT) ? 'block' : 'none';
+
+      visibleJobs.forEach((job, i) => {
         const card = document.createElement('div');
         card.className = 'job-card fade-up' + (state.selectedJobs.includes(job.id) ? ' selected' : '');
         card.style.animationDelay = `${i * 0.06}s`;
@@ -2319,6 +2375,10 @@ Return a JSON array of objects with these exact fields:
 
     // ── Step 3: Contacts ──
     async function runContacts() {
+      if (isFreeTier()) {
+        openUpgradeModal();
+        return;
+      }
       goToStep(3);
       const container = document.getElementById('contactsContainer');
 
@@ -2326,7 +2386,7 @@ Return a JSON array of objects with these exact fields:
         .filter(j => state.selectedJobs.includes(j.id))
         .map(j => ({ job_id: j.id, title: j.title, company: j.company, industry: j.industry, location: j.location }));
 
-      const contactEstimate = Math.max(10, selectedJobData.length * 4);
+      const contactEstimate = Math.max(20, selectedJobData.length * 8);
       showProgress(container, 'Surfacing decision-makers...', contactEstimate);
 
       const systemPrompt = 'You are a networking assistant for senior leaders. Respond ONLY with a JSON object. No markdown, no explanation.';
@@ -2565,7 +2625,7 @@ Return a JSON object with a "sequences" array. Each sequence:
         .single();
       if (profile?.resume_text) {
         state.resumeText = profile.resume_text;
-        document.getElementById('resumeText').value = profile.resume_text;
+        showResumeLoaded('Saved resume', profile.resume_text);
       }
 
       // Load search profiles
@@ -2708,15 +2768,36 @@ Return a JSON object with a "sequences" array. Each sequence:
           <span id="progressTime" style="font-size:0.75rem;color:#858585">Estimated ${estimatedSec}s remaining</span>
         </div>`;
 
+      const workingMessages = [
+        'AI is analyzing your criteria...',
+        'Scanning thousands of roles...',
+        'Cross-referencing your resume...',
+        'Building personalized results...',
+        'Matching against your preferences...',
+        'Finalizing your results...',
+        'Still working, hang tight...',
+        'Processing, this takes a moment...',
+        'Almost there, wrapping up...'
+      ];
       clearInterval(progressInterval);
       progressInterval = setInterval(() => {
         elapsed++;
-        const pct = Math.min((elapsed / estimatedSec) * 100, 95);
+        const pct = Math.min((elapsed / estimatedSec) * 100, 92);
         const remaining = Math.max(estimatedSec - elapsed, 1);
         const bar = document.getElementById('progressBar');
         const time = document.getElementById('progressTime');
+        const msg = document.getElementById('progressMsg');
         if (bar) bar.style.width = pct + '%';
-        if (time) time.textContent = remaining <= 1 ? 'Almost done...' : `Estimated ${remaining}s remaining`;
+        if (elapsed > estimatedSec) {
+          if (time) time.textContent = 'Still working, this can take up to a minute...';
+        } else {
+          if (time) time.textContent = `Estimated ${remaining}s remaining`;
+        }
+        // Rotate messages every 5 seconds
+        if (msg && elapsed % 5 === 0) {
+          const msgIdx = Math.min(Math.floor(elapsed / 5), workingMessages.length - 1);
+          msg.textContent = workingMessages[msgIdx];
+        }
       }, 1000);
     }
 
