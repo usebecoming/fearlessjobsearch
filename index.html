@@ -2243,12 +2243,13 @@ Return a JSON array of objects with these exact fields:
     async function runContacts() {
       goToStep(3);
       const container = document.getElementById('contactsContainer');
-      const contactEstimate = Math.max(10, selectedJobData.length * 4);
-      showProgress(container, 'Surfacing decision-makers...', contactEstimate);
 
       const selectedJobData = state.jobs
         .filter(j => state.selectedJobs.includes(j.id))
         .map(j => ({ job_id: j.id, title: j.title, company: j.company, industry: j.industry, location: j.location }));
+
+      const contactEstimate = Math.max(10, selectedJobData.length * 4);
+      showProgress(container, 'Surfacing decision-makers...', contactEstimate);
 
       const systemPrompt = 'You are a networking assistant for senior leaders. Respond ONLY with a JSON object. No markdown, no explanation.';
       const userPrompt = `Surface 3-6 direct company contacts for each of the following roles. Include: internal recruiter/TA, most likely hiring manager, and a skip-level leader (their manager or C-suite peer). NO recruiting agencies. Provide realistic names, work email, LinkedIn URL, and one-line rationale.
