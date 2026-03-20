@@ -1612,16 +1612,7 @@
       </div>
 
       <!-- Mode Instructions -->
-      <div id="jobModeInstructions" style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:10px;padding:16px 20px;margin-bottom:20px">
-        <p style="font-size:0.88rem;color:#555;font-weight:500;line-height:1.6;margin:0">Enter exact job titles as they appear on job boards. Each title runs its own search. Results from the last 7 days.
-          <a href="#" onclick="event.preventDefault();var el=document.getElementById('searchTipsDetail');el.style.display=el.style.display==='none'?'block':'none';this.textContent=el.style.display==='none'?'Tips ▾':'Tips ▴'" style="color:#B8A88A;font-weight:600;margin-left:6px">Tips &#9662;</a>
-        </p>
-        <div id="searchTipsDetail" style="display:none;margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777;line-height:1.7">
-          <div style="margin-bottom:4px">Try variations: "VP Marketing" vs "Vice President, Marketing" vs "Head of Marketing"</div>
-          <div style="margin-bottom:4px">Broader titles = more results. Specific titles = more relevant.</div>
-          <div>Include the function: "Marketing Manager" not just "Manager".</div>
-        </div>
-      </div>
+      <div id="jobModeInstructions"></div>
       <div id="companyModeInstructions" style="display:none;background:#FFFFFF;border:1px solid #E5E4E2;border-radius:10px;padding:16px 20px;margin-bottom:20px">
         <p style="font-size:0.88rem;color:#555;font-weight:500;line-height:1.6;margin-bottom:12px">Enter the companies you want to work at. We'll look for relevant leadership openings at each one. If no roles are currently posted, we'll still surface the right people to start building a relationship with.</p>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777;line-height:1.7">
@@ -1649,6 +1640,7 @@
       <!-- Target Titles (Job Mode) -->
       <div class="form-group" id="titlesGroup">
         <label class="form-label" id="titlesLabel">Target Job Titles</label>
+        <p style="font-size:0.82rem;color:#777;margin-bottom:8px;line-height:1.5">We search active jobs posted in the last 7 days. Use exact titles like "VP of Marketing" or "Director of Product". Try different variations to see more results.</p>
         <div class="tag-input-wrap" id="titlesWrap">
           <input type="text" class="tag-field" id="titlesField" placeholder="e.g. VP of Marketing, press Enter to add">
         </div>
