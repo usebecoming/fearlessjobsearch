@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -768,10 +768,10 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnaWNvbXJ5Y2Jocmlub2J2bmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NzcwOTMsImV4cCI6MjA4OTU1MzA5M30.nmC38E3meTH6mS0yjhyXaSYlwLc28mxqxLNf5e1KSdg';
 
     let sb = null;
-    try {
+    if (window.supabase && window.supabase.createClient) {
       sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    } catch (e) {
-      console.error('Supabase init failed:', e);
+    } else {
+      console.error('Supabase library not loaded. window.supabase =', window.supabase);
     }
     const supabase = sb;
 
