@@ -33,59 +33,61 @@ export default async function handler(req, res) {
     // If remote is selected and there are also physical locations, add a remote-only search too
     if (isRemote && physicalLocations.length > 0) locationQueries.push('__remote__');
 
-    // Expand title abbreviations so one input searches multiple variations
-    const expandedTitles = [];
+    // Expand titles, cap at 5 (originals first, then synonyms)
+    const allExpanded = [];
     const seen = new Set();
+    // Add user's original titles first
+    for (const title of titles) {
+      const key = title.toLowerCase();
+      if (!seen.has(key)) { seen.add(key); allExpanded.push(title); }
+    }
+    // Then add expansions
     for (const title of titles) {
       const variations = expandTitle(title);
       for (const v of variations) {
         const key = v.toLowerCase();
-        if (!seen.has(key)) { seen.add(key); expandedTitles.push(v); }
+        if (!seen.has(key)) { seen.add(key); allExpanded.push(v); }
       }
     }
+    const expandedTitles = allExpanded.slice(0, 5);
     console.log(`📋 Original titles: ${titles.join(', ')}`);
-    console.log(`📋 Expanded to ${expandedTitles.length} search terms:`);
+    console.log(`📋 Expanded to ${expandedTitles.length} search terms (capped at 5):`);
     expandedTitles.forEach(t => console.log(`   • ${t}`));
 
-    const allJobs = [];
-    const seenJobIds = new Set();
-
-    // Helper: run JSearch and collect results
-    async function jsearchQuery(query, extraParams) {
-      for (const page of [1, 2]) { // Pull page 1 and page 2
-        const params = new URLSearchParams({
-          query,
-          page: String(page),
-          num_pages: '1',
-          date_posted: 'week',
-          employment_types: 'FULLTIME',
-          ...extraParams
-        });
-        try {
-          const response = await fetch(
-            `https://jsearch.p.rapidapi.com/search?${params.toString()}`,
-            { headers: { 'X-RapidAPI-Key': rapidApiKey, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' } }
-          );
-          if (response.ok) {
-            const data = await response.json();
-            const results = data.data || [];
-            if (page === 1) console.log(`  JSearch "${query.substring(0,50)}": ${results.length} results`);
-            for (const job of results) {
-              const jid = job.job_id || '';
-              if (jid && !seenJobIds.has(jid)) { seenJobIds.add(jid); allJobs.push(job); }
-            }
-            if (results.length < 5) break; // No point fetching page 2
-          }
-        } catch (e) {
-          console.error('JSearch error:', e.message);
+    // Single JSearch call with timeout protection
+    async function jsearchOne(query, extraParams) {
+      const params = new URLSearchParams({
+        query,
+        page: '1',
+        num_pages: '1',
+        date_posted: 'week',
+        employment_types: 'FULLTIME',
+        ...extraParams
+      });
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const response = await fetch(
+          `https://jsearch.p.rapidapi.com/search?${params.toString()}`,
+          { headers: { 'X-RapidAPI-Key': rapidApiKey, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' }, signal: controller.signal }
+        );
+        clearTimeout(timeout);
+        if (response.ok) {
+          const data = await response.json();
+          const results = data.data || [];
+          console.log(`  JSearch "${query.substring(0,50)}": ${results.length}`);
+          return results;
         }
+        return [];
+      } catch (e) {
+        console.log(`  ⚠️ JSearch timeout/error for "${query.substring(0,40)}": ${e.message}`);
+        return [];
       }
     }
 
-    // Run title-based searches
+    // Build all search queries
     const seniority = getSeniority(titles[0] || '');
-    console.log('Seniority filter:', seniority || 'none');
-
+    const searchQueries = [];
     for (const title of expandedTitles) {
       for (const loc of locationQueries) {
         const isRemoteQuery = loc === '__remote__';
@@ -94,11 +96,11 @@ export default async function handler(req, res) {
         const extra = {};
         if ((isRemote && !locationStr) || isRemoteQuery) extra.remote_jobs_only = 'true';
         if (seniority) extra.job_requirements = seniority;
-        await jsearchQuery(query, extra);
+        searchQueries.push({ query, extra });
       }
     }
 
-    // Resume keyword search (additional query)
+    // Add resume keyword search
     const rawResumeText = req.body.resumeKeywords || '';
     const resumeKeywords = extractResumeKeywords(rawResumeText);
     if (resumeKeywords) {
@@ -109,7 +111,24 @@ export default async function handler(req, res) {
         const query = resumeKeywords + (locationStr ? ` in ${locationStr}` : '');
         const extra = {};
         if ((isRemote && !locationStr) || isRemoteQuery) extra.remote_jobs_only = 'true';
-        await jsearchQuery(query, extra);
+        searchQueries.push({ query, extra });
+      }
+    }
+
+    console.log(`🔍 Running ${searchQueries.length} JSearch queries in parallel...`);
+
+    // Run ALL queries in parallel
+    const allResults = await Promise.all(
+      searchQueries.map(sq => jsearchOne(sq.query, sq.extra))
+    );
+
+    // Dedupe by job ID
+    const seenJobIds = new Set();
+    const allJobs = [];
+    for (const results of allResults) {
+      for (const job of results) {
+        const jid = job.job_id || '';
+        if (jid && !seenJobIds.has(jid)) { seenJobIds.add(jid); allJobs.push(job); }
       }
     }
 

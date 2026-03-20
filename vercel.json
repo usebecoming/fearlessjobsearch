@@ -4,10 +4,10 @@
       "maxDuration": 60
     },
     "api/search-jobs.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "api/chat.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
   },
   "rewrites": [
