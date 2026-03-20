@@ -3137,15 +3137,16 @@ Return a JSON array of objects with these exact fields:
           userPrompt = `I searched LinkedIn and found potential contacts for each company below. Each contact has a name, LinkedIn URL, and a snippet from their LinkedIn page.
 
 CRITICAL RULES:
-1. ONLY include people who CURRENTLY work at the company. Look at the snippet for clues. If someone's snippet mentions a different company as their current role, EXCLUDE them.
-2. For each contact you keep, determine their actual title from the snippet and assign a role type:
-   - "Hiring Manager" = the person who would directly manage whoever fills the open role (one level above the role)
-   - "Skip-Level" = the hiring manager's boss or a relevant C-suite leader
-   - "Recruiter / TA" = internal recruiter, talent acquisition, talent partner, or HR at the company
-3. Write a one-line note explaining why this person is the right one to reach out to for this specific role.
-4. Keep the original LinkedIn URL exactly as provided.
-5. If the search didn't find a good hiring manager or recruiter, that's OK. Only include real people you're confident work there. Do NOT make up contacts.
-6. Return 3-6 contacts per job maximum.
+1. ONLY include people who CURRENTLY work at "${selectedJobData.map(j=>j.company).join('" or "')}" right now. Read the snippet carefully. If the snippet says they work at a DIFFERENT company, or says "former" or "ex-", EXCLUDE them immediately. When in doubt, exclude.
+2. Their role in the snippet must match what we searched for. A marketing person should not show up as a recruiter. A person at a completely different company should never appear.
+3. For each verified contact, determine their actual current title and assign a role type:
+   - "Hiring Manager" = the person who would directly manage whoever fills the open role (one level above the posted role)
+   - "Skip-Level" = the hiring manager's boss, or a relevant C-suite/SVP leader
+   - "Recruiter / TA" = internal recruiter, talent acquisition, talent partner, or HR business partner at the company
+4. Write a one-line note explaining why this specific person is relevant for this specific role.
+5. Keep the original LinkedIn URL exactly as provided. Do NOT modify or generate URLs.
+6. Do NOT make up or fabricate any contacts. If the search found no one verified at the company, return an empty contacts array for that job. It is better to return 0 contacts than wrong ones.
+7. Return 3-6 contacts per job maximum.
 
 Jobs and search results:
 ${JSON.stringify(braveResults.results, null, 2)}
