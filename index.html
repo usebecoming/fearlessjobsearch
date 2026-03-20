@@ -3531,7 +3531,9 @@ Skip-Level titles: ${(dt.slTitles || dt.skipLevel || []).join(', ')}
 Raw contacts found: ${r.raw_contacts.length}`;
           }).join('\n\n');
 
-          userPrompt = `You are a strict contact verification system filtering LinkedIn search results to find ONLY genuinely relevant decision-makers.
+          userPrompt = `You are a contact role assigner and title extractor. Some contacts are already pre-qualified (marked preQualified: true). Do NOT reject pre-qualified contacts. Only assign their role type, extract their title, and write a reason.
+
+For contacts marked claudeDecide: true, apply verification rules to decide whether to include them. Be generous with medium confidence when the company name appears in the snippet.
 
 HIERARCHY: Coordinator < Manager < Senior Manager < Director < Senior Director < VP < SVP/EVP < C-Suite < CEO
 
@@ -3539,6 +3541,12 @@ ROLE DEFINITIONS:
 - Hiring Manager = ONE level above the open role in the SAME function/department
 - Skip-Level = TWO levels above in the same function, following the function-to-skip-level mapping below
 - Recruiter/TA = internal recruiter at this company handling this level of hire
+
+TITLE EXTRACTION RULES:
+1. Extract current title from snippet if available
+2. If no title in snippet, use the inferredTitle field if provided
+3. If inferredTitle is empty, infer from URL slug: "-hr" = HR Professional, "-cpo" = Chief People Officer, "-cto" = CTO, "-talent" = Talent Professional, "-recruiting" = Recruiter, "human-resource" = HR Professional
+4. NEVER return a contact with an empty or null title. Use function-appropriate defaults: "HR Professional" for People, "Technology Leader" for Engineering, "Marketing Professional" for Marketing, etc.
 
 FUNCTION-TO-SKIP-LEVEL MAPPING (skip-level must follow the job's function):
 - HR/People/Learning/Talent/OD: CHRO, CPO, Chief People Officer, COO, CEO. NEVER CFO, CTO, CMO, CRO.
@@ -3593,20 +3601,21 @@ For contacts accepted under relaxed rules, set confidence to "medium" and note t
 PROFESSIONAL SERVICES / LAW FIRM RULE:
 If the data includes "is_professional_services: true", accept these additional skip-level titles: Chief Administrative Officer, Chief Talent Officer, Managing Partner, Administrative Partner, Director of Administration.
 
-REJECTION RATE TARGET:
-Aim to verify and return at least 30% of contacts passed to you (roughly 1 in 3). If you are rejecting more than 70% for a single job, revisit your rejections.
-Prefer medium confidence over rejection when:
-- The company name appears in the snippet but employment tense is unclear
-- The title is adjacent to the expected function (e.g. "HR Operations" for a People role)
-- The URL slug contains function keywords
-Only reject when:
-- The function is clearly wrong (e.g. sales director for HR role)
-- The company name does not appear anywhere in the snippet
-- The title is completely vague with no function signal
+PRE-QUALIFIED CONTACT RULES:
+- Contacts with preQualified: true have ALREADY been accepted. Do NOT reject them.
+- For pre-qualified contacts, ONLY assign role type, extract title, write reason.
+- Use the preQualReason and confidence fields already provided.
+- Use inferredTitle if no title can be extracted from snippet.
+
+CLAUDE-DECIDE CONTACT RULES:
+- Contacts with claudeDecide: true need your verification.
+- Be generous. Accept at medium confidence when company name appears in snippet.
+- Only reject when function is clearly wrong OR company name is absent.
 
 FINAL OUTPUT RULES:
 - Maximum 3 contacts per job (one per role type)
-- If a role type cannot be filled with high/medium confidence, leave it empty
+- All pre-qualified contacts MUST appear in output (do not drop them)
+- If more than 3 are pre-qualified, pick the best one per role type
 - Never fabricate, modify, or construct LinkedIn URLs
 - Return valid JSON even if empty
 

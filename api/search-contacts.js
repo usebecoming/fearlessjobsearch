@@ -118,15 +118,38 @@ export default async function handler(req, res) {
 
       const finalContacts = dedupeContacts(allContacts);
 
-      // Enrich contacts: flag URL slugs that contain function keywords
-      finalContacts.forEach(c => {
-        const slug = (c.linkedin_url || '').toLowerCase();
-        if (/-hr|-people|-talent|-recruiting|-culture|-learning/.test(slug)) {
-          c.slugHasFunction = true;
-        }
-      });
+      // Pre-qualify contacts BEFORE Claude
+      const preQualified = [];
+      const claudeDecide = [];
+      let autoRejected = 0;
 
-      console.log(`Final contacts for ${company}: ${finalContacts.length}`);
+      for (const contact of finalContacts) {
+        const result = preQualifyContact(contact.linkedin_url, contact.snippet, company);
+        if (result.accepted === true) {
+          contact.preQualified = true;
+          contact.confidence = result.confidence;
+          contact.preQualReason = result.reason;
+          contact.inferredTitle = inferTitleFromSlug(contact.linkedin_url);
+          preQualified.push(contact);
+          console.log(`  ✅ Pre-qualified: ${contact.name} — ${result.reason}`);
+        } else if (result.accepted === false) {
+          autoRejected++;
+          console.log(`  ❌ Pre-rejected: ${contact.name} — ${result.reason}`);
+        } else {
+          contact.claudeDecide = true;
+          claudeDecide.push(contact);
+          console.log(`  🤔 Claude decides: ${contact.name}`);
+        }
+      }
+
+      console.log(`Pre-qualification for ${company}:`);
+      console.log(`  ✅ Auto-accepted: ${preQualified.length}`);
+      console.log(`  🤔 Claude decides: ${claudeDecide.length}`);
+      console.log(`  ❌ Auto-rejected: ${autoRejected}`);
+
+      // Combine pre-qualified + claude-decide for Claude
+      const toPassToClaude = [...preQualified, ...claudeDecide];
+      console.log(`Passing ${toPassToClaude.length} contacts to Claude`);
 
       // Look up LinkedIn company slug for fallback links
       const companySlug = await getLinkedInCompanySlug(company, braveKey);
@@ -151,7 +174,7 @@ export default async function handler(req, res) {
           slTitles: [...derived.slTitles, ...extraSlTitles],
           recTerms: derived.recTerms
         },
-        raw_contacts: finalContacts.slice(0, 20),
+        raw_contacts: toPassToClaude.slice(0, 20),
         linkedin_slug: companySlug,
         geo_urn: geoUrn,
         is_professional_services: isProfServices
@@ -499,6 +522,89 @@ function categorizeRole(title, derived) {
   if (t.includes('recruit') || t.includes('talent acq') || t.includes('talent partner')) return 'Recruiter / TA';
   if (t.includes('ceo') || t.includes('president') || t.includes('coo') || t.includes('chairman')) return 'Skip-Level';
   return 'Hiring Manager';
+}
+
+// ── Pre-qualification: accept/reject contacts BEFORE Claude ──
+
+function preQualifyContact(url, snippet, companyName) {
+  const slug = url.toLowerCase();
+  const snippetLower = (snippet || '').toLowerCase();
+  const companyLower = companyName.toLowerCase();
+
+  // Function keyword slugs - instant accept signals
+  const functionSlugs = [
+    '-hr', '-chro', '-cpo', '-cto', '-cmo', '-coo', '-cfo', '-cro',
+    '-people', '-talent', '-recruiting', '-culture', '-workforce',
+    '-marketing', '-sales', '-engineering', '-product', '-design',
+    '-finance', '-legal', '-operations', '-analytics', '-data',
+    'human-resource'
+  ];
+  const hasInstantSlug = functionSlugs.some(s => slug.includes(s));
+
+  // C-suite in slug
+  const cSuiteSlugs = ['-cpo', '-chro', '-cto', '-cmo', '-coo', '-cfo', '-ceo', '-cro', '-cio'];
+  const hasCsuite = cSuiteSlugs.some(s => slug.includes(s));
+
+  // Company signal in snippet
+  const companyWords = companyLower.split(/\s+/).filter(w => w.length > 3);
+  const hasCompanySignal = companyWords.some(word => snippetLower.includes(word));
+
+  // Current employment signal
+  const currentSignals = ['at ' + companyLower, '· ' + companyLower,
+    companyLower + ' |', companyLower + ' ·', 'current', 'currently'];
+  const hasCurrentSignal = currentSignals.some(s => snippetLower.includes(s));
+
+  // Past tense rejection
+  const pastSignals = ['formerly', 'previously', 'ex-', 'alumni', 'former ', 'left ', 'worked at'];
+  const hasPastTense = pastSignals.some(s => snippetLower.includes(s));
+
+  // Decision
+  if (hasPastTense && !hasCurrentSignal) {
+    return { accepted: false, reason: 'past tense employment' };
+  }
+  if (hasCsuite) {
+    return { accepted: true, confidence: 'high', reason: 'C-suite title in URL slug' };
+  }
+  if (hasInstantSlug && hasCompanySignal) {
+    return { accepted: true, confidence: 'high', reason: 'function keyword in slug + company confirmed' };
+  }
+  if (hasInstantSlug) {
+    return { accepted: true, confidence: 'medium', reason: 'function keyword in slug' };
+  }
+  if (hasCompanySignal && hasCurrentSignal) {
+    return { accepted: true, confidence: 'high', reason: 'company + current employment confirmed' };
+  }
+  if (hasCompanySignal) {
+    return { accepted: true, confidence: 'medium', reason: 'company name found in snippet' };
+  }
+  return { accepted: 'claude_decide', confidence: 'low' };
+}
+
+function inferTitleFromSlug(slug) {
+  const s = slug.toLowerCase();
+  if (s.includes('-chro') || s.includes('chief-human')) return 'Chief Human Resources Officer';
+  if (s.includes('-cpo') && (s.includes('people') || s.includes('hr'))) return 'Chief People Officer';
+  if (s.includes('-cpo')) return 'Chief Product Officer';
+  if (s.includes('-cto')) return 'Chief Technology Officer';
+  if (s.includes('-cmo')) return 'Chief Marketing Officer';
+  if (s.includes('-coo')) return 'Chief Operating Officer';
+  if (s.includes('-cfo')) return 'Chief Financial Officer';
+  if (s.includes('-cro')) return 'Chief Revenue Officer';
+  if (s.includes('-ceo')) return 'CEO';
+  if (s.includes('human-resource')) return 'HR Professional';
+  if (s.includes('-hr')) return 'HR Professional';
+  if (s.includes('-people')) return 'People Team';
+  if (s.includes('-talent')) return 'Talent Professional';
+  if (s.includes('-recruiting')) return 'Recruiter';
+  if (s.includes('-marketing')) return 'Marketing Professional';
+  if (s.includes('-sales')) return 'Sales Professional';
+  if (s.includes('-engineering')) return 'Engineering Professional';
+  if (s.includes('-product')) return 'Product Professional';
+  if (s.includes('-design')) return 'Design Professional';
+  if (s.includes('-finance')) return 'Finance Professional';
+  if (s.includes('-legal')) return 'Legal Professional';
+  if (s.includes('-operations')) return 'Operations Professional';
+  return '';
 }
 
 function dedupeContacts(contacts) {
