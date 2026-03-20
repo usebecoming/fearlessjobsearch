@@ -1985,7 +1985,8 @@
     // ── Stripe Checkout ──
     async function startCheckout(plan) {
       // Check if user is logged in first
-      const { data: { user } } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+      const { data: { session: _sess } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+      const user = _sess?.user;
       if (!user) {
         openAuthModal('signup');
         sessionStorage.setItem('fjs_pending_plan', plan);
@@ -2779,7 +2780,8 @@ Return a JSON array of objects with these exact fields:
       const job = state.jobs.find(j => j.id === jobId);
       if (!job) return;
       const idx = state.favorites.findIndex(f => f.title === job.title && f.company === job.company);
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+        const user = authSession?.user;
 
       if (idx === -1) {
         const fav = {
@@ -2888,7 +2890,8 @@ Return a JSON array of objects with these exact fields:
       // Also save to Supabase in background for cross-device sync
       if (supabase) {
         try {
-          var authResp = await supabase.auth.getUser();
+          var authResp = await supabase.auth.getSession();
+          authResp.data.user = authResp.data.session?.user;
           if (authResp.data.user) {
             var sbResult = await supabase.from('search_profiles').insert({
               user_id: authResp.data.user.id,
@@ -2948,7 +2951,8 @@ Return a JSON array of objects with these exact fields:
 
     // ── Pipeline Helpers ──
     async function addToPipeline(job) {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+        const user = authSession?.user;
       const item = {
         jobId: job.id,
         title: job.title,
@@ -3399,7 +3403,8 @@ Return a JSON object with a "sequences" array. Each sequence:
 
     // ── Supabase Data Sync ──
     async function loadUserData() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+        const user = authSession?.user;
       if (!user) return;
 
       // Load pipeline
@@ -3453,7 +3458,8 @@ Return a JSON object with a "sequences" array. Each sequence:
     }
 
     async function saveResume() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+        const user = authSession?.user;
       if (!user) return;
       await supabase
         .from('profiles')
