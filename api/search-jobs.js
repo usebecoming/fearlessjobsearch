@@ -36,7 +36,7 @@ export default async function handler(req, res) {
         query: title + (location ? ` in ${location}` : ''),
         page: '1',
         num_pages: '1',
-        date_posted: 'week',
+        date_posted: 'month',
         employment_types: 'FULLTIME',
       });
 
