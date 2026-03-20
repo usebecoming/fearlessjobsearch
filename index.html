@@ -281,12 +281,17 @@
     }
     .job-select-check:hover { border-color: #B8A88A; }
     .job-view-btn {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
-      color: #B8A88A; background: none; border: none;
-      cursor: pointer; font-weight: 500; transition: color 0.2s;
-      margin-top: 10px; padding: 0;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
+      color: #FFFFFF; background: #111111; border: none;
+      cursor: pointer; font-weight: 600; transition: all 0.2s;
+      margin-top: 10px; padding: 8px 16px; border-radius: 6px;
+      text-decoration: none; display: inline-block;
     }
-    .job-view-btn:hover { color: #111111; }
+    .job-view-btn:hover { background: #333; }
+    .job-view-btn.secondary {
+      background: none; color: #B8A88A; border: 1px solid #E5E4E2;
+    }
+    .job-view-btn.secondary:hover { border-color: #B8A88A; color: #111; }
 
     /* ── Job Detail Modal ── */
     .job-detail-modal {
@@ -1742,7 +1747,7 @@
       <div class="back-row"><button class="btn-back" onclick="goToStep(1)">← Back to search</button></div>
       <h2 class="section-title">Matched Opportunities</h2>
       <p class="section-sub">Real listings from LinkedIn, Indeed, Glassdoor, and ZipRecruiter. Scored against your resume by AI.</p>
-      <div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:0.88rem;color:#555;font-weight:500">Click any card to select it for outreach. Click "View listing" to see the original posting. When you're ready, hit "Find Decision-Makers" below.</div>
+      <div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:0.88rem;color:#555;font-weight:500">Click any card to select it. Click "Learn more" for details or "View listing" to see the original posting. When ready, hit "Find Decision-Makers" below.</div>
       <div id="jobsContainer"></div>
       <!-- Free mode paywall -->
       <div id="jobsPaywall" style="display:none">
@@ -2692,7 +2697,7 @@ Return a JSON array of objects with these exact fields:
 
         let stretchNote = '';
         if (!isNoListing && job.fitScore < 87) {
-          stretchNote = `<div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#C94444;font-weight:500">${job.fitScore < 70 ? 'Stretch' : 'Good Match'}. May need resume tailoring. <a href="#" onclick="event.stopPropagation();event.preventDefault();openBookingModal()" style="color:#B8A88A;font-weight:600">Get 1:1 help with this.</a></div>`;
+          stretchNote = `<div style="margin-top:10px;padding:10px 14px;background:rgba(201,68,68,0.06);border:1px solid rgba(201,68,68,0.15);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#C94444;font-weight:500">${job.fitScore < 70 ? 'Stretch' : 'Good Match'}. May need resume tailoring. <a href="#" onclick="event.stopPropagation();event.preventDefault();openBookingModal()" style="color:#B8A88A;font-weight:600">Get expert help &#8594;</a></div>`;
         }
 
         let noListingNote = '';
@@ -2723,8 +2728,8 @@ Return a JSON array of objects with these exact fields:
           ${stretchNote}
           ${noListingNote}
           <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
-            <button class="job-view-btn" onclick="event.stopPropagation();openJobDetail('${esc(job.id)}')" style="margin:0">${isNoListing ? 'Select to get contacts' : 'View details'}</button>
-            ${!isNoListing && job.url ? `<a href="${esc(job.url)}" target="_blank" onclick="event.stopPropagation()" class="job-view-btn" style="margin:0;color:#5A7A9A">View listing &#8599;</a>` : ''}
+            <button class="job-view-btn" onclick="event.stopPropagation();openJobDetail('${esc(job.id)}')" style="margin:0">${isNoListing ? 'Select to get contacts' : 'Learn more'}</button>
+            ${!isNoListing && job.url ? `<a href="${esc(job.url)}" target="_blank" onclick="event.stopPropagation()" class="job-view-btn secondary" style="margin:0">View listing &#8599;</a>` : ''}
           </div>
         `;
         card.onclick = () => toggleJobSelection(job.id);
@@ -3075,7 +3080,7 @@ Return a JSON array of objects with these exact fields:
 
         ${job.source ? `<div class="job-detail-section">
           <h3>Source</h3>
-          <p style="font-size:0.88rem;color:#555555;font-weight:500">${esc(job.source)}${job.url ? ` &middot; <a href="${esc(job.url)}" target="_blank" style="color:#B8A88A">View original listing &#8599;</a>` : ''}</p>
+          <p style="font-size:0.88rem;color:#555555;font-weight:500">${esc(job.source)}${job.url ? ` &middot; <a href="${esc(job.url)}" target="_blank" style="color:#B8A88A">View listing &#8599;</a>` : ''}</p>
         </div>` : ''}
 
         <div class="job-detail-actions">
@@ -3083,9 +3088,6 @@ Return a JSON array of objects with these exact fields:
             ${isSelected ? 'Remove from Selection' : 'Select for Outreach'}
           </button>
           ${job.url ? `<a href="${esc(job.url)}" target="_blank" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center">View Listing &#8599;</a>` : ''}
-          <button class="btn-secondary" onclick="saveToPipeline('${esc(job.id)}');openJobDetail('${esc(job.id)}')">
-            Save to Pipeline
-          </button>
         </div>
       `;
 
