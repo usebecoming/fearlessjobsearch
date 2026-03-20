@@ -791,7 +791,11 @@
       }
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        document.getElementById('loginError').textContent = error.message;
+        if (error.message.includes('Invalid login')) {
+          document.getElementById('loginError').textContent = 'No account found with those credentials. Need to create one?';
+        } else {
+          document.getElementById('loginError').textContent = error.message;
+        }
       }
     }
 
@@ -808,9 +812,14 @@
         document.getElementById('signupError').textContent = 'Password must be at least 6 characters';
         return;
       }
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         document.getElementById('signupError').textContent = error.message;
+      } else if (data?.user?.identities?.length === 0) {
+        document.getElementById('signupError').textContent = 'An account with this email already exists. Try signing in.';
+      } else if (data?.session) {
+        // Auto-signed in (email confirmation disabled)
+        // onAuthStateChange will handle showing the app
       } else {
         document.getElementById('signupSuccess').style.display = 'block';
         document.getElementById('signupSuccess').textContent = 'Check your email to confirm your account, then sign in.';
