@@ -1321,9 +1321,12 @@
 
   <!-- ── Nav ── -->
   <nav id="mainNav" style="display:none">
-    <div class="nav-brand" style="cursor:pointer" onclick="goToStep(1)">
-      <img src="assets/phoenix-logo.png" alt="Fearless Job Search" onerror="this.style.display='none'">
-      <span>FEARLESS JOB SEARCH</span>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="nav-brand" style="cursor:pointer" onclick="goToStep(1)">
+        <img src="assets/phoenix-logo.png" alt="Fearless Job Search" onerror="this.style.display='none'">
+        <span>FEARLESS JOB SEARCH</span>
+      </div>
+      <button class="nav-link" onclick="doSignOut()" title="Back to home page" style="font-size:0.75rem;color:#858585">&#8962; Home</button>
     </div>
     <div class="nav-right">
       <button class="nav-link" onclick="goToStep(1)">Search</button>
