@@ -49,9 +49,9 @@ export default async function handler(req, res) {
         if (!seen.has(key)) { seen.add(key); allExpanded.push(v); }
       }
     }
-    const expandedTitles = allExpanded.slice(0, 5);
+    const expandedTitles = allExpanded.slice(0, 7);
     console.log(`📋 Original titles: ${titles.join(', ')}`);
-    console.log(`📋 Expanded to ${expandedTitles.length} search terms (capped at 5):`);
+    console.log(`📋 Expanded to ${expandedTitles.length} search terms (capped at 7):`);
     expandedTitles.forEach(t => console.log(`   • ${t}`));
 
     // Single JSearch call with timeout protection
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
       });
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
+        const timeout = setTimeout(() => controller.abort(), 12000);
         const response = await fetch(
           `https://jsearch.p.rapidapi.com/search?${params.toString()}`,
           { headers: { 'X-RapidAPI-Key': rapidApiKey, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' }, signal: controller.signal }
@@ -145,22 +145,74 @@ export default async function handler(req, res) {
     });
     const afterDedup = dedupedJobs.length;
 
-    // Fix 2: Filter irrelevant jobs (nursing L&D, entry-level, etc.)
+    // Filter irrelevant jobs
     const irrelevantKeywords = [
       'labor & delivery', 'labor and delivery', 'l&d rn', 'registered nurse', 'nursing',
       'patient care', 'antepartum', 'obstetric', 'maternal', 'postpartum', 'nicu',
       'flight nurse', 'med surg', 'icu', 'er nurse', 'travel nurse', 'rn ',
       'sdr', 'bdr', 'sales development rep', 'teach english', 'esl teacher',
-      'water safety', 'lifeguard', 'math tutor', 'mathnasium', 'kumon'
+      'water safety', 'lifeguard', 'math tutor', 'mathnasium', 'kumon',
+      'daycare', 'day care', 'childcare', 'preschool', 'kindergarten',
+      'elementary school', 'middle school', 'high school',
+      'year up', 'job corps', 'workforce development program',
+      'training and documentation specialist', 'documentation specialist',
+      'unlimited earning', 'be your own boss', 'entrepreneurial opportunity',
+      'commission only', 'uncapped commission'
     ];
+
+    const irrelevantPatterns = [
+      /independent.*performance.based/i,
+      /performance.based.*opportunity/i,
+      /^development director/i,
+      /^director of development/i,
+      /\bsvp of development\b/i,
+      /\bvp of development\b/i,
+      /\bsoftware development.*engineer/i,
+      /\bservice delivery engineer\b/i,
+      /\bvalue engineering\b/i,
+      /\bsales development\b/i,
+      /development.*construction/i,
+      /construction.*development/i,
+      /\breal estate.*development\b/i
+    ];
+
+    const suspiciousCompanies = new Set([
+      'focus on life biz', 'primerica', 'herbalife', 'amway', 'cutco',
+      'vector marketing', 'symmetry financial', 'php agency',
+      'world financial group', 'wfg', 'northwestern mutual'
+    ]);
 
     let irrelevantRemoved = 0;
     let fundraisingRemoved = 0;
     const relevantJobs = dedupedJobs.filter(job => {
-      const combined = ((job.job_title || '') + ' ' + (job.job_description || '').substring(0, 200)).toLowerCase();
+      const title = (job.job_title || '').toLowerCase();
+      const desc = (job.job_description || '').substring(0, 300).toLowerCase();
+      const combined = title + ' ' + desc;
+      const company = (job.employer_name || '').toLowerCase();
+
+      // Suspicious company
+      if (suspiciousCompanies.has(company)) {
+        console.log(`  ❌ Suspicious company: ${job.employer_name}`);
+        irrelevantRemoved++;
+        return false;
+      }
+      // Keyword match
       if (irrelevantKeywords.some(kw => combined.includes(kw))) {
         console.log(`  ❌ Irrelevant: ${job.job_title} at ${job.employer_name}`);
         irrelevantRemoved++;
+        return false;
+      }
+      // Pattern match
+      if (irrelevantPatterns.some(p => p.test(title))) {
+        console.log(`  ❌ Irrelevant pattern: ${job.job_title} at ${job.employer_name}`);
+        irrelevantRemoved++;
+        return false;
+      }
+      // Fundraising description check
+      const fundraisingSignals = ['fundrais', 'donor', 'philanthrop', 'annual fund', 'major gifts', 'capital campaign', 'endowment', 'gift officer', 'nonprofit development'];
+      if (fundraisingSignals.some(s => desc.includes(s))) {
+        console.log(`  ❌ Fundraising (desc): ${job.job_title} at ${job.employer_name}`);
+        fundraisingRemoved++;
         return false;
       }
       // Fundraising "development" disambiguation
