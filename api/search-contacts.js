@@ -26,99 +26,96 @@ export default async function handler(req, res) {
     for (const job of jobs) {
       const company = job.company;
       const jobTitle = job.title;
-      console.log(`\n=== SEARCHING CONTACTS FOR: ${jobTitle} at ${company} ===`);
 
-      // Step 1: Derive correct titles
-      const derived = deriveTitles(jobTitle);
-      const dept = derived.department;
-      console.log('Department:', dept);
-      console.log('Derived hiring manager titles:', derived.hiringManager);
-      console.log('Derived skip-level titles:', derived.skipLevel);
-
-      // Get company name variations for retry
-      const companyNames = getCompanyVariations(company);
-      console.log('Company variations:', companyNames);
-
-      const allContacts = [];
-
-      // Skip if no company name
+      // Skip if no company
       if (!company || company === 'Unknown' || company.length < 2) {
-        console.log('Skipping: no valid company name');
-        results.push({ job_id: job.job_id, company, job_title: jobTitle, location: job.location || '', derived_titles: derived, raw_contacts: [] });
+        console.log(`Skipping: no valid company name for "${jobTitle}"`);
+        results.push({ job_id: job.job_id, company, job_title: jobTitle, location: job.location || '', derived: {}, raw_contacts: [] });
         continue;
       }
 
-      // Helper: run query with company name fallbacks
-      async function searchWithFallback(queryBuilder, role) {
-        for (const coName of companyNames) {
-          const query = queryBuilder(coName);
-          console.log(`  Query [${role}] with "${coName}":`, query);
-          const r = await braveSearch(query, braveKey);
-          console.log(`  Results: ${r.length} profiles`);
-          allContacts.push(...r.map(c => ({ ...c, searchRole: role })));
+      console.log(`\n=== CONTACTS FOR: ${jobTitle} at ${company} ===`);
+
+      // Step 1: Derive function, titles, hierarchy
+      const derived = deriveAll(jobTitle);
+      console.log('Function:', derived.func);
+      console.log('HM titles:', derived.hmTitles);
+      console.log('Skip-Level titles:', derived.slTitles);
+      console.log('Recruiter terms:', derived.recTerms);
+
+      const companyNames = getCompanyVariations(company);
+      const allContacts = [];
+
+      // Step 2: Run 3 Brave searches with function-specific queries
+
+      // Search 1: Hiring managers
+      const hmQuery = derived.hmTitles.map(t => `"${t}"`).join(' OR ');
+      for (const co of companyNames) {
+        const q = `site:linkedin.com/in "${co}" (${hmQuery})`;
+        console.log(`  HM query [${co}]:`, q);
+        const r = await braveSearch(q, braveKey);
+        console.log(`  HM results: ${r.length}`);
+        allContacts.push(...r.map(c => ({ ...c, searchRole: 'Hiring Manager' })));
+        if (r.length >= 3) break;
+      }
+
+      // Fallback: broader HM search if few results
+      if (allContacts.filter(c => c.searchRole === 'Hiring Manager').length < 3) {
+        for (const co of companyNames) {
+          const q = `site:linkedin.com/in "${co}" (${getDeptSearchTerms(derived.func)}) (VP OR SVP OR "Head of" OR Director OR Chief)`;
+          console.log(`  HM broad [${co}]:`, q);
+          const r = await braveSearch(q, braveKey);
+          console.log(`  HM broad results: ${r.length}`);
+          allContacts.push(...r.map(c => ({ ...c, searchRole: 'Hiring Manager' })));
           if (r.length >= 3) break;
         }
       }
 
-      // Query 1: Hiring managers - use derived titles loosely (no exact quotes on multi-word)
-      const hmKeywords = derived.hiringManager.map(t => t.length > 15 ? t.split(' ').slice(0, 2).join(' ') : t);
-      await searchWithFallback(
-        co => `site:linkedin.com/in "${co}" ${hmKeywords.map(t => `"${t}"`).join(' OR ')}`,
-        'Hiring Manager'
-      );
-
-      // Query 2: Broader hiring manager - department + adjacent terms + leadership
-      const deptVariations = getDeptSearchTerms(dept);
-      await searchWithFallback(
-        co => `site:linkedin.com/in "${co}" (${deptVariations}) (VP OR Director OR Head OR SVP OR Chief)`,
-        'Hiring Manager'
-      );
-
-      // Query 3: Recruiters - generic + department context
-      await searchWithFallback(
-        co => `site:linkedin.com/in "${co}" recruiter OR "talent acquisition" OR "talent partner" OR "people partner" OR "HR business partner"`,
-        'Recruiter / TA'
-      );
-
-      // Query 4: Skip-level - C-suite including department-specific chiefs
-      const csuiteTerms = getCsuiteSearchTerms(dept);
-      await searchWithFallback(
-        co => `site:linkedin.com/in "${co}" ${csuiteTerms}`,
-        'Skip-Level'
-      );
-
-      // Query 5: If still few results, try without site:linkedin filter (finds LinkedIn profiles indexed elsewhere)
-      if (allContacts.length < 5) {
-        console.log('  Few results, trying broader search...');
-        await searchWithFallback(
-          co => `linkedin.com/in "${co}" ${dept} VP OR Director OR recruiter`,
-          'Hiring Manager'
-        );
+      // Search 2: Recruiters (function-specific)
+      const recQuery = derived.recTerms.map(t => `"${t}"`).join(' OR ');
+      for (const co of companyNames) {
+        const q = `site:linkedin.com/in "${co}" (${recQuery})`;
+        console.log(`  Recruiter query [${co}]:`, q);
+        const r = await braveSearch(q, braveKey);
+        console.log(`  Recruiter results: ${r.length}`);
+        allContacts.push(...r.map(c => ({ ...c, searchRole: 'Recruiter / TA' })));
+        if (r.length >= 3) break;
       }
 
-      // Dedupe and limit
-      const deduped = dedupeContacts(allContacts);
-      console.log(`Total deduped contacts for ${company}: ${deduped.length}`);
-      console.log('Contact URLs:', deduped.map(c => c.linkedin_url));
+      // Search 3: Skip-level
+      const slQuery = derived.slTitles.map(t => `"${t}"`).join(' OR ');
+      for (const co of companyNames) {
+        const q = `site:linkedin.com/in "${co}" (${slQuery})`;
+        console.log(`  Skip-Level query [${co}]:`, q);
+        const r = await braveSearch(q, braveKey);
+        console.log(`  Skip-Level results: ${r.length}`);
+        allContacts.push(...r.map(c => ({ ...c, searchRole: 'Skip-Level' })));
+        if (r.length >= 3) break;
+      }
 
-      // Try Apollo as fallback if Brave found very few
+      const deduped = dedupeContacts(allContacts);
+      console.log(`Total deduped for ${company}: ${deduped.length}`);
+      console.log('URLs:', deduped.map(c => c.linkedin_url));
+
+      // Apollo fallback if very few results
       const apolloKey = process.env.APOLLO_API_KEY;
       if (deduped.length < 3 && apolloKey) {
-        console.log('Few Brave results, trying Apollo fallback...');
-        const apolloContacts = await apolloSearch(company, derived, dept, apolloKey);
-        console.log(`Apollo returned: ${apolloContacts.length} contacts`);
+        console.log('Trying Apollo fallback...');
+        const apolloContacts = await apolloSearch(company, derived, apolloKey);
+        console.log(`Apollo: ${apolloContacts.length} contacts`);
         allContacts.push(...apolloContacts);
       }
 
       const finalContacts = dedupeContacts(allContacts);
+      console.log(`Final contacts for ${company}: ${finalContacts.length}`);
 
       results.push({
         job_id: job.job_id,
-        company: company,
+        company,
         job_title: jobTitle,
         location: job.location || '',
-        derived_titles: derived,
-        raw_contacts: finalContacts.slice(0, 20)
+        derived: { func: derived.func, hmTitles: derived.hmTitles, slTitles: derived.slTitles },
+        raw_contacts: finalContacts.slice(0, 15)
       });
     }
 
@@ -126,125 +123,163 @@ export default async function handler(req, res) {
     return res.status(200).json({ results });
   } catch (err) {
     console.error('Contact search error:', err);
-    return res.status(500).json({ error: 'Something went wrong searching for contacts. Please try again.' });
+    return res.status(500).json({ error: 'Something went wrong searching for contacts.' });
   }
 }
 
-// Step 1: Derive hiring manager and skip-level titles from job title
-function deriveTitles(jobTitle) {
-  const title = jobTitle.toLowerCase();
-  const dept = extractDepartment(jobTitle);
-  const deptShort = getDeptAbbrev(dept);
+// ── Step 1: Derive function, titles, hierarchy ──
 
-  // Hierarchy: Coordinator → Manager → Director → VP → SVP/EVP → C-Suite → CEO
-  let hiringManager = [];
-  let skipLevel = [];
-
-  if (title.includes('coordinator') || title.includes('specialist') || title.includes('analyst')) {
-    hiringManager = [`Manager of ${dept}`, `${dept} Manager`, `Senior Manager ${dept}`];
-    skipLevel = [`Director of ${dept}`, `Director ${dept}`, `Head of ${dept}`];
-  } else if (title.includes('manager') && !title.includes('senior manager') && !title.includes('general manager')) {
-    hiringManager = [`Director of ${dept}`, `Director ${dept}`, `Head of ${dept}`, `Senior Director ${dept}`];
-    skipLevel = [`VP of ${dept}`, `VP ${dept}`, `Vice President ${dept}`];
-  } else if (title.includes('senior manager') || title.includes('associate director')) {
-    hiringManager = [`Director of ${dept}`, `Senior Director ${dept}`, `Head of ${dept}`];
-    skipLevel = [`VP of ${dept}`, `VP ${dept}`, `SVP ${dept}`];
-  } else if (title.includes('director') && !title.includes('senior director') && !title.includes('executive director')) {
-    hiringManager = [`VP of ${dept}`, `VP ${dept}`, `Vice President ${dept}`, `Head of ${dept}`];
-    skipLevel = [`SVP ${dept}`, `Senior Vice President`, deptShort ? `C${deptShort}O` : 'COO', 'Chief'];
-  } else if (title.includes('senior director') || title.includes('executive director')) {
-    hiringManager = [`VP of ${dept}`, `SVP ${dept}`, `Senior Vice President ${dept}`];
-    skipLevel = [deptShort ? `C${deptShort}O` : 'COO', 'CEO', 'President'];
-  } else if (title.includes('head of')) {
-    hiringManager = [`VP of ${dept}`, `VP ${dept}`, `SVP ${dept}`];
-    skipLevel = [deptShort ? `C${deptShort}O` : 'COO', 'CEO', 'President'];
-  } else if (title.includes('vp') || title.includes('vice president')) {
-    hiringManager = [`SVP ${dept}`, `Senior Vice President ${dept}`, `EVP ${dept}`, deptShort ? `C${deptShort}O` : `Chief ${dept} Officer`];
-    // Add department-specific C-suite variations
-    if (dept === 'People' || dept === 'People') {
-      hiringManager.push('CHRO', 'Chief People Officer', 'CPO', 'SVP HR', 'SVP Human Resources');
-    } else if (dept === 'Marketing') {
-      hiringManager.push('CMO', 'Chief Marketing Officer');
-    } else if (dept === 'Engineering') {
-      hiringManager.push('CTO', 'Chief Technology Officer');
-    } else if (dept === 'Finance') {
-      hiringManager.push('CFO', 'Chief Financial Officer');
-    } else if (dept === 'Product') {
-      hiringManager.push('CPO', 'Chief Product Officer');
-    } else if (dept === 'Revenue' || dept === 'Sales') {
-      hiringManager.push('CRO', 'Chief Revenue Officer');
-    }
-    skipLevel = ['CEO', 'President', 'COO', 'Founder'];
-  } else if (title.includes('svp') || title.includes('senior vice president') || title.includes('evp')) {
-    hiringManager = [deptShort ? `C${deptShort}O` : `Chief ${dept} Officer`, 'CEO', 'President'];
-    skipLevel = ['CEO', 'President', 'Chairman', 'Founder'];
-  } else if (title.includes('chief') || title.includes('cmo') || title.includes('cto') || title.includes('cpo') || title.includes('cfo') || title.includes('cro') || title.includes('coo')) {
-    hiringManager = ['CEO', 'President', 'Founder', 'Managing Director'];
-    skipLevel = ['Chairman', 'Board', 'Founder'];
-  } else if (title.includes('ceo') || title.includes('president') || title.includes('founder')) {
-    hiringManager = ['Chairman', 'Board Member', 'Founder'];
-    skipLevel = ['Board Member', 'Investor'];
-  } else {
-    // Default: treat as mid-level
-    hiringManager = [`Director of ${dept}`, `VP ${dept}`, `Head of ${dept}`];
-    skipLevel = [`SVP ${dept}`, 'COO', 'CEO'];
-  }
-
-  return { hiringManager, skipLevel, department: dept };
+function deriveAll(jobTitle) {
+  const func = deriveFunction(jobTitle);
+  const level = deriveLevel(jobTitle);
+  const hmTitles = getHiringManagerTitles(func, level);
+  const slTitles = getSkipLevelTitles(func, level);
+  const recTerms = getRecruiterTerms(func);
+  return { func, level, hmTitles, slTitles, recTerms };
 }
 
-function extractDepartment(jobTitle) {
-  const title = jobTitle.toLowerCase();
-  const deptMap = [
-    [['marketing', 'brand', 'growth', 'demand gen'], 'Marketing'],
-    [['product'], 'Product'],
-    [['engineering', 'software', 'development', 'technical', 'technology'], 'Engineering'],
-    [['sales', 'business development', 'account'], 'Sales'],
-    [['finance', 'accounting', 'controller'], 'Finance'],
-    [['operations', 'supply chain', 'logistics'], 'Operations'],
-    [['people', 'hr', 'human resources', 'talent', 'learning', 'organizational development', 'leadership development', 'talent development', 'training'], 'People'],
-    [['data', 'analytics', 'insights', 'intelligence'], 'Data'],
-    [['design', 'creative', 'ux', 'ui'], 'Design'],
-    [['legal', 'compliance', 'regulatory'], 'Legal'],
-    [['strategy', 'planning', 'transformation'], 'Strategy'],
+function deriveFunction(jobTitle) {
+  const t = jobTitle.toLowerCase();
+  const map = [
+    [['marketing', 'brand', 'growth', 'demand gen', 'content marketing'], 'Marketing'],
+    [['product', 'product management'], 'Product'],
+    [['engineering', 'software', 'development', 'technical', 'technology', 'platform'], 'Engineering'],
+    [['sales', 'business development', 'account executive', 'account management'], 'Sales'],
+    [['finance', 'accounting', 'controller', 'treasury', 'fp&a'], 'Finance'],
+    [['operations', 'supply chain', 'logistics', 'procurement'], 'Operations'],
+    [['people', 'hr', 'human resources', 'talent', 'learning', 'organizational development', 'leadership development', 'talent development', 'training', 'talent acquisition', 'recruiting'], 'People'],
+    [['data', 'analytics', 'insights', 'intelligence', 'machine learning', 'ai'], 'Data'],
+    [['design', 'creative', 'ux', 'ui', 'user experience'], 'Design'],
+    [['legal', 'compliance', 'regulatory', 'general counsel'], 'Legal'],
+    [['strategy', 'planning', 'transformation', 'corporate development'], 'Strategy'],
     [['revenue', 'commercial'], 'Revenue'],
-    [['customer', 'client', 'success', 'support'], 'Customer Success'],
-    [['content', 'communications', 'pr', 'editorial'], 'Communications'],
-    [['partnerships', 'alliances', 'channels'], 'Partnerships'],
-    [['security', 'information security', 'infosec'], 'Security'],
+    [['customer', 'client', 'success', 'support', 'customer experience'], 'Customer Success'],
+    [['communications', 'pr', 'public relations', 'editorial', 'corporate communications'], 'Communications'],
+    [['partnerships', 'alliances', 'channels', 'business partnerships'], 'Partnerships'],
+    [['security', 'information security', 'infosec', 'cybersecurity'], 'Security'],
   ];
-  for (const [keywords, dept] of deptMap) {
-    if (keywords.some(k => title.includes(k))) return dept;
+  for (const [keywords, func] of map) {
+    if (keywords.some(k => t.includes(k))) return func;
   }
   return 'Operations';
 }
 
-function getDeptAbbrev(dept) {
-  const map = {
-    'Marketing': 'M', 'Product': 'P', 'Engineering': 'T',
-    'Finance': 'F', 'Operations': 'O', 'People': 'H',
-    'Revenue': 'R', 'Data': 'D', 'Security': 'IS',
-    'Customer Success': 'C', 'Communications': 'C',
-  };
-  return map[dept] || '';
+function deriveLevel(jobTitle) {
+  const t = jobTitle.toLowerCase();
+  if (t.includes('ceo') || t.includes('president') || t.includes('founder')) return 'ceo';
+  if (t.includes('chief') || t.includes('cmo') || t.includes('cto') || t.includes('cfo') || t.includes('cpo') || t.includes('cro') || t.includes('coo') || t.includes('chro')) return 'csuite';
+  if (t.includes('svp') || t.includes('senior vice president') || t.includes('evp') || t.includes('executive vice president')) return 'svp';
+  if (t.includes('vp') || t.includes('vice president')) return 'vp';
+  if (t.includes('senior director') || t.includes('executive director')) return 'senior_director';
+  if (t.includes('head of')) return 'head';
+  if (t.includes('director')) return 'director';
+  if (t.includes('senior manager')) return 'senior_manager';
+  if (t.includes('manager')) return 'manager';
+  return 'director'; // default
 }
 
-// Step 2: Brave Search with URL extraction (Step 3)
-// Fetches two pages of 20 results each for ~40 total raw results
+function getHiringManagerTitles(func, level) {
+  const csuiteTitles = getCsuiteForFunction(func);
+
+  const levelMap = {
+    'manager': [`Director of ${func}`, `Director ${func}`, `Head of ${func}`, `Senior Director ${func}`],
+    'senior_manager': [`Director of ${func}`, `Senior Director ${func}`, `Head of ${func}`],
+    'director': [`VP of ${func}`, `VP ${func}`, `Vice President ${func}`, `Head of ${func}`],
+    'senior_director': [`VP of ${func}`, `SVP ${func}`, `Senior Vice President ${func}`],
+    'head': [`VP of ${func}`, `VP ${func}`, `SVP ${func}`],
+    'vp': [`SVP ${func}`, `Senior Vice President ${func}`, `EVP ${func}`, ...csuiteTitles],
+    'svp': [...csuiteTitles, 'CEO', 'President'],
+    'csuite': ['CEO', 'President', 'Founder'],
+    'ceo': ['Chairman', 'Board Member'],
+  };
+
+  return levelMap[level] || [`VP of ${func}`, `Director ${func}`, `Head of ${func}`];
+}
+
+function getSkipLevelTitles(func, level) {
+  const csuiteTitles = getCsuiteForFunction(func);
+
+  const levelMap = {
+    'manager': [`VP of ${func}`, `VP ${func}`, `SVP ${func}`],
+    'senior_manager': [`VP of ${func}`, `SVP ${func}`, ...csuiteTitles],
+    'director': [`SVP ${func}`, ...csuiteTitles, 'CEO', 'President'],
+    'senior_director': [...csuiteTitles, 'CEO', 'President', 'COO'],
+    'head': [...csuiteTitles, 'CEO', 'President', 'COO'],
+    'vp': ['CEO', 'President', 'COO', 'Founder'],
+    'svp': ['CEO', 'President', 'Chairman', 'Founder'],
+    'csuite': ['CEO', 'President', 'Chairman'],
+    'ceo': ['Chairman', 'Board'],
+  };
+
+  return levelMap[level] || ['CEO', 'President', 'COO'];
+}
+
+function getCsuiteForFunction(func) {
+  const map = {
+    'Marketing': ['CMO', 'Chief Marketing Officer'],
+    'Product': ['CPO', 'Chief Product Officer'],
+    'Engineering': ['CTO', 'Chief Technology Officer', 'Chief Engineering Officer'],
+    'Sales': ['CRO', 'Chief Revenue Officer', 'Chief Sales Officer'],
+    'Finance': ['CFO', 'Chief Financial Officer'],
+    'Operations': ['COO', 'Chief Operating Officer'],
+    'People': ['CHRO', 'Chief People Officer', 'CPO', 'Chief Human Resources Officer', 'VP of People', 'VP of HR', 'Head of People', 'Head of HR'],
+    'Data': ['CDO', 'Chief Data Officer', 'CTO'],
+    'Legal': ['CLO', 'Chief Legal Officer', 'General Counsel'],
+    'Security': ['CISO', 'Chief Information Security Officer'],
+    'Customer Success': ['CCO', 'Chief Customer Officer'],
+    'Revenue': ['CRO', 'Chief Revenue Officer'],
+    'Communications': ['CCO', 'Chief Communications Officer'],
+  };
+  return map[func] || ['COO', 'Chief Operating Officer'];
+}
+
+function getRecruiterTerms(func) {
+  const base = ['recruiter', 'talent acquisition', 'recruiting partner', 'talent partner', 'HR business partner'];
+  const funcSpecific = {
+    'Engineering': ['technical recruiter', 'engineering recruiter'],
+    'Product': ['technical recruiter', 'product recruiter'],
+    'People': ['HR recruiter', 'people recruiter', 'talent acquisition'],
+    'Marketing': ['marketing recruiter'],
+    'Sales': ['sales recruiter'],
+    'Finance': ['finance recruiter'],
+    'Design': ['design recruiter', 'creative recruiter'],
+  };
+  return [...(funcSpecific[func] || []), ...base];
+}
+
+// ── Step 2: Brave Search ──
+
+function getDeptSearchTerms(func) {
+  const map = {
+    'People': '"People" OR "HR" OR "Human Resources" OR "Talent" OR "Learning" OR "OD"',
+    'Marketing': '"Marketing" OR "Growth" OR "Brand" OR "Demand"',
+    'Engineering': '"Engineering" OR "Software" OR "Technology" OR "Platform"',
+    'Sales': '"Sales" OR "Business Development" OR "Revenue"',
+    'Finance': '"Finance" OR "Accounting" OR "FP&A"',
+    'Product': '"Product" OR "Product Management"',
+    'Operations': '"Operations" OR "Supply Chain"',
+    'Data': '"Data" OR "Analytics" OR "Insights" OR "ML"',
+    'Design': '"Design" OR "UX" OR "Creative"',
+    'Customer Success': '"Customer Success" OR "Client Success" OR "CX"',
+    'Revenue': '"Revenue" OR "Sales" OR "Commercial"',
+    'Legal': '"Legal" OR "Compliance" OR "General Counsel"',
+    'Security': '"Security" OR "InfoSec" OR "Cybersecurity"',
+    'Communications': '"Communications" OR "PR" OR "Corporate Comms"',
+  };
+  return map[func] || `"${func}"`;
+}
+
 async function braveSearch(query, apiKey) {
   try {
-    const allWebResults = [];
-
-    // Page 1: results 0-19
-    const params1 = new URLSearchParams({
+    const params = new URLSearchParams({
       q: query,
-      count: '20',
-      offset: '0',
+      count: '10',
       text_decorations: 'false',
       search_lang: 'en'
     });
-    const res1 = await fetch(
-      `https://api.search.brave.com/res/v1/web/search?${params1.toString()}`,
+
+    const response = await fetch(
+      `https://api.search.brave.com/res/v1/web/search?${params.toString()}`,
       {
         headers: {
           'Accept': 'application/json',
@@ -253,72 +288,43 @@ async function braveSearch(query, apiKey) {
         }
       }
     );
-    if (res1.ok) {
-      const data1 = await res1.json();
-      allWebResults.push(...((data1.web && data1.web.results) || []));
-    } else {
-      console.error('Brave API error page 1:', res1.status, res1.statusText);
+
+    if (!response.ok) {
+      console.error('Brave API error:', response.status);
+      return [];
     }
 
-    // Page 2: results 20-39
-    const params2 = new URLSearchParams({
-      q: query,
-      count: '20',
-      offset: '20',
-      text_decorations: 'false',
-      search_lang: 'en'
-    });
-    const res2 = await fetch(
-      `https://api.search.brave.com/res/v1/web/search?${params2.toString()}`,
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Accept-Encoding': 'gzip',
-          'X-Subscription-Token': apiKey
-        }
-      }
-    );
-    if (res2.ok) {
-      const data2 = await res2.json();
-      allWebResults.push(...((data2.web && data2.web.results) || []));
-    }
-
-    console.log(`  Brave raw results: ${allWebResults.length} total web results (2 pages)`);
-    const data = { web: { results: allWebResults } };
+    const data = await response.json();
     const webResults = (data.web && data.web.results) || [];
-    console.log(`  Brave raw results: ${webResults.length} total web results`);
+    console.log(`    Brave raw: ${webResults.length} results`);
 
+    // Step 3: Extract and clean LinkedIn URLs
     const contacts = [];
     for (const r of webResults) {
       const url = r.url || '';
-
-      // Step 3: Extract and validate LinkedIn URL
-      // Reject company pages and job listings
+      // Reject non-profile pages
       if (url.includes('linkedin.com/company/')) continue;
       if (url.includes('linkedin.com/jobs/')) continue;
       if (url.includes('linkedin.com/pulse/')) continue;
       if (url.includes('linkedin.com/posts/')) continue;
-
-      // Must be a profile page (/in/ or /pub/)
       if (!url.includes('linkedin.com/in/') && !url.includes('linkedin.com/pub/')) continue;
 
-      // Clean the URL - strip query params and tracking
+      // Clean URL
       let cleanUrl = url.split('?')[0].split('#')[0].replace(/\/+$/, '');
       if (!cleanUrl.startsWith('http')) cleanUrl = 'https://' + cleanUrl;
 
-      // Extract name from URL slug
       const name = extractNameFromUrl(cleanUrl);
       if (!name || name.length < 3) continue;
 
       contacts.push({
-        name: name,
+        name,
         linkedin_url: cleanUrl,
         snippet: (r.description || r.title || '').substring(0, 400),
         page_title: (r.title || '').substring(0, 200)
       });
     }
 
-    console.log(`  After URL filtering: ${contacts.length} valid LinkedIn profiles`);
+    console.log(`    After cleaning: ${contacts.length} valid profiles`);
     return contacts;
   } catch (err) {
     console.error('Brave search failed:', err.message);
@@ -328,51 +334,77 @@ async function braveSearch(query, apiKey) {
 
 function extractNameFromUrl(url) {
   let slug = '';
-  if (url.includes('linkedin.com/in/')) {
-    slug = url.split('linkedin.com/in/')[1];
-  } else if (url.includes('linkedin.com/pub/')) {
-    slug = url.split('linkedin.com/pub/')[1];
-  }
+  if (url.includes('linkedin.com/in/')) slug = url.split('linkedin.com/in/')[1];
+  else if (url.includes('linkedin.com/pub/')) slug = url.split('linkedin.com/pub/')[1];
   if (!slug) return '';
-
   const parts = slug.split('/')[0].split('-').filter(p => p.length > 0 && !/^\d+$/.test(p));
   if (parts.length < 2) return '';
-
   return parts.slice(0, 3).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
 }
 
-// Get broader search terms for a department (catches variations)
-function getDeptSearchTerms(dept) {
-  const map = {
-    'People': '"People" OR "HR" OR "Human Resources" OR "Talent" OR "Learning" OR "Organizational Development"',
-    'Marketing': '"Marketing" OR "Growth" OR "Brand" OR "Demand Gen"',
-    'Engineering': '"Engineering" OR "Software" OR "Technology" OR "Development"',
-    'Sales': '"Sales" OR "Business Development" OR "Revenue"',
-    'Finance': '"Finance" OR "Accounting" OR "FP&A"',
-    'Product': '"Product" OR "Product Management"',
-    'Operations': '"Operations" OR "Supply Chain"',
-    'Data': '"Data" OR "Analytics" OR "Insights"',
-    'Design': '"Design" OR "UX" OR "Creative"',
-    'Customer Success': '"Customer Success" OR "Client Success" OR "Customer Experience"',
-    'Revenue': '"Revenue" OR "Sales" OR "Commercial"',
+// ── Company name variations ──
+
+function getCompanyVariations(company) {
+  const variations = [company];
+  const known = {
+    'RTX': ['Raytheon', 'RTX Corporation'],
+    'Meta': ['Facebook', 'Meta Platforms'],
+    'Alphabet': ['Google'], 'Google': ['Alphabet'],
+    'Amazon': ['AWS', 'Amazon Web Services'], 'AWS': ['Amazon'],
+    'Microsoft': ['MSFT'],
+    'JPMorgan': ['JP Morgan', 'JPMorgan Chase', 'Chase'],
+    'Goldman Sachs': ['Goldman'],
+    'McKinsey': ['McKinsey & Company'],
+    'BCG': ['Boston Consulting Group'],
+    'Salesforce': ['Salesforce.com'],
+    'CrowdStrike': ['Crowdstrike'],
+    'Palo Alto Networks': ['Palo Alto'],
   };
-  return map[dept] || `"${dept}"`;
+  const upper = company.toUpperCase();
+  for (const [key, aliases] of Object.entries(known)) {
+    if (key.toUpperCase() === upper) { variations.push(...aliases); break; }
+  }
+  const firstWord = company.split(/\s+/)[0];
+  if (firstWord !== company && firstWord.length > 3) variations.push(firstWord);
+  return [...new Set(variations)];
 }
 
-// Get C-suite search terms relevant to a department
-function getCsuiteSearchTerms(dept) {
-  const base = 'CEO OR COO OR President';
-  const map = {
-    'People': `CHRO OR "Chief People Officer" OR CPO OR "Chief Human Resources" OR ${base}`,
-    'Marketing': `CMO OR "Chief Marketing Officer" OR ${base}`,
-    'Engineering': `CTO OR "Chief Technology Officer" OR "Chief Engineering" OR ${base}`,
-    'Sales': `CRO OR "Chief Revenue Officer" OR "Chief Sales" OR ${base}`,
-    'Finance': `CFO OR "Chief Financial Officer" OR ${base}`,
-    'Product': `CPO OR "Chief Product Officer" OR ${base}`,
-    'Data': `CDO OR "Chief Data Officer" OR CTO OR ${base}`,
-    'Operations': `COO OR "Chief Operating Officer" OR ${base}`,
-  };
-  return map[dept] || base;
+// ── Apollo fallback ──
+
+async function apolloSearch(company, derived, apiKey) {
+  try {
+    const titles = [...derived.hmTitles.slice(0, 3), ...derived.slTitles.slice(0, 2), 'Recruiter', 'Talent Acquisition'];
+    const response = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        q_organization_name: company,
+        person_titles: titles.slice(0, 5),
+        page: 1,
+        per_page: 10
+      })
+    });
+    if (!response.ok) { console.error('Apollo error:', response.status); return []; }
+    const data = await response.json();
+    return (data.people || [])
+      .filter(p => p.linkedin_url && p.linkedin_url.includes('linkedin.com/in/'))
+      .map(p => ({
+        name: [p.first_name, p.last_name].filter(Boolean).join(' '),
+        linkedin_url: p.linkedin_url.split('?')[0],
+        snippet: `${p.title || ''} at ${p.organization?.name || company}`,
+        page_title: `${p.first_name} ${p.last_name} - ${p.title || ''}`,
+        searchRole: categorizeRole(p.title, derived)
+      }));
+  } catch (err) { console.error('Apollo failed:', err.message); return []; }
+}
+
+function categorizeRole(title, derived) {
+  if (!title) return 'Hiring Manager';
+  const t = title.toLowerCase();
+  if (t.includes('recruit') || t.includes('talent acq') || t.includes('talent partner')) return 'Recruiter / TA';
+  if (t.includes('ceo') || t.includes('president') || t.includes('coo') || t.includes('chairman')) return 'Skip-Level';
+  return 'Hiring Manager';
 }
 
 function dedupeContacts(contacts) {
@@ -383,100 +415,4 @@ function dedupeContacts(contacts) {
     seen.add(key);
     return true;
   });
-}
-
-// Company name variations for retry logic
-function getCompanyVariations(company) {
-  const variations = [company];
-  const known = {
-    'RTX': ['Raytheon', 'RTX Corporation'],
-    'Meta': ['Facebook', 'Meta Platforms'],
-    'Alphabet': ['Google'],
-    'Google': ['Alphabet'],
-    'Amazon': ['AWS', 'Amazon Web Services'],
-    'AWS': ['Amazon', 'Amazon Web Services'],
-    'Microsoft': ['MSFT'],
-    'JPMorgan': ['JP Morgan', 'JPMorgan Chase', 'Chase'],
-    'JP Morgan': ['JPMorgan', 'JPMorgan Chase'],
-    'Goldman Sachs': ['Goldman'],
-    'McKinsey': ['McKinsey & Company'],
-    'BCG': ['Boston Consulting Group'],
-    'Bain': ['Bain & Company'],
-    'Deloitte': ['Deloitte Consulting'],
-    'EY': ['Ernst & Young'],
-    'PwC': ['PricewaterhouseCoopers'],
-    'KPMG': ['KPMG US'],
-    'Salesforce': ['Salesforce.com'],
-    'CrowdStrike': ['Crowdstrike'],
-    'Palo Alto Networks': ['Palo Alto'],
-    'ServiceNow': ['Service Now'],
-  };
-
-  // Check known aliases
-  const upper = company.toUpperCase();
-  for (const [key, aliases] of Object.entries(known)) {
-    if (key.toUpperCase() === upper) {
-      variations.push(...aliases);
-      break;
-    }
-  }
-
-  // Also try first word if multi-word (e.g. "Live Nation" → "Live Nation", "Live")
-  const firstWord = company.split(/\s+/)[0];
-  if (firstWord !== company && firstWord.length > 3) {
-    variations.push(firstWord);
-  }
-
-  return [...new Set(variations)];
-}
-
-// Apollo.io fallback search
-async function apolloSearch(company, derived, dept, apiKey) {
-  try {
-    // Search for people at the company with relevant titles
-    const titles = [...derived.hiringManager, ...derived.skipLevel, 'Recruiter', 'Talent Acquisition'];
-    const response = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
-      },
-      body: JSON.stringify({
-        api_key: apiKey,
-        q_organization_name: company,
-        person_titles: titles.slice(0, 5),
-        page: 1,
-        per_page: 10
-      })
-    });
-
-    if (!response.ok) {
-      console.error('Apollo API error:', response.status);
-      return [];
-    }
-
-    const data = await response.json();
-    const people = data.people || [];
-
-    return people
-      .filter(p => p.linkedin_url && p.linkedin_url.includes('linkedin.com/in/'))
-      .map(p => ({
-        name: [p.first_name, p.last_name].filter(Boolean).join(' '),
-        linkedin_url: p.linkedin_url.split('?')[0],
-        snippet: `${p.title || ''} at ${p.organization?.name || company}`,
-        page_title: `${p.first_name} ${p.last_name} - ${p.title || ''}`,
-        searchRole: categorizeApolloRole(p.title, derived)
-      }));
-  } catch (err) {
-    console.error('Apollo search failed:', err.message);
-    return [];
-  }
-}
-
-function categorizeApolloRole(title, derived) {
-  if (!title) return 'Hiring Manager';
-  const t = title.toLowerCase();
-  if (t.includes('recruit') || t.includes('talent acq') || t.includes('talent partner')) return 'Recruiter / TA';
-  if (t.includes('ceo') || t.includes('president') || t.includes('coo') || t.includes('chairman')) return 'Skip-Level';
-  return 'Hiring Manager';
 }

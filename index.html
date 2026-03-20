@@ -2750,12 +2750,12 @@
 
           if (braveResults && braveResults.results && braveResults.results.some(r => r.raw_contacts && r.raw_contacts.length > 0)) {
             const jobContexts = braveResults.results.map(r => {
-              const dt = r.derived_titles || { hiringManager: [], skipLevel: [] };
+              const dt = r.derived || r.derived_titles || { hmTitles: [], slTitles: [], func: '' };
               return `Company: ${r.company} (${r.location || 'any location'})
+Function/Department: ${dt.func || 'Leadership'}
 User's background: ${state.titles.length > 0 ? state.titles.join(', ') : 'Leadership roles'}
-Looking for: hiring managers, skip-level leaders, and recruiters to build relationships with
-Hiring Manager titles: ${dt.hiringManager.join(', ')}
-Skip-Level titles: ${dt.skipLevel.join(', ')}
+Hiring Manager titles: ${(dt.hmTitles || dt.hiringManager || []).join(', ')}
+Skip-Level titles: ${(dt.slTitles || dt.skipLevel || []).join(', ')}
 Raw contacts found: ${r.raw_contacts.length}`;
             }).join('\n\n');
 
@@ -3470,10 +3470,11 @@ Return a JSON array of objects with these exact fields:
         if (braveResults && braveResults.results && braveResults.results.some(r => r.raw_contacts && r.raw_contacts.length > 0)) {
           // We have real LinkedIn data - have Claude verify and organize
           const jobContexts = braveResults.results.map(r => {
-            const dt = r.derived_titles || { hiringManager: [], skipLevel: [] };
+            const dt = r.derived || r.derived_titles || { hmTitles: [], slTitles: [], func: '' };
             return `Job: ${r.job_title} at ${r.company} (${r.location || 'location unknown'})
-Hiring Manager titles to look for: ${dt.hiringManager.join(', ')}
-Skip-Level titles to look for: ${dt.skipLevel.join(', ')}
+Function/Department: ${dt.func || 'Leadership'}
+Hiring Manager titles: ${(dt.hmTitles || dt.hiringManager || []).join(', ')}
+Skip-Level titles: ${(dt.slTitles || dt.skipLevel || []).join(', ')}
 Raw contacts found: ${r.raw_contacts.length}`;
           }).join('\n\n');
 
