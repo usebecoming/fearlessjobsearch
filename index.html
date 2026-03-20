@@ -462,6 +462,13 @@
       border-bottom: 1px solid #EEEEED;
     }
 
+    /* ── Saved profiles bar ── */
+    .saved-profiles-bar {
+      background: #FFFFFF; border: 1px solid #E5E4E2;
+      border-radius: 10px; padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+
     /* ── Back button ── */
     .back-row { margin-bottom: 20px; }
     .btn-back {
@@ -704,9 +711,26 @@
         </div>
       </div>
 
-      <button class="btn-primary" id="searchBtn" disabled onclick="runSearch()">
-        Search Jobs
-      </button>
+      <!-- Saved Search Profiles -->
+      <div class="saved-profiles-bar">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select class="form-input" id="profileSelect" style="width:auto;min-width:180px;font-size:0.82rem;padding:8px 12px">
+            <option value="">Load saved search...</option>
+          </select>
+          <button class="btn-secondary btn-small" onclick="loadSearchProfile()">Load</button>
+          <button class="btn-secondary btn-small" style="color:#C94444;border-color:rgba(201,68,68,0.3)" onclick="deleteSearchProfile()">Delete</button>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+          <input type="text" class="form-input" id="profileName" placeholder="Name this search" style="width:200px;font-size:0.82rem;padding:8px 12px">
+          <button class="btn-secondary btn-small" onclick="saveSearchProfile()">Save Search</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <button class="btn-primary" id="searchBtn" disabled onclick="runSearch()">
+          Search Jobs
+        </button>
+      </div>
     </div>
 
     <!-- ── Step 2: Job Listings ── -->
@@ -1099,7 +1123,7 @@
 
       const resumeSummary = state.resumeText.substring(0, 1200);
       const systemPrompt = 'You are a job search assistant for senior leaders. Respond ONLY with a JSON array. No markdown, no explanation, no extra text.';
-      const userPrompt = `Generate 8-10 realistic active job listings posted within the last 5 days. Direct employers only. No staffing agencies or third-party recruiters.
+      const userPrompt = `Generate 15 realistic active job listings posted within the last 5 days. Direct employers only. No staffing agencies or third-party recruiters.
 
 Target titles: ${JSON.stringify(state.titles)}
 Location: ${state.locations.length ? state.locations.join(', ') : 'Any'}
@@ -1152,7 +1176,6 @@ Return a JSON array of objects with these exact fields:
 
         card.innerHTML = `
           <div class="job-card-actions">
-            <button class="job-fav-btn ${isFav ? 'favorited' : ''}" onclick="event.stopPropagation();toggleFavorite('${esc(job.id)}')" title="Favorite this role">&#9829;</button>
             <div class="job-select-check" onclick="event.stopPropagation();toggleJobSelection('${esc(job.id)}')">&#10003;</div>
           </div>
           <div class="job-card-header" style="padding-right:70px">
@@ -1184,8 +1207,16 @@ Return a JSON array of objects with these exact fields:
 
     function toggleJobSelection(id) {
       const idx = state.selectedJobs.indexOf(id);
-      if (idx === -1) state.selectedJobs.push(id);
-      else state.selectedJobs.splice(idx, 1);
+      if (idx === -1) {
+        state.selectedJobs.push(id);
+        // Auto-favorite for AI learning
+        const job = state.jobs.find(j => j.id === id);
+        if (job && !state.favorites.some(f => f.title === job.title && f.company === job.company)) {
+          toggleFavorite(id);
+        }
+      } else {
+        state.selectedJobs.splice(idx, 1);
+      }
       renderJobs();
     }
 
@@ -1230,6 +1261,100 @@ Return a JSON array of objects with these exact fields:
         }
       }
       renderJobs();
+    }
+
+    // ── Search Profiles ──
+    async function loadSearchProfiles() {
+      if (!supabase) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('search_profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      const select = document.getElementById('profileSelect');
+      select.innerHTML = '<option value="">Load saved search...</option>';
+      if (data) {
+        data.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = p.name;
+          opt.dataset.profile = JSON.stringify(p);
+          select.appendChild(opt);
+        });
+      }
+    }
+
+    async function saveSearchProfile() {
+      const name = document.getElementById('profileName').value.trim();
+      if (!name) {
+        document.getElementById('profileName').style.borderColor = '#C94444';
+        setTimeout(() => document.getElementById('profileName').style.borderColor = '', 1500);
+        return;
+      }
+      if (!supabase) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const workTypes = [...document.querySelectorAll('.work-type-option input:checked')].map(cb => cb.value);
+
+      await supabase.from('search_profiles').insert({
+        user_id: user.id,
+        name,
+        titles: state.titles,
+        locations: state.locations,
+        work_types: workTypes,
+        salary_min: document.getElementById('salaryMin').value,
+        salary_max: document.getElementById('salaryMax').value,
+        anchors: [
+          document.getElementById('anchor1').value.trim(),
+          document.getElementById('anchor2').value.trim(),
+          document.getElementById('anchor3').value.trim()
+        ].filter(Boolean)
+      });
+
+      document.getElementById('profileName').value = '';
+      await loadSearchProfiles();
+    }
+
+    function loadSearchProfile() {
+      const select = document.getElementById('profileSelect');
+      const opt = select.selectedOptions[0];
+      if (!opt || !opt.dataset.profile) return;
+      const p = JSON.parse(opt.dataset.profile);
+
+      // Restore titles
+      state.titles = p.titles || [];
+      renderTags();
+
+      // Restore locations
+      state.locations = p.locations || [];
+      renderLocationTags();
+
+      // Restore work types
+      document.querySelectorAll('.work-type-option input').forEach(cb => {
+        cb.checked = (p.work_types || []).includes(cb.value);
+      });
+
+      // Restore salary
+      if (p.salary_min) document.getElementById('salaryMin').value = p.salary_min;
+      if (p.salary_max) document.getElementById('salaryMax').value = p.salary_max;
+
+      // Restore anchors
+      const anchors = p.anchors || [];
+      document.getElementById('anchor1').value = anchors[0] || '';
+      document.getElementById('anchor2').value = anchors[1] || '';
+      document.getElementById('anchor3').value = anchors[2] || '';
+
+      validateSearch();
+    }
+
+    async function deleteSearchProfile() {
+      const select = document.getElementById('profileSelect');
+      const id = select.value;
+      if (!id || !supabase) return;
+      await supabase.from('search_profiles').delete().eq('id', id);
+      await loadSearchProfiles();
     }
 
     // ── Pipeline Helpers ──
@@ -1322,9 +1447,6 @@ Return a JSON array of objects with these exact fields:
         <div class="job-detail-actions">
           <button class="btn-primary" onclick="toggleJobSelection('${esc(job.id)}');closeJobDetail()">
             ${isSelected ? 'Remove from Selection' : 'Select for Outreach'}
-          </button>
-          <button class="btn-secondary" onclick="toggleFavorite('${esc(job.id)}');openJobDetail('${esc(job.id)}')">
-            ${isFav ? '&#9829; Favorited' : '&#9825; Add to Favorites'}
           </button>
           <button class="btn-secondary" onclick="saveToPipeline('${esc(job.id)}');openJobDetail('${esc(job.id)}')">
             Save to Pipeline
@@ -1599,6 +1721,9 @@ Return a JSON object with a "sequences" array. Each sequence:
         state.resumeText = profile.resume_text;
         document.getElementById('resumeText').value = profile.resume_text;
       }
+
+      // Load search profiles
+      await loadSearchProfiles();
     }
 
     async function saveResume() {
