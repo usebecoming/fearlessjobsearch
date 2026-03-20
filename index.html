@@ -2335,15 +2335,81 @@ ${state.anchors.length ? 'The user has provided these job links as reference exa
 ${resumeSummary ? 'Candidate resume summary (score fit against this):\n' + resumeSummary : 'No resume provided. Assign fitScore of 50 to all.'}
 ${getFavoriteContext()}`;
       } else {
-        userPrompt = `Generate 10 realistic active job listings posted within the last 5 days. Direct employers only. No staffing agencies or third-party recruiters.
+        // Job Target mode: use JSearch API for real listings, then Claude for scoring
+        try {
+          showProgress(container, 'Searching real job listings...', 10);
+
+          const searchRes = await fetch('/api/search-jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              titles: state.titles,
+              locations: state.locations,
+              workTypes
+            })
+          });
+
+          if (!searchRes.ok) {
+            const err = await searchRes.json().catch(() => ({}));
+            throw new Error(err.error || 'Job search failed');
+          }
+
+          const searchData = await searchRes.json();
+          const realJobs = searchData.jobs || [];
+
+          if (realJobs.length === 0) {
+            stopProgress();
+            container.innerHTML = '<div class="error-box">No jobs found matching your criteria. Try broadening your titles or locations.<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="goToStep(1)">Adjust Search</button></div>';
+            return;
+          }
+
+          // Now score with Claude
+          showProgress(container, 'Scoring opportunities against your profile...', 15);
+
+          const scoringPrompt = `Score each of the following real job listings against the candidate's resume. For each job, provide a fitScore (0-100) and a one-line fitReason explaining the match.
+
+${resumeSummary ? 'Candidate resume:\n' + resumeSummary : 'No resume provided. Assign fitScore of 50 to all.'}
+${state.anchors.length ? 'The user has provided these job links as reference examples of what they are looking for. Analyze the role level, scope, industry, and responsibilities from these links when scoring: ' + state.anchors.join(', ') : ''}
+${getFavoriteContext()}
+
+Jobs to score:
+${JSON.stringify(realJobs.map(j => ({ id: j.id, title: j.title, company: j.company, location: j.location, description: j.description })), null, 2)}
+
+Return a JSON array with one object per job:
+[{ "id": "string", "fitScore": number, "fitReason": "string" }]`;
+
+          const scores = await callClaude(
+            'You are a career fit scoring assistant. Respond ONLY with a JSON array. No markdown, no explanation.',
+            scoringPrompt
+          );
+
+          // Merge scores into real jobs
+          const scoredJobs = realJobs.map(job => {
+            const score = (scores || []).find(s => s.id === job.id);
+            return {
+              ...job,
+              fitScore: score ? score.fitScore : 50,
+              fitReason: score ? score.fitReason : 'Unable to score against resume.'
+            };
+          });
+
+          stopProgress();
+          state.jobs = scoredJobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0));
+          state.selectedJobs = [];
+          renderJobs();
+          return;
+        } catch (err) {
+          console.error('JSearch error, falling back to Claude:', err);
+          // Fall back to Claude-generated jobs if JSearch fails
+          userPrompt = `Generate 10 realistic active job listings posted within the last 5 days. Direct employers only. No staffing agencies or third-party recruiters.
 
 Target titles: ${JSON.stringify(state.titles)}
 Location: ${state.locations.length ? state.locations.join(', ') : 'Any'}
 Work type: ${workTypes.length ? workTypes.join(', ') : 'Any'}
 ${salaryStr ? 'Salary range: ' + salaryStr : ''}
-${state.anchors.length ? 'The user has provided these job links as reference examples of what they are looking for. Analyze the role level, scope, industry, and responsibilities from these links to find similar opportunities: ' + state.anchors.join(', ') : ''}
 ${resumeSummary ? 'Candidate resume summary (score fit against this):\n' + resumeSummary : 'No resume provided. Assign fitScore of 50 to all.'}
 ${getFavoriteContext()}`;
+        }
       }
 
       userPrompt += `
@@ -2361,7 +2427,7 @@ Return a JSON array of objects with these exact fields:
 - salary (string or null)
 - highlights (array of 2-3 strings)
 - source (string: "LinkedIn", "Indeed", or "Glassdoor")
-- url (string: a realistic job listing URL on the source platform, e.g. "https://www.linkedin.com/jobs/view/..." or "https://www.indeed.com/viewjob?...")`;
+- url (string: a realistic job listing URL on the source platform)`;
 
       try {
         const jobs = await callClaude(systemPrompt, userPrompt);
