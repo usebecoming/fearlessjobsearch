@@ -805,6 +805,89 @@
     }
     .auth-modal.active { display: flex; }
 
+    /* ── Search Mode Toggle ── */
+    .search-mode-toggle {
+      display: flex; gap: 0; margin-bottom: 24px;
+      border: 1px solid #E5E4E2; border-radius: 10px;
+      overflow: hidden; width: fit-content;
+    }
+    .search-mode-btn {
+      padding: 10px 24px; font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.82rem; font-weight: 500; color: #6E6E6E;
+      background: #FFFFFF; border: none; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .search-mode-btn.active {
+      background: #111111; color: #FFFFFF;
+    }
+    .search-mode-btn:not(.active):hover {
+      background: #F9F6F1; color: #111;
+    }
+
+    /* ── Coaching CTA ── */
+    .coaching-cta {
+      background: rgba(184,168,138,0.08); border: 1px solid rgba(184,168,138,0.2);
+      border-radius: 10px; padding: 14px 20px; margin-top: 16px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+      color: #7A6C52; display: flex; align-items: center;
+      justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    .coaching-cta a {
+      color: #B8A88A; font-weight: 600; white-space: nowrap;
+    }
+
+    /* ── Booking Modal ── */
+    .booking-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(17,17,17,0.4); z-index: 250;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .booking-modal.active { display: flex; }
+    .booking-card {
+      background: #FFFFFF; border: 1px solid #E5E4E2;
+      border-radius: 12px; padding: 20px; margin-bottom: 12px;
+      transition: all 0.25s;
+    }
+    .booking-card:hover { border-color: #B8A88A; }
+
+    /* ── Outreach Info Box ── */
+    .outreach-info-box {
+      background: rgba(184,168,138,0.08); border: 1px solid rgba(184,168,138,0.2);
+      border-radius: 10px; padding: 16px 20px; margin-bottom: 24px;
+      font-size: 0.88rem; color: #555; font-weight: 500; line-height: 1.6;
+    }
+
+    /* ── Stretch job card ── */
+    .job-card.stretch-role {
+      opacity: 0.75; border-color: #EEEEED;
+    }
+    .job-card.stretch-role:hover { opacity: 0.9; }
+
+    /* ── Credibility Section ── */
+    .credibility-section {
+      padding: 60px 24px; max-width: 800px; margin: 0 auto; text-align: center;
+    }
+    .credibility-section h2 {
+      font-size: 1.8rem; line-height: 1.3; margin-bottom: 16px;
+    }
+    .proof-badges {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      justify-content: center; margin: 28px 0;
+    }
+    .proof-badge {
+      background: rgba(184,168,138,0.1); border: 1px solid rgba(184,168,138,0.25);
+      border-radius: 8px; padding: 8px 16px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      color: #7A6C52; font-weight: 500;
+    }
+    .credibility-quote {
+      font-family: 'Playfair Display', serif; font-size: 1.15rem;
+      font-style: italic; color: #444; line-height: 1.6;
+      border-left: 3px solid #B8A88A; padding: 16px 24px;
+      margin: 28px auto; max-width: 600px; text-align: left;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 640px) {
       nav { padding: 14px 16px; }
@@ -839,11 +922,12 @@
 
     <!-- Hero -->
     <div class="hero">
-      <div class="hero-badge">AI-Powered Job Search</div>
-      <h1>Stop applying into the void. <span>Start landing interviews.</span></h1>
-      <p>The job boards are broken. Recruiters ghost you. HR never sees your resume. Fearless Job Search gives you the only thing that actually works: direct access to the people who make hiring decisions.</p>
+      <div class="hero-badge">AI-Powered Executive Search</div>
+      <h1>Stop waiting for callbacks. <span>Start conversations with the right people.</span></h1>
+      <p>At the senior level, your next move will come through relationships, not applications. Fearless Job Search finds the opportunities worth pursuing and connects you directly with the people who make hiring decisions.</p>
       <div class="hero-cta">
         <button class="btn-primary" onclick="document.getElementById('pricingSection').scrollIntoView({behavior:'smooth'})">Start Your Search</button>
+        <button class="btn-secondary" style="padding:16px 36px;font-size:1rem;border-color:#B8A88A;color:#B8A88A" onclick="openBookingModal()">Work With a Coach</button>
         <button class="btn-secondary" style="padding:16px 36px;font-size:1rem" onclick="document.getElementById('problemSection').scrollIntoView({behavior:'smooth'})">See How It Works</button>
       </div>
     </div>
@@ -883,13 +967,13 @@
       <div class="features-grid">
         <div class="feature-card">
           <div class="feature-num">01</div>
-          <h3>Define Your Search</h3>
+          <h3>Position Your Search</h3>
           <p>Enter your target titles, locations, work type, and salary range. Upload your resume for AI-powered fit scoring. Save unlimited search profiles.</p>
         </div>
         <div class="feature-card">
           <div class="feature-num">02</div>
-          <h3>Get Matched Roles</h3>
-          <p>AI surfaces 15 active job listings matched to your criteria. Each scored against your resume with a fit percentage and explanation. No staffing agencies. Direct employers only.</p>
+          <h3>Get Matched Opportunities</h3>
+          <p>AI surfaces 10 active opportunities matched to your criteria. Each scored against your resume with a fit percentage and explanation. No staffing agencies. Direct employers only.</p>
         </div>
         <div class="feature-card">
           <div class="feature-num">03</div>
@@ -898,8 +982,8 @@
         </div>
         <div class="feature-card">
           <div class="feature-num">04</div>
-          <h3>Send Personalized Outreach</h3>
-          <p>Get 4-message sequences tailored to each contact. Pull real achievements from your resume. Peer-level tone. Copy, paste, send. Follow-ups included for 14 days.</p>
+          <h3>Start Conversations</h3>
+          <p>Get 4-message sequences tailored to each contact. Real achievements from your resume. Peer-level tone. Copy, send, start conversations. Follow-ups included for 14 days.</p>
         </div>
       </div>
     </div>
@@ -911,7 +995,7 @@
 
       <!-- Step 1: Search -->
       <div style="margin-bottom:48px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 1: Define Your Search</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 1: Position Your Search</div>
         <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:14px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,0.04)">
           <div style="margin-bottom:16px">
             <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Target Job Titles</div>
@@ -1081,6 +1165,26 @@
           </div>
         </div>
       </div>
+      <!-- Outreach Disclaimer (landing page) -->
+      <div style="margin-top:24px;background:rgba(184,168,138,0.08);border:1px solid rgba(184,168,138,0.2);border-radius:10px;padding:14px 20px;font-size:0.82rem;color:#7A6C52;font-family:'IBM Plex Mono',monospace;line-height:1.6">
+        Fearless Job Search builds your outreach strategy and writes your messages. You send them. Reach out directly through LinkedIn and email. The tool does the thinking. You do the connecting.
+      </div>
+    </div>
+
+    <!-- Credibility Section -->
+    <div class="credibility-section">
+      <h2>Built by the coach who has helped executives land the jobs they actually want</h2>
+      <p class="section-sub">This is not another AI gimmick. Fearless Job Search was created by Dr. Benjamin Ritter, an ICF PCC-certified executive coach with a Doctorate in Organizational Leadership.</p>
+      <div class="proof-badges">
+        <span class="proof-badge">ICF PCC Certified</span>
+        <span class="proof-badge">Doctorate in Organizational Leadership</span>
+        <span class="proof-badge">Clients at Google, Amazon, DoorDash, Pinterest, Coursera</span>
+        <span class="proof-badge">Author of "Becoming Fearless"</span>
+        <span class="proof-badge">Founder, Live for Yourself Consulting</span>
+      </div>
+      <div class="credibility-quote">"You don't need to apply to more jobs. You need to have better conversations with the right people. I built this tool to make that happen."</div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#858585;margin-top:8px">Dr. Benjamin Ritter</p>
+      <a href="https://liveforyourselfconsulting.com" target="_blank" style="display:inline-block;margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem">Learn more about LFY Consulting &#8594;</a>
     </div>
 
     <!-- Pricing -->
@@ -1095,9 +1199,9 @@
           <div class="pricing-amount">$29<span>/mo</span></div>
           <div class="pricing-annual">1 search per month</div>
           <ul class="pricing-features">
-            <li>15 AI-matched roles per search</li>
-            <li>Up to 90 decision-maker contacts</li>
-            <li>360 personalized outreach messages</li>
+            <li>10 AI-matched roles per search</li>
+            <li>Up to 60 decision-maker contacts</li>
+            <li>240 personalized outreach messages</li>
             <li>Emails + LinkedIn profiles included</li>
             <li>Pipeline tracking</li>
           </ul>
@@ -1110,9 +1214,9 @@
           <div class="pricing-amount">$59<span>/mo</span></div>
           <div class="pricing-annual">4 searches per month</div>
           <ul class="pricing-features">
-            <li>60 AI-matched roles per month</li>
-            <li>Up to 360 decision-maker contacts</li>
-            <li>1,440 personalized outreach messages</li>
+            <li>40 AI-matched roles per month</li>
+            <li>Up to 240 decision-maker contacts</li>
+            <li>960 personalized outreach messages</li>
             <li>AI learns what roles you prefer</li>
             <li>Saved search profiles</li>
             <li>CSV export for automation tools</li>
@@ -1146,8 +1250,8 @@
 
     <!-- Final CTA -->
     <div style="padding:60px 24px;text-align:center;max-width:700px;margin:0 auto">
-      <h2 style="font-size:2rem;line-height:1.3;margin-bottom:16px">Your next role isn't going to find you. <span style="color:#B8A88A">Go get it.</span></h2>
-      <p style="font-size:1.05rem;color:#555;font-weight:500;line-height:1.7;margin-bottom:32px">Every day you wait is a day someone else is reaching out to the hiring manager you should be talking to. Stop scrolling job boards. Start having real conversations with the people who actually make hiring decisions.</p>
+      <h2 style="font-size:2rem;line-height:1.3;margin-bottom:16px">Your next move starts with a conversation. <span style="color:#B8A88A">Start it today.</span></h2>
+      <p style="font-size:1.05rem;color:#555;font-weight:500;line-height:1.7;margin-bottom:32px">Every day you wait is a day someone else is building the relationship that lands the role you want. Stop scrolling job boards. Start having real conversations with the people who actually make hiring decisions.</p>
       <button class="btn-primary" style="font-size:1.05rem;padding:18px 40px" onclick="document.getElementById('pricingSection').scrollIntoView({behavior:'smooth'})">Start Your Fearless Job Search</button>
     </div>
 
@@ -1210,6 +1314,7 @@
     </div>
     <div class="nav-right">
       <button class="nav-btn" onclick="openPipeline()">Pipeline</button>
+      <button class="nav-btn" style="border-color:#B8A88A;color:#B8A88A" onclick="openBookingModal()">Work With Ben</button>
       <button class="nav-btn" id="navUpgradeBtn" style="border-color:#B8A88A;color:#B8A88A" onclick="openUpgradeModal()">Upgrade</button>
       <span class="user-email" id="navUserEmail"></span>
       <button class="nav-signout" onclick="doSignOut()">Sign Out</button>
@@ -1245,8 +1350,14 @@
         <button class="btn-primary" style="padding:10px 22px;font-size:0.82rem;white-space:nowrap" onclick="openUpgradeModal()">View Plans</button>
       </div>
 
-      <h2 class="section-title">Define Your Search</h2>
-      <p class="section-sub">Tell us what you're looking for. We'll find roles that match your leadership profile.</p>
+      <h2 class="section-title">Position Your Search</h2>
+      <p class="section-sub">Tell us what you are looking for. We will find opportunities that match your leadership profile.</p>
+
+      <!-- Search Mode Toggle -->
+      <div class="search-mode-toggle" id="searchModeToggle">
+        <button class="search-mode-btn active" onclick="setSearchMode('jobs')">Job Target</button>
+        <button class="search-mode-btn" onclick="setSearchMode('companies')">Company Target</button>
+      </div>
 
       <!-- Saved Search Profiles -->
       <div class="saved-profiles-bar" style="margin-bottom:28px">
@@ -1263,11 +1374,19 @@
         </div>
       </div>
 
-      <!-- Target Titles -->
-      <div class="form-group">
-        <label class="form-label">Target Job Titles</label>
+      <!-- Target Titles (Job Mode) -->
+      <div class="form-group" id="titlesGroup">
+        <label class="form-label" id="titlesLabel">Target Job Titles</label>
         <div class="tag-input-wrap" id="titlesWrap">
           <input type="text" class="tag-field" id="titlesField" placeholder="e.g. VP of Marketing, press Enter to add">
+        </div>
+      </div>
+
+      <!-- Target Companies (Company Mode) -->
+      <div class="form-group" id="companiesGroup" style="display:none">
+        <label class="form-label">Target Companies</label>
+        <div class="tag-input-wrap" id="companiesWrap">
+          <input type="text" class="tag-field" id="companiesField" placeholder="e.g. Google, Stripe, press Enter to add">
         </div>
       </div>
 
@@ -1359,7 +1478,7 @@
 
       <div style="display:flex;gap:12px;margin-top:8px">
         <button class="btn-primary" id="searchBtn" disabled onclick="runSearch()">
-          Search Jobs
+          Find Opportunities
         </button>
       </div>
     </div>
@@ -1367,14 +1486,14 @@
     <!-- ── Step 2: Job Listings ── -->
     <div class="section" id="section-2">
       <div class="back-row"><button class="btn-back" onclick="goToStep(1)">← Back to search</button></div>
-      <h2 class="section-title">Job Listings</h2>
-      <p class="section-sub">Select the roles that interest you to surface decision-makers.</p>
+      <h2 class="section-title">Matched Opportunities</h2>
+      <p class="section-sub">Select the opportunities worth pursuing. We'll find the people who make hiring decisions.</p>
       <div id="jobsContainer"></div>
       <!-- Free mode paywall -->
       <div id="jobsPaywall" style="display:none">
         <div style="position:relative;margin-top:-60px;padding-top:60px;background:linear-gradient(to bottom,rgba(255,248,242,0),#FFF8F2 40px)">
           <div style="background:#FFFFFF;border:2px solid #B8A88A;border-radius:14px;padding:32px;text-align:center;box-shadow:0 8px 32px rgba(184,168,138,0.12)">
-            <h3 style="font-size:1.3rem;margin-bottom:8px">10 more matched roles available</h3>
+            <h3 style="font-size:1.3rem;margin-bottom:8px">7 more matched opportunities available</h3>
             <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto">Plus decision-maker contacts, personalized outreach sequences, and pipeline tracking.</p>
             <button class="btn-primary" style="padding:14px 32px" onclick="openUpgradeModal()">Unlock Full Access</button>
           </div>
@@ -1392,7 +1511,7 @@
     <div class="section" id="section-3">
       <div class="back-row"><button class="btn-back" onclick="goToStep(2)">← Back to jobs</button></div>
       <h2 class="section-title">Decision-Makers</h2>
-      <p class="section-sub">Select the contacts you want to reach out to, then generate personalized outreach sequences.</p>
+      <p class="section-sub">The people who actually make hiring decisions. No agencies, no gatekeepers.</p>
 
       <!-- Instructions -->
       <div id="contactsInstructions" style="display:none;background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:20px;margin-bottom:20px">
@@ -1424,8 +1543,17 @@
     <!-- ── Step 4: Outreach Sequences ── -->
     <div class="section" id="section-4">
       <div class="back-row"><button class="btn-back" onclick="goToStep(3)">← Back to contacts</button></div>
-      <h2 class="section-title">Outreach Sequences</h2>
-      <p class="section-sub">Personalized 4-message sequences for each contact. Copy and send.</p>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 class="section-title">Outreach Sequences</h2>
+          <p class="section-sub">Confident, peer-level outreach sequences. Copy, send, start conversations.</p>
+        </div>
+        <button class="btn-secondary btn-small" onclick="exportOutreachCSV()" style="margin-top:8px">Export to Spreadsheet</button>
+      </div>
+      <!-- Outreach Disclaimer -->
+      <div class="outreach-info-box">
+        Fearless Job Search builds your outreach strategy and writes your messages. You send them. Reach out directly through LinkedIn and email. The tool does the thinking. You do the connecting.
+      </div>
       <div id="outreachContainer"></div>
     </div>
   </div>
@@ -1460,8 +1588,8 @@
           <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$29<span style="font-size:0.9rem;color:#858585;font-weight:400">/mo</span></div>
           <ul style="list-style:none;margin:16px 0;font-size:0.82rem;color:#555;font-weight:500">
             <li style="padding:4px 0">1 search/month</li>
-            <li style="padding:4px 0">90 contacts</li>
-            <li style="padding:4px 0">360 messages</li>
+            <li style="padding:4px 0">60 decision-maker contacts</li>
+            <li style="padding:4px 0">240 personalized outreach messages</li>
           </ul>
           <button class="btn-secondary" style="width:100%;justify-content:center;padding:10px" onclick="startCheckout('starter')">Select</button>
         </div>
@@ -1470,8 +1598,8 @@
           <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$59<span style="font-size:0.9rem;color:#858585;font-weight:400">/mo</span></div>
           <ul style="list-style:none;margin:16px 0;font-size:0.82rem;color:#555;font-weight:500">
             <li style="padding:4px 0">4 searches/month</li>
-            <li style="padding:4px 0">360 contacts</li>
-            <li style="padding:4px 0">1,440 messages</li>
+            <li style="padding:4px 0">240 decision-maker contacts</li>
+            <li style="padding:4px 0">960 personalized outreach messages</li>
           </ul>
           <button class="btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="startCheckout('pro')">Select</button>
         </div>
@@ -1486,6 +1614,47 @@
           <button class="btn-primary" style="width:100%;justify-content:center;padding:10px;background:#111" onclick="startCheckout('unlimited')">Select</button>
           <div style="text-align:center;margin-top:8px"><a href="#" onclick="event.preventDefault();startCheckout('unlimited_yearly')" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem">$599/year (save $589)</a></div>
         </div>
+      </div>
+      <!-- Coaching Upsell -->
+      <div style="margin-top:20px;background:rgba(184,168,138,0.06);border:1px solid rgba(184,168,138,0.2);border-radius:12px;padding:20px;text-align:center">
+        <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:#111;margin-bottom:8px">Want direct coaching from the expert who built this tool?</div>
+        <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">Work 1-on-1 with Dr. Benjamin Ritter for resume strategy, LinkedIn positioning, or career coaching.</p>
+        <button class="btn-secondary" style="padding:10px 24px" onclick="closeUpgradeModal();openBookingModal()">Book a Session - $500</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Booking Modal ── -->
+  <div class="booking-modal" id="bookingModal">
+    <div class="modal" style="max-width:600px">
+      <div class="modal-header">
+        <h2 style="font-size:1.3rem">Work With Ben</h2>
+        <button class="modal-close" onclick="closeBookingModal()">&#10005;</button>
+      </div>
+      <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:20px">Get direct access to the coach who built this tool. Dr. Benjamin Ritter has helped hundreds of executives land the roles they actually want.</p>
+      <div class="booking-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">Resume Review and Rewrite</div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:600;color:#B8A88A">$500</span>
+        </div>
+        <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">Get your resume rewritten by an expert who knows what hiring managers at top companies actually look for. Includes a 45-minute strategy call and a fully rewritten resume.</p>
+        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book Resume Review</a>
+      </div>
+      <div class="booking-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">LinkedIn Optimization</div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:600;color:#B8A88A">$500</span>
+        </div>
+        <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">Transform your LinkedIn profile into a magnet for opportunities. Headline, summary, experience, and positioning all optimized for executive-level roles.</p>
+        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book LinkedIn Session</a>
+      </div>
+      <div class="booking-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">Career Coaching Session</div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:600;color:#B8A88A">$500</span>
+        </div>
+        <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">A focused 60-minute session to clarify your career direction, refine your search strategy, and build confidence for your next move. No fluff, just results.</p>
+        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book Coaching Session</a>
       </div>
     </div>
   </div>
@@ -1710,6 +1879,7 @@
     // ── State ──
     const state = {
       titles: [],
+      companies: [],
       locations: [],
       anchors: [],
       resumeText: '',
@@ -1721,7 +1891,8 @@
       pipeline: [],
       currentStep: 1,
       hasPaid: false,
-      userEmail: ''
+      userEmail: '',
+      searchMode: 'jobs'
     };
 
     // ── Tag input ──
@@ -1756,6 +1927,66 @@
       renderTags();
       validateSearch();
     }
+
+    // ── Search Mode Toggle ──
+    function setSearchMode(mode) {
+      state.searchMode = mode;
+      document.querySelectorAll('.search-mode-btn').forEach(btn => btn.classList.remove('active'));
+      if (mode === 'jobs') {
+        document.querySelectorAll('.search-mode-btn')[0].classList.add('active');
+        document.getElementById('titlesGroup').style.display = '';
+        document.getElementById('companiesGroup').style.display = 'none';
+      } else {
+        document.querySelectorAll('.search-mode-btn')[1].classList.add('active');
+        document.getElementById('titlesGroup').style.display = 'none';
+        document.getElementById('companiesGroup').style.display = '';
+      }
+      validateSearch();
+    }
+
+    // ── Company Tag Input ──
+    const companiesField = document.getElementById('companiesField');
+    const companiesWrap = document.getElementById('companiesWrap');
+
+    companiesField.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = companiesField.value.trim();
+        if (val && !state.companies.includes(val)) {
+          state.companies.push(val);
+          renderCompanyTags();
+          companiesField.value = '';
+        }
+        validateSearch();
+      }
+    });
+
+    function renderCompanyTags() {
+      companiesWrap.querySelectorAll('.tag').forEach(t => t.remove());
+      state.companies.forEach((company, i) => {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.innerHTML = `${esc(company)}<button class="tag-remove" onclick="removeCompany(${i})">&#215;</button>`;
+        companiesWrap.insertBefore(tag, companiesField);
+      });
+    }
+
+    function removeCompany(i) {
+      state.companies.splice(i, 1);
+      renderCompanyTags();
+      validateSearch();
+    }
+
+    // ── Booking Modal ──
+    function openBookingModal() {
+      document.getElementById('bookingModal').classList.add('active');
+    }
+    function closeBookingModal() {
+      document.getElementById('bookingModal').classList.remove('active');
+    }
+    document.getElementById('bookingModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeBookingModal();
+    });
 
     // ── Location autocomplete ──
     const LOCATIONS = [
@@ -1885,7 +2116,10 @@
           text = await file.text();
         }
 
-        text = text.replace(/\s+/g, ' ').trim();
+        // Preserve paragraph breaks, normalize whitespace within lines
+        text = text.split(/\n\s*\n/).map(para =>
+          para.split('\n').map(line => line.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n')
+        ).filter(Boolean).join('\n\n').trim();
         state.resumeText = text;
         showResumeLoaded(file.name, text);
         saveResume();
@@ -1917,7 +2151,11 @@
     // ── Validation ──
     function validateSearch() {
       const btn = document.getElementById('searchBtn');
-      btn.disabled = state.titles.length === 0;
+      if (state.searchMode === 'companies') {
+        btn.disabled = state.companies.length === 0;
+      } else {
+        btn.disabled = state.titles.length === 0;
+      }
     }
 
     let resumeSaveTimeout;
@@ -1979,7 +2217,9 @@
 
     // ── Step 2: Search ──
     async function runSearch() {
-      state.resumeText = document.getElementById('resumeText').value.trim();
+      // Only read from textarea if no file was uploaded
+      const textareaVal = document.getElementById('resumeText').value.trim();
+      if (textareaVal) state.resumeText = textareaVal;
       state.anchors = [
         document.getElementById('anchor1').value.trim(),
         document.getElementById('anchor2').value.trim(),
@@ -1998,12 +2238,25 @@
 
       goToStep(2);
       const container = document.getElementById('jobsContainer');
-      showProgress(container, 'Searching for matching roles...', 20);
+      showProgress(container, 'Finding opportunities that match your leadership profile...', 20);
       document.getElementById('selectionBar').style.display = 'none';
 
       const resumeSummary = state.resumeText.substring(0, 1200);
       const systemPrompt = 'You are a job search assistant for senior leaders. Respond ONLY with a JSON array. No markdown, no explanation, no extra text.';
-      const userPrompt = `Generate 15 realistic active job listings posted within the last 5 days. Direct employers only. No staffing agencies or third-party recruiters.
+
+      let userPrompt;
+      if (state.searchMode === 'companies') {
+        userPrompt = `Generate 10 realistic active job listings at the specified target companies, posted within the last 5 days. Focus on leadership-level positions (Director, VP, SVP, C-Suite). If no relevant open roles exist at a company, still include the company with the most likely leadership role they would hire for and surface appropriate contacts.
+
+Target companies: ${JSON.stringify(state.companies)}
+Location: ${state.locations.length ? state.locations.join(', ') : 'Any'}
+Work type: ${workTypes.length ? workTypes.join(', ') : 'Any'}
+${salaryStr ? 'Salary range: ' + salaryStr : ''}
+${state.anchors.length ? 'Anchor job links for reference: ' + state.anchors.join(', ') : ''}
+${resumeSummary ? 'Candidate resume summary (score fit against this):\n' + resumeSummary : 'No resume provided. Assign fitScore of 50 to all.'}
+${getFavoriteContext()}`;
+      } else {
+        userPrompt = `Generate 10 realistic active job listings posted within the last 5 days. Direct employers only. No staffing agencies or third-party recruiters.
 
 Target titles: ${JSON.stringify(state.titles)}
 Location: ${state.locations.length ? state.locations.join(', ') : 'Any'}
@@ -2011,7 +2264,10 @@ Work type: ${workTypes.length ? workTypes.join(', ') : 'Any'}
 ${salaryStr ? 'Salary range: ' + salaryStr : ''}
 ${state.anchors.length ? 'Anchor job links for reference: ' + state.anchors.join(', ') : ''}
 ${resumeSummary ? 'Candidate resume summary (score fit against this):\n' + resumeSummary : 'No resume provided. Assign fitScore of 50 to all.'}
-${getFavoriteContext()}
+${getFavoriteContext()}`;
+      }
+
+      userPrompt += `
 
 Return a JSON array of objects with these exact fields:
 - id (string, unique)
@@ -2040,7 +2296,7 @@ Return a JSON array of objects with these exact fields:
     }
 
     // Free preview: show 5 jobs, lock the rest
-    const FREE_JOB_LIMIT = 5;
+    const FREE_JOB_LIMIT = 3;
     const ADMIN_EMAILS = ['ben@liveforyourselfconsulting.com', 'ritterbenjamin@gmail.com'];
     function isFreeTier() {
       if (ADMIN_EMAILS.includes(state.userEmail)) return false;
@@ -2060,14 +2316,20 @@ Return a JSON array of objects with these exact fields:
 
       visibleJobs.forEach((job, i) => {
         const card = document.createElement('div');
-        card.className = 'job-card fade-up' + (state.selectedJobs.includes(job.id) ? ' selected' : '');
+        const isStretch = job.fitScore < 87;
+        card.className = 'job-card fade-up' + (state.selectedJobs.includes(job.id) ? ' selected' : '') + (isStretch ? ' stretch-role' : '');
         card.style.animationDelay = `${i * 0.06}s`;
 
-        const fitBadge = job.fitScore >= 80 ? 'badge-green' :
-                         job.fitScore >= 60 ? 'badge-gold' : 'badge-red';
-        const fitLabel = job.fitScore >= 80 ? 'Strong Match' :
-                         job.fitScore >= 60 ? 'Good Match' : 'Stretch';
+        const fitBadge = job.fitScore >= 87 ? 'badge-green' :
+                         job.fitScore >= 70 ? 'badge-gold' : 'badge-red';
+        const fitLabel = job.fitScore >= 87 ? 'Strong Match' :
+                         job.fitScore >= 70 ? 'Good Match' : 'Stretch';
         const isFav = state.favorites.some(f => f.title === job.title && f.company === job.company);
+
+        let stretchNote = '';
+        if (job.fitScore < 87) {
+          stretchNote = `<div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#C94444;font-weight:500">${job.fitScore < 70 ? 'Stretch' : 'Good Match'} - may need resume tailoring. <a href="#" onclick="event.stopPropagation();event.preventDefault();openBookingModal()" style="color:#B8A88A;font-weight:600">Get Ben's eyes on it.</a></div>`;
+        }
 
         card.innerHTML = `
           <div class="job-card-actions">
@@ -2078,7 +2340,7 @@ Return a JSON array of objects with these exact fields:
               <div class="job-title">${esc(job.title)}</div>
               <div class="job-company">${esc(job.company)}</div>
             </div>
-            <span class="badge ${fitBadge}">${job.fitScore} · ${fitLabel}</span>
+            <span class="badge ${fitBadge}">${job.fitScore} &middot; ${fitLabel}</span>
           </div>
           <div class="job-meta">
             <span>${esc(job.location)}</span>
@@ -2089,6 +2351,7 @@ Return a JSON array of objects with these exact fields:
           </div>
           ${job.highlights ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${job.highlights.map(h => `<span style="font-size:0.75rem;color:#555555;background:#F9F6F1;padding:3px 8px;border-radius:4px;border:1px solid #EEEEED;font-weight:500">${esc(h)}</span>`).join('')}</div>` : ''}
           <div class="fit-reason">"${esc(job.fitReason)}"</div>
+          ${stretchNote}
           <button class="job-view-btn" onclick="event.stopPropagation();openJobDetail('${esc(job.id)}')">View details + apply</button>
         `;
         card.onclick = () => toggleJobSelection(job.id);
@@ -2096,6 +2359,13 @@ Return a JSON array of objects with these exact fields:
       });
 
       container.appendChild(grid);
+
+      // Coaching CTA after job listings
+      const ctaDiv = document.createElement('div');
+      ctaDiv.className = 'coaching-cta';
+      ctaDiv.innerHTML = 'Want expert eyes on your strategy? <a href="#" onclick="event.preventDefault();openBookingModal()">Work with Ben &#8594;</a>';
+      container.appendChild(ctaDiv);
+
       document.getElementById('selectionBar').style.display = 'flex';
       updateSelectionCount();
     }
@@ -2351,10 +2621,10 @@ Return a JSON array of objects with these exact fields:
       if (!job) return;
       const panel = document.getElementById('jobDetailPanel');
 
-      const fitBadge = job.fitScore >= 80 ? 'badge-green' :
-                       job.fitScore >= 60 ? 'badge-gold' : 'badge-red';
-      const fitLabel = job.fitScore >= 80 ? 'Strong Match' :
-                       job.fitScore >= 60 ? 'Good Match' : 'Stretch';
+      const fitBadge = job.fitScore >= 87 ? 'badge-green' :
+                       job.fitScore >= 70 ? 'badge-gold' : 'badge-red';
+      const fitLabel = job.fitScore >= 87 ? 'Strong Match' :
+                       job.fitScore >= 70 ? 'Good Match' : 'Stretch';
       const isFav = state.favorites.some(f => f.title === job.title && f.company === job.company);
       const isSelected = state.selectedJobs.includes(job.id);
 
@@ -2445,7 +2715,7 @@ Return a JSON array of objects with these exact fields:
         .map(j => ({ job_id: j.id, title: j.title, company: j.company, industry: j.industry, location: j.location }));
 
       const contactEstimate = Math.max(20, selectedJobData.length * 8);
-      showProgress(container, 'Surfacing decision-makers...', contactEstimate);
+      showProgress(container, 'Identifying the people behind the hiring decisions...', contactEstimate);
 
       const systemPrompt = 'You are a networking assistant for senior leaders. Respond ONLY with a JSON object. No markdown, no explanation.';
       const userPrompt = `Surface 3-6 direct company contacts for each of the following roles. Include: internal recruiter/TA, most likely hiring manager, and a skip-level leader (their manager or C-suite peer). NO recruiting agencies. Provide realistic names, work email, LinkedIn URL, and one-line rationale.
@@ -2591,7 +2861,7 @@ Return a JSON object with a "results" array. Each result:
 
       const totalContacts = targets.reduce((sum, t) => sum + t.contacts.length, 0);
       const outreachEstimate = Math.max(20, totalContacts * 5);
-      showProgress(container, 'Generating personalized outreach sequences...', outreachEstimate);
+      showProgress(container, 'Writing your outreach strategy...', outreachEstimate);
 
       const systemPrompt = 'You are a senior executive outreach copywriter. Respond ONLY with a JSON object. No markdown, no explanation.';
       const userPrompt = `Write personalized 4-message outreach sequences for each contact below. Two tracks:
@@ -2847,6 +3117,32 @@ Return a JSON object with a "sequences" array. Each sequence:
       });
     }
 
+    function exportOutreachCSV() {
+      const seqs = state.sequences?.sequences || [];
+      if (seqs.length === 0) {
+        alert('No outreach sequences to export yet.');
+        return;
+      }
+      const headers = ['Contact Name', 'Title', 'Company', 'Role', 'Channel', 'Day', 'Message Type', 'Message Text'];
+      const rows = [];
+      seqs.forEach(seq => {
+        (seq.messages || []).forEach(msg => {
+          rows.push([
+            seq.contact_name, seq.job_title, seq.company, seq.contact_role || seq.track,
+            msg.channel, msg.timing, msg.step, msg.body
+          ].map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(','));
+        });
+      });
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'fearless-outreach-' + new Date().toISOString().split('T')[0] + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
     function exportCSV() {
       const contacts = getAllContacts();
       const headers = ['Name', 'Title', 'Role', 'Email', 'LinkedIn', 'Company', 'Job Title', 'Note'];
@@ -2880,8 +3176,8 @@ Return a JSON object with a "sequences" array. Each sequence:
         </div>`;
 
       const workingMessages = [
-        'AI is analyzing your criteria...',
-        'Scanning thousands of roles...',
+        'AI is analyzing your leadership profile...',
+        'Scanning thousands of opportunities...',
         'Cross-referencing your resume...',
         'Building personalized results...',
         'Matching against your preferences...',
