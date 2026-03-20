@@ -2546,7 +2546,27 @@
           for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const content = await page.getTextContent();
-            pages.push(content.items.map(item => item.str).join(' '));
+            // Reconstruct text with line breaks using Y-position changes
+            var lastY = null;
+            var pageLines = [];
+            var currentLine = '';
+            content.items.forEach(function(item) {
+              var y = item.transform ? item.transform[5] : null;
+              if (lastY !== null && y !== null && Math.abs(y - lastY) > 5) {
+                // Y position changed significantly = new line
+                if (currentLine.trim()) pageLines.push(currentLine.trim());
+                currentLine = item.str;
+              } else {
+                // Same line - add space if needed
+                if (currentLine && item.str && !currentLine.endsWith(' ') && !item.str.startsWith(' ')) {
+                  currentLine += ' ';
+                }
+                currentLine += item.str;
+              }
+              lastY = y;
+            });
+            if (currentLine.trim()) pageLines.push(currentLine.trim());
+            pages.push(pageLines.join('\n'));
           }
           text = pages.join('\n\n');
         } else if (ext === 'docx') {
