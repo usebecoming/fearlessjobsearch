@@ -161,6 +161,27 @@ export default async function handler(req, res) {
       console.log(`  🤔 Claude decides: ${claudeDecide.length}`);
       console.log(`  ❌ Auto-rejected: ${autoRejected}`);
 
+      // Founder search if too few pre-qualified contacts
+      if (preQualified.length < 2) {
+        console.log(`🔍 Low pre-qualified count (${preQualified.length}) — running founder search for ${company}`);
+        const fq1 = `"${company}" founder CEO president "linkedin.com/in"`;
+        console.log(`  Founder query: ${fq1}`);
+        const fResults = await braveSearch(fq1, braveKey);
+        console.log(`  Founder results: ${fResults.length}`);
+        for (const fr of fResults) {
+          if (!preQualified.some(p => p.linkedin_url === fr.linkedin_url) && !claudeDecide.some(p => p.linkedin_url === fr.linkedin_url)) {
+            fr.preQualified = true;
+            fr.confidence = 'medium';
+            fr.preQualReason = 'founder/CEO search';
+            fr.isFounder = true;
+            fr.searchRole = 'Skip-Level';
+            fr.inferredTitle = inferTitleFromSlug(fr.linkedin_url) || 'Founder / CEO';
+            preQualified.push(fr);
+            console.log(`  ✅ Founder found: ${fr.name} — ${fr.linkedin_url}`);
+          }
+        }
+      }
+
       // Combine pre-qualified + claude-decide for Claude
       const toPassToClaude = [...preQualified, ...claudeDecide];
       console.log(`Passing ${toPassToClaude.length} contacts to Claude`);
@@ -633,28 +654,41 @@ function dedupeContacts(contacts) {
 
 // ── LinkedIn company slug lookup ──
 async function getLinkedInCompanySlug(companyName, braveKey) {
-  try {
-    const query = `site:linkedin.com/company "${companyName}"`;
-    console.log('Company slug lookup:', query);
-    const params = new URLSearchParams({ q: query, count: '3', text_decorations: 'false', search_lang: 'en' });
-    const response = await fetch(
-      `https://api.search.brave.com/res/v1/web/search?${params.toString()}`,
-      { headers: { 'Accept': 'application/json', 'X-Subscription-Token': braveKey } }
-    );
-    if (!response.ok) return slugifyCompany(companyName);
-    const data = await response.json();
-    const results = (data.web && data.web.results) || [];
-    for (const r of results) {
-      const match = (r.url || '').match(/linkedin\.com\/company\/([^\/\?]+)/);
-      if (match) {
-        console.log('Found LinkedIn slug:', match[1]);
-        return match[1];
+  // Try full name first, then variations
+  const namesToTry = [companyName];
+  // Add known abbreviations
+  const abbrevMap = { 'Clifton Larson Allen': 'CLA CliftonLarsonAllen', 'CliftonLarsonAllen': 'CLA' };
+  if (abbrevMap[companyName]) namesToTry.push(abbrevMap[companyName]);
+  // Also try without common suffixes
+  const cleaned = companyName.replace(/\s*(Inc|LLC|Corp|Ltd|Group|Co)\s*\.?$/i, '').trim();
+  if (cleaned !== companyName) namesToTry.push(cleaned);
+
+  for (const name of namesToTry) {
+    try {
+      const query = `site:linkedin.com/company "${name}"`;
+      console.log('Company slug lookup:', query);
+      const params = new URLSearchParams({ q: query, count: '5', text_decorations: 'false', search_lang: 'en' });
+      const response = await fetch(
+        `https://api.search.brave.com/res/v1/web/search?${params.toString()}`,
+        { headers: { 'Accept': 'application/json', 'X-Subscription-Token': braveKey } }
+      );
+      if (!response.ok) continue;
+      const data = await response.json();
+      const results = (data.web && data.web.results) || [];
+      for (const r of results) {
+        const match = (r.url || '').match(/linkedin\.com\/company\/([^\/\?]+)/);
+        if (match) {
+          console.log(`✅ Found LinkedIn slug for "${companyName}": ${match[1]}`);
+          return match[1];
+        }
       }
+    } catch (e) {
+      console.error('Slug lookup failed for', name, ':', e.message);
     }
-  } catch (e) {
-    console.error('Slug lookup failed:', e.message);
   }
-  return slugifyCompany(companyName);
+  const fallback = slugifyCompany(companyName);
+  console.log(`⚠️ Slug not found for "${companyName}" — using generated: ${fallback}`);
+  return fallback;
 }
 
 function slugifyCompany(name) {

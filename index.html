@@ -3680,15 +3680,26 @@ Return a JSON object with a "results" array. Each result:
 
         const data = await callClaude(systemPrompt, userPrompt);
         stopProgress();
-        // Fix 4: Log what Claude returned
-        if (data.results) {
+        // Fix 4: Enhanced Claude output logging
+        console.log('\n📤 CLAUDE CONTACT OUTPUT:');
+        if (!data.results || data.results.length === 0) {
+          console.log('  ❌ Claude returned 0 results');
+          console.log('  Raw response:', JSON.stringify(data).substring(0, 500));
+        } else {
+          var totalKept = 0;
           data.results.forEach(function(r) {
-            console.log('📤 Claude returned for ' + r.company + ':');
-            (r.contacts || []).forEach(function(c) {
-              console.log('  ' + (c.confidence === 'high' ? '✅' : '🔶') + ' ' + c.name + ' — ' + c.role + ' — ' + c.title);
-            });
-            console.log('  Total: ' + (r.contacts || []).length + ' contacts');
+            console.log('\n📤 ' + r.company + ':');
+            if (!r.contacts || r.contacts.length === 0) {
+              console.log('  ❌ 0 contacts returned');
+            } else {
+              r.contacts.forEach(function(c) {
+                console.log('  ' + (c.confidence === 'high' ? '✅' : '🔶') + ' ' + c.name + ' | ' + c.role + ' | ' + (c.title || 'NO TITLE') + ' | ' + (c.confidence || 'unknown'));
+              });
+              totalKept += r.contacts.length;
+            }
           });
+          var totalPassed = braveResults && braveResults.results ? braveResults.results.reduce(function(s,r){ return s + (r.raw_contacts || []).length; }, 0) : 0;
+          console.log('\n📊 Pipeline: ' + totalPassed + ' passed to Claude → ' + totalKept + ' kept (' + (totalPassed > 0 ? Math.round(totalKept/totalPassed*100) : 0) + '% acceptance)');
         }
         // Merge linkedin_slug and geo_urn from Brave into Claude's results
         if (data.results && braveResults && braveResults.results) {
@@ -3706,9 +3717,10 @@ Return a JSON object with a "results" array. Each result:
           data.results = data.results.map(function(job) {
             if (!job.contacts) return job;
             job.contacts = job.contacts.filter(function(c) {
-              var url = (c.linkedin || '').toLowerCase().split('?')[0];
+              var url = (c.linkedin || c.linkedin_url || '').toLowerCase().split('?')[0].replace(/\/+$/, '');
+              if (!url) return true;
               if (seenUrls[url]) {
-                console.log('Duplicate removed:', c.name, 'appeared in multiple jobs');
+                console.log('⚠️ Duplicate removed:', c.name, 'at', job.company, '- appeared in earlier job');
                 return false;
               }
               seenUrls[url] = true;
