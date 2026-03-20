@@ -1568,8 +1568,7 @@
             <span class="value">0</span>
           </div>
           <div class="account-dropdown-item" style="border-top:1px solid #F0EFED;padding-top:12px;margin-top:4px">
-            <span class="label">Support</span>
-            <span class="value"><a href="mailto:support@lfyconsulting.com">support@lfyconsulting.com</a></span>
+            <a href="mailto:support@lfyconsulting.com" style="color:#B8A88A;font-size:0.82rem">Contact Support</a>
           </div>
           <button class="account-signout" onclick="doSignOut()">Sign Out</button>
         </div>
@@ -1751,8 +1750,8 @@
     <div class="section" id="section-2">
       <div class="back-row"><button class="btn-back" onclick="goToStep(1)">← Back to search</button></div>
       <h2 class="section-title">Matched Opportunities</h2>
-      <p class="section-sub">Select the opportunities worth pursuing. We'll find the people who make hiring decisions.</p>
-      <p style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777;margin-bottom:16px">Real listings sourced from LinkedIn, Indeed, Glassdoor, ZipRecruiter, and other major job platforms. Scored against your resume by AI.</p>
+      <p class="section-sub">Real listings from LinkedIn, Indeed, Glassdoor, and ZipRecruiter. Scored against your resume by AI.</p>
+      <div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:0.88rem;color:#555;font-weight:500">Click any card to select it for outreach. Click "View listing" to see the original posting. When you're ready, hit "Find Decision-Makers" below.</div>
       <div id="jobsContainer"></div>
       <!-- Free mode paywall -->
       <div id="jobsPaywall" style="display:none">
@@ -1776,10 +1775,10 @@
     <div class="section" id="section-3">
       <div class="back-row"><button class="btn-back" onclick="goToStep(2)">← Back to jobs</button></div>
       <h2 class="section-title">Decision-Makers</h2>
-      <p class="section-sub">The people who actually make hiring decisions. No agencies, no gatekeepers.</p>
+      <p class="section-sub">Real people at each company, found via LinkedIn. Verified to currently work there.</p>
 
-      <!-- Instructions -->
       <div id="contactsInstructions" style="display:none;margin-bottom:20px">
+        <div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;margin-bottom:14px;font-size:0.88rem;color:#555;font-weight:500">Select the contacts you want to reach out to, then click "Generate Outreach" to get personalized message sequences for each one.</div>
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
           <div style="display:flex;gap:8px">
             <button class="btn-secondary btn-small" onclick="selectAllContacts()">Select All</button>
@@ -1804,16 +1803,14 @@
     <!-- ── Step 4: Outreach Sequences ── -->
     <div class="section" id="section-4">
       <div class="back-row"><button class="btn-back" onclick="goToStep(3)">← Back to contacts</button></div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
-        <div>
-          <h2 class="section-title">Outreach Sequences</h2>
-          <p class="section-sub">Confident, peer-level outreach sequences. Copy, send, start conversations.</p>
-        </div>
-        <button class="btn-secondary btn-small" onclick="exportOutreachCSV()" style="margin-top:8px">Export to Spreadsheet</button>
+      <h2 class="section-title">Outreach Sequences</h2>
+      <p class="section-sub">Personalized 4-message sequences for each contact. Copy, paste, start conversations.</p>
+      <div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;margin-bottom:14px;font-size:0.88rem;color:#555;font-weight:500">Each contact gets a full outreach sequence across 14 days. Click "Copy" on any message to copy it to your clipboard, then paste it into LinkedIn or email.</div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="btn-secondary btn-small" onclick="exportOutreachCSV()">Export to Spreadsheet</button>
       </div>
-      <!-- Outreach Disclaimer -->
       <div class="outreach-info-box">
-        Fearless Job Search builds your outreach strategy and writes your messages. You send them. Reach out directly through LinkedIn and email. The tool does the thinking. You do the connecting.
+        Fearless Job Search writes your messages. You send them. Reach out directly through LinkedIn and email. The tool does the thinking. You do the connecting.
       </div>
       <div id="outreachContainer"></div>
     </div>
@@ -2919,8 +2916,7 @@ Return a JSON array of objects with these exact fields:
         saveBtn.style.color = '#3A8A5C';
         saveBtn.style.borderColor = '#3A8A5C';
         setTimeout(() => { saveBtn.textContent = 'Save Current Search'; saveBtn.style.color = ''; saveBtn.style.borderColor = ''; saveBtn.disabled = false; }, 2000);
-        // Refresh the dropdown
-        await loadSearchProfiles();
+        // Refresh the dropdown immediately
         await loadSearchProfiles();
       } catch (err) {
         console.error('saveSearchProfile() caught error:', err);
