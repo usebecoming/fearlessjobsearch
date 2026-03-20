@@ -1183,7 +1183,7 @@
         <div class="feature-card">
           <div class="feature-num">03</div>
           <h3>Find Decision-Makers</h3>
-          <p>For every role you select, instantly get 3-6 direct contacts at the company. Internal recruiters, hiring managers, and skip-level leaders. With emails and LinkedIn profiles.</p>
+          <p>For every role you select, instantly get 3-6 direct contacts at the company. Internal recruiters, hiring managers, and skip-level leaders. With real LinkedIn profiles sourced from the web.</p>
         </div>
         <div class="feature-card">
           <div class="feature-num">04</div>
@@ -1293,10 +1293,7 @@
             </div>
             <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">SVP of Marketing, Stripe</div>
             <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Directly owns this role. 8 years at Stripe, promoted from VP. Active on LinkedIn.</div>
-            <div style="display:flex;gap:8px">
-              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">View on LinkedIn</span>
-              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">LinkedIn &rarr;</span>
-            </div>
+            <div><span style="background:#111;color:#fff;padding:6px 14px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:500;display:inline-block">View on LinkedIn &#8599;</span></div>
           </div>
           <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,0.02)">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -1304,11 +1301,8 @@
               <span class="mock-badge" style="background:rgba(184,168,138,0.15);color:#7A6C52;border:1px solid rgba(184,168,138,0.3)">Skip-Level</span>
             </div>
             <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">CRO, Stripe</div>
-            <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Rachel's direct report chain. Influence over final hiring decision for VP-level roles.</div>
-            <div style="display:flex;gap:8px">
-              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">View on LinkedIn</span>
-              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">LinkedIn &rarr;</span>
-            </div>
+            <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Two levels above the role. Influence over final hiring decisions at VP level.</div>
+            <div><span style="background:#111;color:#fff;padding:6px 14px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:500;display:inline-block">View on LinkedIn &#8599;</span></div>
           </div>
           <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,0.02)">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -1317,10 +1311,7 @@
             </div>
             <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">Senior Talent Partner, Stripe</div>
             <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Handles VP-level marketing hires. Responsive to direct outreach on LinkedIn.</div>
-            <div style="display:flex;gap:8px">
-              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">View on LinkedIn</span>
-              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">LinkedIn &rarr;</span>
-            </div>
+            <div><span style="background:#111;color:#fff;padding:6px 14px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:500;display:inline-block">View on LinkedIn &#8599;</span></div>
           </div>
         </div>
       </div>
@@ -1342,7 +1333,7 @@
             <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A">Connection Request</span>
             <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777">LinkedIn · Day 1</span>
           </div>
-          <div style="font-size:0.88rem;color:#111;line-height:1.65;font-weight:500">Rachel, I noticed your team is expanding Stripe's marketing org. I built and scaled a 25-person marketing team that drove $180M in pipeline at a Series D fintech. Would value a quick conversation about the VP role. - Alex</div>
+          <div style="font-size:0.88rem;color:#111;line-height:1.65;font-weight:500">Rachel, I noticed your team is expanding Stripe's marketing org. I built and scaled a 25-person marketing team that drove $180M in pipeline at a Series D fintech. Would love to hear more about the direction you're taking the team.</div>
         </div>
         <div style="position:relative">
           <div style="filter:blur(5px);pointer-events:none;user-select:none">
@@ -2823,24 +2814,42 @@ Return a JSON array of objects with these exact fields:
 
     // ── Search Profiles ──
     async function loadSearchProfiles() {
-      if (!supabase) return;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from('search_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
       const select = document.getElementById('profileSelect');
       select.innerHTML = '<option value="">Load saved search...</option>';
-      if (data) {
-        data.forEach(p => {
-          const opt = document.createElement('option');
-          opt.value = p.id;
-          opt.textContent = p.name;
-          opt.dataset.profile = JSON.stringify(p);
-          select.appendChild(opt);
-        });
+
+      let profiles = [];
+
+      // Try Supabase first
+      if (supabase) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data } = await supabase
+              .from('search_profiles')
+              .select('*')
+              .order('created_at', { ascending: false });
+            if (data && data.length > 0) profiles = data;
+          }
+        } catch (e) {
+          console.error('Load profiles from Supabase failed:', e);
+        }
       }
+
+      // Fallback to localStorage
+      if (profiles.length === 0) {
+        try {
+          const local = JSON.parse(localStorage.getItem('fjs_search_profiles') || '[]');
+          profiles = local;
+        } catch (e) {}
+      }
+
+      profiles.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        opt.dataset.profile = JSON.stringify(p);
+        select.appendChild(opt);
+      });
     }
 
     async function saveSearchProfile() {
@@ -2905,16 +2914,25 @@ Return a JSON array of objects with these exact fields:
 
         if (error) {
           console.error('Save search error:', error);
-          saveBtn.textContent = 'Error. Try again.';
-          saveBtn.style.color = '#C94444';
-          setTimeout(() => { saveBtn.textContent = 'Save Current Search'; saveBtn.style.color = ''; saveBtn.disabled = false; }, 2000);
-          return;
+          // Fallback: save to localStorage
+          const localProfiles = JSON.parse(localStorage.getItem('fjs_search_profiles') || '[]');
+          localProfiles.push({ id: Date.now().toString(), name, ...insertData, created_at: new Date().toISOString() });
+          localStorage.setItem('fjs_search_profiles', JSON.stringify(localProfiles));
+          console.log('Saved to localStorage as fallback');
         }
 
         nameInput.value = '';
         saveBtn.textContent = 'Saved!';
         saveBtn.style.color = '#3A8A5C';
         saveBtn.style.borderColor = '#3A8A5C';
+
+        // Show visible success notification
+        const notification = document.createElement('div');
+        notification.style.cssText = 'position:fixed;top:80px;right:24px;background:#3A8A5C;color:#fff;padding:12px 20px;border-radius:8px;font-family:"IBM Plex Mono",monospace;font-size:0.88rem;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:fadeUp 0.3s ease-out';
+        notification.textContent = 'Search saved: ' + name;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+
         setTimeout(() => { saveBtn.textContent = 'Save Current Search'; saveBtn.style.color = ''; saveBtn.style.borderColor = ''; saveBtn.disabled = false; }, 2000);
         // Refresh the dropdown immediately
         await loadSearchProfiles();
