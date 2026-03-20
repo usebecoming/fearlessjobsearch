@@ -3285,25 +3285,27 @@ Skip-Level titles to look for: ${dt.skipLevel.join(', ')}
 Raw contacts found: ${r.raw_contacts.length}`;
           }).join('\n\n');
 
-          userPrompt = `You are verifying LinkedIn search results to find real decision-makers.
+          userPrompt = `You are a strict contact verification system. Your job is to filter LinkedIn search results down to ONLY the people who are genuinely useful for reaching out about a specific job.
 
-Role definitions:
-- Hiring Manager = the person one level above the open role (Coordinator > Manager > Director > VP > SVP/EVP > C-Suite > CEO)
-- Skip-Level = two levels above the open role
-- Recruiter/TA = internal recruiter or talent acquisition partner at this company
+HIERARCHY for role assignment:
+Coordinator < Manager < Senior Manager < Director < Senior Director < VP < SVP/EVP < C-Suite < CEO
+
+For each job:
+- Hiring Manager = someone whose title is ONE level above the open role in the SAME department. Example: if the job is "Director of HR", the hiring manager would be "VP of HR" or "VP People" or "CHRO". NOT a "Lead Digital Analyst". NOT someone in a completely different function.
+- Skip-Level = TWO levels above the open role in the same function, or a relevant C-suite executive.
+- Recruiter/TA = someone whose title explicitly contains "recruiter", "talent acquisition", "talent partner", or "HR business partner" AT this specific company.
 
 ${jobContexts}
 
-Here are the raw search results for each job. Each result has a name, LinkedIn URL, snippet from the search page, and the role we were searching for.
-
-YOUR RULES:
-1. ONLY include contacts where the snippet confirms they CURRENTLY work at the company. Look for "at [Company]", "[Company] |", or the company name appearing with their current title. If ambiguous or past tense, EXCLUDE.
-2. Assign each contact the correct role type based on their title and the hierarchy above.
-3. Extract their current title from the snippet.
-4. Keep the LinkedIn URL EXACTLY as provided. Do NOT modify, shorten, or fabricate any URL.
-5. Do NOT invent any contacts. If fewer than 3 can be verified, return however many are confirmed.
-6. Do NOT include anyone whose employment appears to be past tense ("former", "ex-", "previously at").
-7. Write a one-line note explaining why this person is relevant for this specific role.
+STRICT FILTERING RULES:
+1. The person MUST currently work at the EXACT company listed. Not a similarly named company ("Phase2 Labs" is NOT "Phase2 Technology"). If the snippet doesn't clearly confirm current employment at this specific company, EXCLUDE.
+2. The person's function MUST directly relate to the job being hired for. For HR/Talent/People roles, only include contacts in HR, People, Talent, Recruiting, or C-suite. A digital analyst, sales director, or generic "employee" is NEVER valid for an HR role.
+3. For Hiring Manager specifically: their function must directly own or oversee the department the role sits in. For an HR role, the hiring manager is a CHRO, CPO, VP of People, or Head of HR. Not a sales director. Not an analyst.
+4. REJECT anyone with no identifiable title beyond "Employee", "Team Member", "Senior Executive", or other vague titles. These provide no signal.
+5. REJECT any contact where "could provide insights" or "could provide internal perspective" is the best rationale. The note must explain a DIRECT connection to the hiring decision.
+6. Keep LinkedIn URLs EXACTLY as provided. Do NOT modify or fabricate URLs.
+7. Do NOT invent contacts. Return an empty contacts array rather than include questionable matches.
+8. It is better to return 1-2 verified relevant contacts than 4-5 questionable ones. Never fill slots just to hit a number.
 
 Search results:
 ${JSON.stringify(braveResults.results, null, 2)}
@@ -3316,10 +3318,10 @@ Return a JSON object with a "results" array. Each result:
   "contacts": [
     {
       "name": "string",
-      "title": "string (current title from snippet)",
+      "title": "string (their actual current title, not a guess)",
       "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
       "linkedin": "string (exact URL from search results)",
-      "note": "string (why this person is relevant)"
+      "note": "string (specific reason this person is relevant to THIS role)"
     }
   ]
 }`;
