@@ -1937,10 +1937,20 @@
         throw new Error(err.error || `Something went wrong (${res.status})`);
       }
       const data = await res.json();
+      if (!data.content || !data.content[0] || !data.content[0].text) {
+        console.error('Unexpected API response:', data);
+        throw new Error('Unexpected response from AI. Please try again.');
+      }
       let text = data.content[0].text;
+      console.log('Claude raw response:', text.substring(0, 200));
       // Strip markdown fences
       text = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-      return JSON.parse(text);
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        console.error('JSON parse failed. Raw text:', text);
+        throw new Error('AI returned an invalid response. Please try again.');
+      }
     }
 
     // ── Step 2: Search ──
