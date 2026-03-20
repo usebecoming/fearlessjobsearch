@@ -2628,16 +2628,14 @@
     // ── API Call Helper ──
     // Usage tracking
     function logUsage(action, details) {
-      if (!supabase) { console.log('logUsage skipped: no supabase'); return; }
       if (!state.userId) { console.log('logUsage skipped: no userId'); return; }
       console.log('logUsage:', action, details);
-      supabase.from('usage_log').insert({
-        user_id: state.userId,
-        action: action,
-        details: details || {}
-      }).then(function(r) {
-        if (r.error) console.error('logUsage error:', r.error);
-        else console.log('logUsage success');
+      fetch('/api/log-usage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: state.userId, action: action, details: details || {} })
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        console.log('logUsage:', d.ok ? 'success' : 'failed');
       }).catch(function(e) { console.error('logUsage failed:', e); });
     }
 
@@ -3670,6 +3668,16 @@ Return a JSON object with a "results" array. Each result:
 
         const data = await callClaude(systemPrompt, userPrompt);
         stopProgress();
+        // Fix 4: Log what Claude returned
+        if (data.results) {
+          data.results.forEach(function(r) {
+            console.log('📤 Claude returned for ' + r.company + ':');
+            (r.contacts || []).forEach(function(c) {
+              console.log('  ' + (c.confidence === 'high' ? '✅' : '🔶') + ' ' + c.name + ' — ' + c.role + ' — ' + c.title);
+            });
+            console.log('  Total: ' + (r.contacts || []).length + ' contacts');
+          });
+        }
         // Merge linkedin_slug and geo_urn from Brave into Claude's results
         if (data.results && braveResults && braveResults.results) {
           data.results.forEach(function(r) {
@@ -3678,6 +3686,23 @@ Return a JSON object with a "results" array. Each result:
               r.linkedin_slug = braveMatch.linkedin_slug;
               r.geo_urn = braveMatch.geo_urn;
             }
+          });
+        }
+        // Fix 3: Cross-job deduplication
+        if (data.results) {
+          var seenUrls = {};
+          data.results = data.results.map(function(job) {
+            if (!job.contacts) return job;
+            job.contacts = job.contacts.filter(function(c) {
+              var url = (c.linkedin || '').toLowerCase().split('?')[0];
+              if (seenUrls[url]) {
+                console.log('Duplicate removed:', c.name, 'appeared in multiple jobs');
+                return false;
+              }
+              seenUrls[url] = true;
+              return true;
+            });
+            return job;
           });
         }
         state.contacts = data;

@@ -46,52 +46,56 @@ export default async function handler(req, res) {
       const companyNames = getCompanyVariations(company);
       const allContacts = [];
 
-      // Step 2: Run 3 Brave searches with function-specific queries
+      // Helper: search with false positive filtering for short name fallbacks
+      async function searchAndFilter(queryBuilder, role) {
+        for (let i = 0; i < companyNames.length; i++) {
+          const co = companyNames[i];
+          const isShortName = i > 0 && co.length < company.length;
+          const q = queryBuilder(co);
+          console.log(`  ${role} query [${co}]:`, q);
+          let r = await braveSearch(q, braveKey);
 
-      // Search 1: Hiring managers
-      const hmQuery = derived.hmTitles.map(t => `"${t}"`).join(' OR ');
-      for (const co of companyNames) {
-        const q = `site:linkedin.com/in "${co}" (${hmQuery})`;
-        console.log(`  HM query [${co}]:`, q);
-        const r = await braveSearch(q, braveKey);
-        console.log(`  HM results: ${r.length}`);
-        allContacts.push(...r.map(c => ({ ...c, searchRole: 'Hiring Manager' })));
-        if (r.length >= 3) break;
-      }
+          // Fix 1: Filter name-based false positives on short name fallbacks
+          if (isShortName && r.length > 0) {
+            const before = r.length;
+            r = r.filter(result => {
+              const slug = (result.linkedin_url || '').toLowerCase();
+              const snip = (result.snippet || '').toLowerCase();
+              const short = co.toLowerCase();
+              // If short name is in the slug but NOT in snippet, it's likely the person's name
+              if (slug.includes(short.replace(/\s+/g, '-')) && !snip.includes(short)) {
+                console.log(`  ❌ False positive: ${result.name} — "${short}" in slug is person's name`);
+                return false;
+              }
+              return true;
+            });
+            if (before !== r.length) console.log(`  Filtered ${before - r.length} false positives`);
+          }
 
-      // Fallback: broader HM search if few results
-      if (allContacts.filter(c => c.searchRole === 'Hiring Manager').length < 3) {
-        for (const co of companyNames) {
-          const q = `site:linkedin.com/in "${co}" (${getDeptSearchTerms(derived.func)}) (VP OR SVP OR "Head of" OR Director OR Chief)`;
-          console.log(`  HM broad [${co}]:`, q);
-          const r = await braveSearch(q, braveKey);
-          console.log(`  HM broad results: ${r.length}`);
-          allContacts.push(...r.map(c => ({ ...c, searchRole: 'Hiring Manager' })));
+          console.log(`  ${role} results: ${r.length}`);
+          allContacts.push(...r.map(c => ({ ...c, searchRole: role })));
           if (r.length >= 3) break;
         }
       }
 
-      // Search 2: Recruiters (function-specific)
-      const recQuery = derived.recTerms.map(t => `"${t}"`).join(' OR ');
-      for (const co of companyNames) {
-        const q = `site:linkedin.com/in "${co}" (${recQuery})`;
-        console.log(`  Recruiter query [${co}]:`, q);
-        const r = await braveSearch(q, braveKey);
-        console.log(`  Recruiter results: ${r.length}`);
-        allContacts.push(...r.map(c => ({ ...c, searchRole: 'Recruiter / TA' })));
-        if (r.length >= 3) break;
+      // Step 2: Run Brave searches
+
+      // Search 1: Hiring managers
+      const hmQuery = derived.hmTitles.map(t => `"${t}"`).join(' OR ');
+      await searchAndFilter(co => `site:linkedin.com/in "${co}" (${hmQuery})`, 'Hiring Manager');
+
+      // Fallback: broader HM search if few results
+      if (allContacts.filter(c => c.searchRole === 'Hiring Manager').length < 3) {
+        await searchAndFilter(co => `site:linkedin.com/in "${co}" (${getDeptSearchTerms(derived.func)}) (VP OR SVP OR "Head of" OR Director OR Chief)`, 'Hiring Manager');
       }
+
+      // Search 2: Recruiters
+      const recQuery = derived.recTerms.map(t => `"${t}"`).join(' OR ');
+      await searchAndFilter(co => `site:linkedin.com/in "${co}" (${recQuery})`, 'Recruiter / TA');
 
       // Search 3: Skip-level
       const slQuery = derived.slTitles.map(t => `"${t}"`).join(' OR ');
-      for (const co of companyNames) {
-        const q = `site:linkedin.com/in "${co}" (${slQuery})`;
-        console.log(`  Skip-Level query [${co}]:`, q);
-        const r = await braveSearch(q, braveKey);
-        console.log(`  Skip-Level results: ${r.length}`);
-        allContacts.push(...r.map(c => ({ ...c, searchRole: 'Skip-Level' })));
-        if (r.length >= 3) break;
-      }
+      await searchAndFilter(co => `site:linkedin.com/in "${co}" (${slQuery})`, 'Skip-Level');
 
       const deduped = dedupeContacts(allContacts);
       console.log(`Total deduped for ${company}: ${deduped.length}`);
@@ -106,14 +110,24 @@ export default async function handler(req, res) {
         allContacts.push(...apolloContacts);
       }
 
-      // Fix 2: Founder search for small companies (if <2 contacts)
+      // Fix 2: Enhanced founder search for small companies
       let dedupedSoFar = dedupeContacts(allContacts);
-      if (dedupedSoFar.length < 2) {
-        console.log('Few contacts, searching for founder/CEO...');
-        const founderQuery = `site:linkedin.com/in "${company}" (Founder OR "Co-Founder" OR CEO OR President)`;
-        const founderResults = await braveSearch(founderQuery, braveKey);
-        console.log(`Founder search: ${founderResults.length} results`);
-        allContacts.push(...founderResults.map(r => ({ ...r, searchRole: 'Skip-Level', isFounder: true })));
+      if (dedupedSoFar.length < 3) {
+        console.log('🔍 Running founder/CEO search...');
+        // Query 1: site-restricted LinkedIn search
+        const founderQuery1 = `site:linkedin.com/in "${company}" (Founder OR "Co-Founder" OR CEO OR President)`;
+        const founderResults1 = await braveSearch(founderQuery1, braveKey);
+        console.log(`  Founder search (site): ${founderResults1.length} results`);
+        allContacts.push(...founderResults1.map(r => ({ ...r, searchRole: 'Skip-Level', isFounder: true })));
+
+        // Query 2: general web search for founder name + LinkedIn
+        if (founderResults1.length < 1) {
+          const founderQuery2 = `"${company}" founder CEO "linkedin.com/in"`;
+          console.log(`  Founder web search: ${founderQuery2}`);
+          const founderResults2 = await braveSearch(founderQuery2, braveKey);
+          console.log(`  Founder web results: ${founderResults2.length}`);
+          allContacts.push(...founderResults2.map(r => ({ ...r, searchRole: 'Skip-Level', isFounder: true })));
+        }
       }
 
       const finalContacts = dedupeContacts(allContacts);
