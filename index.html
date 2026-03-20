@@ -1673,14 +1673,20 @@ Return a JSON array of objects with these exact fields:
       updateSelectionCount();
     }
 
-    function toggleJobSelection(id) {
+    async function toggleJobSelection(id) {
       const idx = state.selectedJobs.indexOf(id);
       if (idx === -1) {
         state.selectedJobs.push(id);
-        // Auto-favorite for AI learning
         const job = state.jobs.find(j => j.id === id);
-        if (job && !state.favorites.some(f => f.title === job.title && f.company === job.company)) {
-          toggleFavorite(id);
+        if (job) {
+          // Auto-add to pipeline
+          if (!state.pipeline.find(p => p.jobId === job.id)) {
+            await addToPipeline(job);
+          }
+          // Auto-favorite for AI learning
+          if (!state.favorites.some(f => f.title === job.title && f.company === job.company)) {
+            toggleFavorite(id);
+          }
         }
       } else {
         state.selectedJobs.splice(idx, 1);
