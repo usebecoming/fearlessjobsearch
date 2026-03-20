@@ -2837,16 +2837,17 @@ Return a JSON object with a "results" array. Each result:
         const data = await callClaude(systemPrompt, userPrompt);
         stopProgress();
         state.contacts = data;
-        // Save to pipeline
+        renderContacts(data);
+        // Save to pipeline in background (don't block UI)
         for (const sj of selectedJobData) {
           const job = state.jobs.find(j => j.id === sj.job_id);
           if (job && !state.pipeline.find(p => p.jobId === job.id)) {
-            await addToPipeline(job);
+            addToPipeline(job).catch(e => console.error('Pipeline save error:', e));
           }
         }
-        renderContacts(data);
       } catch (err) {
         stopProgress();
+        console.error('Contacts error:', err);
         container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runContacts()">Try again</button></div>`;
       }
     }
@@ -3006,18 +3007,19 @@ Return a JSON object with a "sequences" array. Each sequence:
         const data = await callClaude(systemPrompt, userPrompt);
         stopProgress();
         state.sequences = data;
-        // Update pipeline status
+        renderOutreach(data);
+        // Update pipeline status in background
         for (const p of state.pipeline) {
           if (state.selectedJobs.includes(p.jobId)) {
             p.status = 'Outreach Ready';
-            if (p.dbId) {
-              await supabase.from('pipeline').update({ status: 'Outreach Ready' }).eq('id', p.dbId);
+            if (p.dbId && supabase) {
+              supabase.from('pipeline').update({ status: 'Outreach Ready' }).eq('id', p.dbId).catch(() => {});
             }
           }
         }
-        renderOutreach(data);
       } catch (err) {
         stopProgress();
+        console.error('Outreach error:', err);
         container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runOutreach()">Try again</button></div>`;
       }
     }
