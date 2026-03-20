@@ -1655,6 +1655,7 @@
     }
 
     function showApp(user) {
+      state.userEmail = user.email;
       document.getElementById('landingPage').classList.add('hidden');
       closeAuthModal();
       document.getElementById('mainNav').style.display = 'flex';
@@ -1697,7 +1698,8 @@
       sequences: [],
       pipeline: [],
       currentStep: 1,
-      hasPaid: false
+      hasPaid: false,
+      userEmail: ''
     };
 
     // ── Tag input ──
@@ -2017,7 +2019,11 @@ Return a JSON array of objects with these exact fields:
 
     // Free preview: show 5 jobs, lock the rest
     const FREE_JOB_LIMIT = 5;
-    function isFreeTier() { return !state.hasPaid; }
+    const ADMIN_EMAILS = ['ben@liveforyourselfconsulting.com'];
+    function isFreeTier() {
+      if (ADMIN_EMAILS.includes(state.userEmail)) return false;
+      return !state.hasPaid;
+    }
 
     function renderJobs() {
       const container = document.getElementById('jobsContainer');
