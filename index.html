@@ -1871,7 +1871,7 @@ Return a JSON array of objects with these exact fields:
       try {
         const jobs = await callClaude(systemPrompt, userPrompt);
         stopProgress();
-        state.jobs = jobs;
+        state.jobs = jobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0));
         state.selectedJobs = [];
         renderJobs();
       } catch (err) {
@@ -1932,21 +1932,28 @@ Return a JSON array of objects with these exact fields:
       const idx = state.selectedJobs.indexOf(id);
       if (idx === -1) {
         state.selectedJobs.push(id);
-        const job = state.jobs.find(j => j.id === id);
-        if (job) {
-          // Auto-add to pipeline
-          if (!state.pipeline.find(p => p.jobId === job.id)) {
-            await addToPipeline(job);
-          }
-          // Auto-favorite for AI learning
-          if (!state.favorites.some(f => f.title === job.title && f.company === job.company)) {
-            toggleFavorite(id);
-          }
-        }
       } else {
         state.selectedJobs.splice(idx, 1);
       }
       renderJobs();
+      updateSelectionCount();
+
+      // Background tasks (don't block UI)
+      if (idx === -1) {
+        const job = state.jobs.find(j => j.id === id);
+        if (job) {
+          try {
+            if (!state.pipeline.find(p => p.jobId === job.id)) {
+              await addToPipeline(job);
+            }
+          } catch (e) { console.error('Pipeline save error:', e); }
+          try {
+            if (!state.favorites.some(f => f.title === job.title && f.company === job.company)) {
+              await toggleFavorite(id);
+            }
+          } catch (e) { console.error('Favorite save error:', e); }
+        }
+      }
     }
 
     // ── Favorites ──
