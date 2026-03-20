@@ -53,6 +53,15 @@
 
     /* ── Layout ── */
     .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+    .app-wrapper {
+      background: #FFFFFF;
+      border: 1px solid #E5E4E2;
+      border-radius: 16px;
+      margin: 24px auto;
+      max-width: 1080px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 8px 24px rgba(0,0,0,0.04);
+    }
 
     /* ── Nav ── */
     nav {
@@ -88,15 +97,21 @@
       gap: 0; padding: 28px 0 8px;
     }
     .step-dot {
-      width: 36px; height: 36px; border-radius: 50%;
+      width: 40px; height: 40px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; font-weight: 500;
-      background: #FFFFFF; color: #858585;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; font-weight: 600;
+      background: #F9F6F1; color: #B8A88A;
       border: 2px solid #E5E4E2;
       transition: all 0.3s;
     }
-    .step-dot.active { background: #111111; color: #FFFFFF; border-color: #111111; }
-    .step-dot.completed { background: #3A8A5C; color: #fff; border-color: #3A8A5C; }
+    .step-dot.active {
+      background: #111111; color: #FFFFFF; border-color: #111111;
+      box-shadow: 0 2px 8px rgba(17,17,17,0.2);
+    }
+    .step-dot.completed {
+      background: #3A8A5C; color: #fff; border-color: #3A8A5C;
+      box-shadow: 0 2px 8px rgba(58,138,92,0.2);
+    }
     .step-line { width: 60px; height: 2px; background: #E5E4E2; transition: background 0.3s; }
     .step-line.completed { background: #3A8A5C; }
     .step-labels {
@@ -104,11 +119,11 @@
       padding: 8px 0 24px;
     }
     .step-label {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
       color: #858585; text-align: center; width: 80px;
-      transition: color 0.3s;
+      transition: color 0.3s; font-weight: 500;
     }
-    .step-label.active { color: #111111; }
+    .step-label.active { color: #111111; font-weight: 600; }
 
     /* ── Section containers ── */
     .section { display: none; }
@@ -219,11 +234,18 @@
     .job-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
     .job-card {
       background: #FFFFFF; border: 1px solid #E5E4E2;
-      border-radius: 12px; padding: 22px; cursor: pointer;
-      transition: all 0.25s; position: relative;
+      border-radius: 14px; padding: 24px; cursor: pointer;
+      transition: all 0.3s; position: relative;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
-    .job-card:hover { border-color: #B8A88A; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
-    .job-card.selected { border-color: #B8A88A; background: rgba(184,168,138,0.04); box-shadow: 0 0 0 1px #B8A88A; }
+    .job-card:hover {
+      border-color: #B8A88A; transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    .job-card.selected {
+      border-color: #B8A88A; background: rgba(184,168,138,0.03);
+      box-shadow: 0 0 0 2px #B8A88A, 0 8px 24px rgba(184,168,138,0.1);
+    }
     .job-card.selected .job-select-check {
       background: #111111; color: #FFFFFF; border-color: #111111;
     }
@@ -292,21 +314,26 @@
     }
 
     /* ── Contact Cards ── */
-    .contacts-group { margin-bottom: 32px; }
+    .contacts-group { margin-bottom: 36px; }
     .contacts-group-header {
-      font-family: 'Playfair Display', serif; font-size: 1.05rem;
+      font-family: 'Playfair Display', serif; font-size: 1.1rem;
       color: #111111; margin-bottom: 6px;
     }
     .contacts-group-sub {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       color: #B8A88A; margin-bottom: 16px;
+      padding-bottom: 16px; border-bottom: 1px solid #EEEEED;
     }
     .contact-card {
       background: #FFFFFF; border: 1px solid #E5E4E2;
-      border-radius: 10px; padding: 18px; margin-bottom: 12px;
-      transition: border-color 0.2s;
+      border-radius: 12px; padding: 20px; margin-bottom: 12px;
+      transition: all 0.25s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
-    .contact-card:hover { border-color: #B8A88A; }
+    .contact-card:hover {
+      border-color: #B8A88A; transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    }
     .contact-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .contact-name { font-weight: 600; font-size: 0.95rem; color: #111111; }
     .contact-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; color: #666666; margin-bottom: 6px; font-weight: 500; }
@@ -317,18 +344,21 @@
     .sequence-group { margin-bottom: 36px; }
     .sequence-header {
       background: #FFFFFF; border: 1px solid #E5E4E2;
-      border-radius: 10px 10px 0 0; padding: 18px 22px;
+      border-radius: 14px 14px 0 0; padding: 20px 24px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
-    .sequence-contact { font-weight: 500; font-size: 0.95rem; color: #111111; }
+    .sequence-contact { font-weight: 600; font-size: 1rem; color: #111111; }
     .sequence-track {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
       color: #858585; margin-top: 4px;
     }
     .message-card {
-      background: #F9F6F1; border: 1px solid #E5E4E2;
-      border-top: none; padding: 20px 22px;
+      background: #FDFBF8; border: 1px solid #E5E4E2;
+      border-top: none; padding: 22px 24px;
+      transition: background 0.2s;
     }
-    .message-card:last-child { border-radius: 0 0 10px 10px; }
+    .message-card:hover { background: #F9F6F1; }
+    .message-card:last-child { border-radius: 0 0 14px 14px; }
     .message-meta {
       display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 10px;
@@ -415,10 +445,17 @@
 
     /* ── Section titles ── */
     .section-title {
-      font-size: 1.6rem; margin-bottom: 6px;
+      font-size: 1.7rem; margin-bottom: 8px;
+      position: relative; display: inline-block;
+    }
+    .section-title::after {
+      content: ''; display: block;
+      width: 40px; height: 3px; background: #B8A88A;
+      border-radius: 2px; margin-top: 8px;
     }
     .section-sub {
-      font-size: 0.92rem; color: #555555; margin-bottom: 28px; font-weight: 500;
+      font-size: 0.92rem; color: #555555; margin-bottom: 32px; font-weight: 500;
+      margin-top: 12px;
     }
 
     /* ── File upload ── */
@@ -770,7 +807,7 @@
 
     <!-- Hero -->
     <div class="hero">
-      <div class="hero-badge">For Senior Leaders Only</div>
+      <div class="hero-badge">AI-Powered Job Search</div>
       <h1>Stop applying into the void. <span>Start landing interviews.</span></h1>
       <p>The job boards are broken. Recruiters ghost you. HR never sees your resume. Fearless Job Search gives you the only thing that actually works: direct access to the people who make hiring decisions.</p>
       <div class="hero-cta">
@@ -1013,7 +1050,7 @@
     <div class="nav-right">
       <button class="nav-btn" onclick="openPipeline()">Pipeline</button>
       <span class="user-email" id="navUserEmail"></span>
-      <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
+      <button class="nav-signout" onclick="doSignOut()">Sign Out</button>
     </div>
   </nav>
 
@@ -1038,9 +1075,25 @@
 
   <!-- ── Step 1: Search Setup ── -->
   <div class="container" id="appContent" style="display:none">
+  <div class="app-wrapper">
     <div class="section active" id="section-1">
       <h2 class="section-title">Define Your Search</h2>
       <p class="section-sub">Tell us what you're looking for. We'll find roles that match your leadership profile.</p>
+
+      <!-- Saved Search Profiles -->
+      <div class="saved-profiles-bar" style="margin-bottom:28px">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select class="form-input" id="profileSelect" style="width:auto;min-width:200px;font-size:0.82rem;padding:8px 12px">
+            <option value="">Load a saved search...</option>
+          </select>
+          <button class="btn-secondary btn-small" onclick="loadSearchProfile()">Load</button>
+          <button class="btn-secondary btn-small" style="color:#C94444;border-color:rgba(201,68,68,0.3)" onclick="deleteSearchProfile()">Delete</button>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+          <input type="text" class="form-input" id="profileName" placeholder="Name this search" style="width:200px;font-size:0.82rem;padding:8px 12px">
+          <button class="btn-secondary btn-small" onclick="saveSearchProfile()">Save Current Search</button>
+        </div>
+      </div>
 
       <!-- Target Titles -->
       <div class="form-group">
@@ -1119,21 +1172,6 @@
         </div>
       </div>
 
-      <!-- Saved Search Profiles -->
-      <div class="saved-profiles-bar">
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <select class="form-input" id="profileSelect" style="width:auto;min-width:180px;font-size:0.82rem;padding:8px 12px">
-            <option value="">Load saved search...</option>
-          </select>
-          <button class="btn-secondary btn-small" onclick="loadSearchProfile()">Load</button>
-          <button class="btn-secondary btn-small" style="color:#C94444;border-color:rgba(201,68,68,0.3)" onclick="deleteSearchProfile()">Delete</button>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
-          <input type="text" class="form-input" id="profileName" placeholder="Name this search" style="width:200px;font-size:0.82rem;padding:8px 12px">
-          <button class="btn-secondary btn-small" onclick="saveSearchProfile()">Save Search</button>
-        </div>
-      </div>
-
       <div style="display:flex;gap:12px;margin-top:8px">
         <button class="btn-primary" id="searchBtn" disabled onclick="runSearch()">
           Search Jobs
@@ -1181,6 +1219,7 @@
       <div id="outreachContainer"></div>
     </div>
   </div>
+  </div>
 
   <!-- ── Job Detail Modal ── -->
   <div class="job-detail-modal" id="jobDetailModal">
@@ -1199,6 +1238,18 @@
   </div>
 
   <script>
+    // ── Sign Out (defined early so it always works) ──
+    function doSignOut() {
+      // Hide app
+      document.getElementById('landingPage').classList.remove('hidden');
+      document.getElementById('mainNav').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'none';
+      document.getElementById('appContent').style.display = 'none';
+      window.scrollTo({ top: 0 });
+      // Sign out of Supabase if available
+      try { if (window._supabase) window._supabase.auth.signOut(); } catch(e) {}
+    }
+
     // ── Supabase Init ──
     const SUPABASE_URL = 'https://tgicomrycbhrinobvnlr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnaWNvbXJ5Y2Jocmlub2J2bmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NzcwOTMsImV4cCI6MjA4OTU1MzA5M30.nmC38E3meTH6mS0yjhyXaSYlwLc28mxqxLNf5e1KSdg';
@@ -1210,6 +1261,7 @@
       console.error('Supabase library not loaded. window.supabase =', window.supabase);
     }
     const supabase = sb;
+    window._supabase = sb;
 
     // ── Stripe Checkout ──
     async function startCheckout(plan) {
