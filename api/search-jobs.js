@@ -48,62 +48,82 @@ export default async function handler(req, res) {
     const allJobs = [];
     const seenJobIds = new Set();
 
+    // Helper: run JSearch and collect results
+    async function jsearchQuery(query, extraParams) {
+      for (const page of [1, 2]) { // Pull page 1 and page 2
+        const params = new URLSearchParams({
+          query,
+          page: String(page),
+          num_pages: '1',
+          date_posted: 'week',
+          employment_types: 'FULLTIME',
+          ...extraParams
+        });
+        try {
+          const response = await fetch(
+            `https://jsearch.p.rapidapi.com/search?${params.toString()}`,
+            { headers: { 'X-RapidAPI-Key': rapidApiKey, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' } }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            const results = data.data || [];
+            if (page === 1) console.log(`  JSearch "${query.substring(0,50)}": ${results.length} results`);
+            for (const job of results) {
+              const jid = job.job_id || '';
+              if (jid && !seenJobIds.has(jid)) { seenJobIds.add(jid); allJobs.push(job); }
+            }
+            if (results.length < 5) break; // No point fetching page 2
+          }
+        } catch (e) {
+          console.error('JSearch error:', e.message);
+        }
+      }
+    }
+
+    // Run title-based searches
+    const seniority = getSeniority(titles[0] || '');
+    console.log('Seniority filter:', seniority || 'none');
+
     for (const title of expandedTitles) {
       for (const loc of locationQueries) {
         const isRemoteQuery = loc === '__remote__';
         const locationStr = isRemoteQuery ? '' : loc;
-
-        const params = new URLSearchParams({
-          query: title + (locationStr ? ` in ${locationStr}` : ''),
-          page: '1',
-          num_pages: '1',
-          date_posted: 'week',
-          employment_types: 'FULLTIME',
-        });
-
-        if (isRemote && !locationStr) {
-          params.set('remote_jobs_only', 'true');
-        }
-        if (isRemoteQuery) {
-          params.set('remote_jobs_only', 'true');
-        }
-
-        console.log('JSearch query:', title, locationStr ? `in ${locationStr}` : '', (isRemote && !locationStr) || isRemoteQuery ? '(remote)' : '');
-
-      try {
-        const response = await fetch(
-          `https://jsearch.p.rapidapi.com/search?${params.toString()}`,
-          {
-            method: 'GET',
-            headers: {
-              'X-RapidAPI-Key': rapidApiKey,
-              'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
-            }
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          const results = data.data || [];
-          console.log(`JSearch results for "${title}": ${results.length}`);
-          for (const job of results) {
-            const jid = job.job_id || '';
-            if (!seenJobIds.has(jid)) {
-              seenJobIds.add(jid);
-              allJobs.push(job);
-            }
-          }
-        } else {
-          console.error('JSearch error for', title, ':', response.status);
-        }
-      } catch (e) {
-        console.error('JSearch fetch error for', title, ':', e.message);
-      }
+        const query = title + (locationStr ? ` in ${locationStr}` : '');
+        const extra = {};
+        if ((isRemote && !locationStr) || isRemoteQuery) extra.remote_jobs_only = 'true';
+        if (seniority) extra.job_requirements = seniority;
+        await jsearchQuery(query, extra);
       }
     }
 
-    console.log(`Total unique jobs across ${titles.length} title(s) x ${locationQueries.length} location(s): ${allJobs.length}`);
-    const jobs = allJobs.slice(0, 15);
+    // Resume keyword search (additional query)
+    const { resumeKeywords } = req.body;
+    if (resumeKeywords && resumeKeywords.length > 10) {
+      console.log('Resume keyword search:', resumeKeywords.substring(0, 60));
+      for (const loc of locationQueries) {
+        const isRemoteQuery = loc === '__remote__';
+        const locationStr = isRemoteQuery ? '' : loc;
+        const query = resumeKeywords + (locationStr ? ` in ${locationStr}` : '');
+        const extra = {};
+        if ((isRemote && !locationStr) || isRemoteQuery) extra.remote_jobs_only = 'true';
+        await jsearchQuery(query, extra);
+      }
+    }
+
+    console.log(`Total unique jobs: ${allJobs.length}`);
+
+    // Dedupe by company+title combo (in addition to job ID dedup above)
+    const seenCompanyTitle = new Set();
+    const dedupedJobs = allJobs.filter(job => {
+      const key = ((job.employer_name || '') + '|' + (job.job_title || '')).toLowerCase();
+      if (seenCompanyTitle.has(key)) return false;
+      seenCompanyTitle.add(key);
+      return true;
+    });
+    console.log(`After company+title dedup: ${dedupedJobs.length}`);
+
+    // Cap at 30 for Claude scoring, Claude returns top 10
+    const jobs = dedupedJobs.slice(0, 30);
 
     // Flag staffing agencies instead of filtering them out
     const agencyKeywords = ['staffing', 'recruiting', 'talent agency', 'manpower', 'adecco', 'randstad', 'robert half', 'hays', 'kforce', 'kelly services', 'allegis', 'insight global', 'korn ferry', 'heidrick', 'aerotek', 'tek systems', 'teksystems', 'beacon hill', 'apex group', 'modis', 'volt', 'spherion', 'express employment', 'nesco', 'addison group', 'brooksource', 'procom', 'collabera', 'cybercoders', 'dice', 'jobspring', 'placement', 'search group', 'executive search', 'talent solutions', 'recruiting group'];
@@ -134,7 +154,7 @@ export default async function handler(req, res) {
       };
       });
 
-    return res.status(200).json({ jobs: filtered.slice(0, 10) });
+    return res.status(200).json({ jobs: filtered.slice(0, 30) });
   } catch (err) {
     console.error('Search error:', err);
     return res.status(500).json({ error: 'Something went wrong searching for jobs. Please try again.' });
@@ -185,62 +205,120 @@ function extractHighlights(job) {
   return highlights.slice(0, 3);
 }
 
-// Expand title abbreviations into search variations
+// ── 1. Keyword synonyms by function ──
+const FUNCTION_SYNONYMS = {
+  'talent development': ['Learning & Development', 'L&D', 'Training and Development', 'Organizational Development', 'OD', 'People Development', 'Talent Management'],
+  'hr': ['Human Resources', 'People Operations', 'People & Culture', 'Workforce'],
+  'human resources': ['HR', 'People Operations', 'People & Culture'],
+  'people operations': ['HR', 'Human Resources', 'People & Culture'],
+  'growth': ['Demand Generation', 'Demand Gen', 'Performance Marketing', 'Revenue Marketing', 'Growth Marketing'],
+  'demand gen': ['Growth', 'Demand Generation', 'Performance Marketing', 'Revenue Marketing'],
+  'demand generation': ['Growth', 'Demand Gen', 'Performance Marketing'],
+  'brand': ['Brand Marketing', 'Brand Strategy', 'Integrated Marketing', 'Creative'],
+  'content': ['Content Strategy', 'Content Marketing', 'Editorial', 'Communications'],
+  'product': ['Product Management', 'Product Strategy'],
+  'product management': ['Product', 'Product Strategy'],
+  'ux': ['User Experience', 'Product Design', 'UX Design'],
+  'user experience': ['UX', 'Product Design', 'UX Design'],
+  'engineering': ['Software Engineering', 'Software Development', 'Technology'],
+  'software engineering': ['Engineering', 'Software Development', 'Technology'],
+  'data': ['Data Science', 'Analytics', 'Business Intelligence', 'BI'],
+  'data science': ['Data', 'Analytics', 'Business Intelligence'],
+  'analytics': ['Data', 'Data Science', 'Business Intelligence'],
+  'sales': ['Business Development', 'BD', 'Revenue', 'Account Management', 'Enterprise Sales'],
+  'business development': ['Sales', 'BD', 'Partnerships', 'Strategic Alliances'],
+  'partnerships': ['Business Development', 'Strategic Alliances', 'Channel'],
+  'finance': ['FP&A', 'Financial Planning', 'Corporate Finance', 'Treasury'],
+  'fp&a': ['Finance', 'Financial Planning', 'Corporate Finance'],
+  'operations': ['Business Operations', 'BizOps', 'Strategy & Operations', 'Strategy and Operations'],
+};
+
+// ── 2. Strip connectors ──
+function stripConnectors(title) {
+  return [
+    title,
+    title.replace(/\bof the\b/gi, '').replace(/\bof\b/gi, '').replace(/,\s*/g, ' ').replace(/\s+/g, ' ').trim(),
+  ];
+}
+
+// Expand title with abbreviations + synonyms + connector stripping
 function expandTitle(title) {
-  const variations = [title];
+  const variations = new Set();
+  variations.add(title);
   const t = title.toLowerCase();
 
-  // VP <-> Vice President
-  if (t.startsWith('vp ') || t.startsWith('vp of ')) {
-    variations.push(title.replace(/^vp\b/i, 'Vice President'));
-  } else if (t.includes('vice president')) {
-    variations.push(title.replace(/vice president/i, 'VP'));
+  // Title abbreviation expansion (VP, SVP, EVP, CXO, etc.)
+  if (/^vp\b/i.test(title)) variations.add(title.replace(/^vp\b/i, 'Vice President'));
+  if (/vice president/i.test(title)) variations.add(title.replace(/vice president/i, 'VP'));
+  if (/^svp\b/i.test(title)) variations.add(title.replace(/^svp\b/i, 'Senior Vice President'));
+  if (/senior vice president/i.test(title)) variations.add(title.replace(/senior vice president/i, 'SVP'));
+  if (/^evp\b/i.test(title)) variations.add(title.replace(/^evp\b/i, 'Executive Vice President'));
+  if (/executive vice president/i.test(title)) variations.add(title.replace(/executive vice president/i, 'EVP'));
+  if (/^dir\b/i.test(title)) variations.add(title.replace(/^dir\b/i, 'Director'));
+  if (/^head of/i.test(title)) {
+    variations.add(title.replace(/^head of/i, 'VP of'));
+    variations.add(title.replace(/^head of/i, 'Director of'));
   }
 
-  // SVP <-> Senior Vice President
-  if (t.startsWith('svp ') || t.startsWith('svp of ')) {
-    variations.push(title.replace(/^svp\b/i, 'Senior Vice President'));
-  } else if (t.includes('senior vice president')) {
-    variations.push(title.replace(/senior vice president/i, 'SVP'));
-  }
-
-  // EVP <-> Executive Vice President
-  if (t.startsWith('evp ') || t.startsWith('evp of ')) {
-    variations.push(title.replace(/^evp\b/i, 'Executive Vice President'));
-  } else if (t.includes('executive vice president')) {
-    variations.push(title.replace(/executive vice president/i, 'EVP'));
-  }
-
-  // Director <-> Dir
-  if (t.startsWith('dir ') || t.startsWith('dir of ')) {
-    variations.push(title.replace(/^dir\b/i, 'Director'));
-  }
-
-  // Head of <-> VP of (adjacent level, worth searching)
-  if (t.startsWith('head of ')) {
-    variations.push(title.replace(/^head of/i, 'VP of'));
-    variations.push(title.replace(/^head of/i, 'Director of'));
-  }
-
-  // Chief X Officer <-> CXO
-  const cxoMap = {
-    'cmo': 'Chief Marketing Officer',
-    'cto': 'Chief Technology Officer',
-    'cfo': 'Chief Financial Officer',
-    'coo': 'Chief Operating Officer',
-    'cpo': 'Chief Product Officer',
-    'cro': 'Chief Revenue Officer',
-    'chro': 'Chief Human Resources Officer',
-    'cio': 'Chief Information Officer',
-  };
-  if (cxoMap[t]) {
-    variations.push(cxoMap[t]);
-  }
+  const cxoMap = { 'cmo': 'Chief Marketing Officer', 'cto': 'Chief Technology Officer', 'cfo': 'Chief Financial Officer', 'coo': 'Chief Operating Officer', 'cpo': 'Chief Product Officer', 'cro': 'Chief Revenue Officer', 'chro': 'Chief Human Resources Officer', 'cio': 'Chief Information Officer' };
+  if (cxoMap[t]) variations.add(cxoMap[t]);
   for (const [abbr, full] of Object.entries(cxoMap)) {
-    if (t === full.toLowerCase()) {
-      variations.push(abbr.toUpperCase());
+    if (t === full.toLowerCase()) variations.add(abbr.toUpperCase());
+  }
+
+  // Function synonym expansion
+  for (const [keyword, synonyms] of Object.entries(FUNCTION_SYNONYMS)) {
+    if (t.includes(keyword)) {
+      // Extract the level prefix (e.g. "VP of", "Director of", "Head of")
+      const match = title.match(/^(.*?)\b(of\s+|,\s*|\s+)(.*)/i);
+      if (match) {
+        const prefix = match[1].trim();
+        for (const syn of synonyms.slice(0, 3)) { // Limit to top 3 synonyms
+          variations.add(`${prefix} of ${syn}`);
+        }
+      }
     }
   }
 
-  return variations;
+  // Strip connectors for all variations
+  const withStripped = new Set();
+  for (const v of variations) {
+    for (const s of stripConnectors(v)) {
+      withStripped.add(s);
+    }
+  }
+
+  return [...withStripped];
+}
+
+// ── 5. Seniority filter ──
+function getSeniority(title) {
+  const t = title.toLowerCase();
+  if (/\b(coordinator|specialist|associate|assistant)\b/.test(t)) return 'entry_level,mid_level';
+  if (/\b(manager|lead|senior)\b/.test(t) && !/\b(director|vp|vice president)\b/.test(t)) return 'mid_level,senior_level';
+  if (/\b(director|head of)\b/.test(t)) return 'senior_level,director';
+  if (/\b(vp|vice president|svp|evp)\b/.test(t)) return 'vp';
+  if (/\b(chief|cmo|cto|cfo|coo|cpo|cro|chro|ceo|president)\b/.test(t)) return 'executive';
+  return '';
+}
+
+// ── 4. Extract resume keywords ──
+function extractResumeKeywords(resumeText) {
+  if (!resumeText || resumeText.length < 50) return '';
+  const t = resumeText.toLowerCase();
+  const keywords = [];
+
+  // Industry keywords
+  const industries = ['saas', 'b2b', 'b2c', 'fintech', 'healthtech', 'edtech', 'e-commerce', 'ecommerce', 'biotech', 'pharma', 'healthcare', 'financial services', 'consulting', 'media', 'retail', 'manufacturing', 'logistics', 'real estate', 'insurance', 'telecom'];
+  for (const ind of industries) {
+    if (t.includes(ind)) keywords.push(ind);
+  }
+
+  // Skill keywords
+  const skills = ['demand generation', 'pipeline', 'revenue growth', 'digital transformation', 'talent acquisition', 'organizational development', 'leadership development', 'change management', 'product strategy', 'go-to-market', 'GTM', 'enterprise sales', 'brand strategy', 'data analytics', 'machine learning', 'cloud', 'agile', 'devops', 'supply chain', 'M&A', 'fundraising', 'investor relations'];
+  for (const skill of skills) {
+    if (t.includes(skill.toLowerCase())) keywords.push(skill);
+  }
+
+  return keywords.slice(0, 5).join(' ');
 }

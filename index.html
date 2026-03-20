@@ -1659,7 +1659,7 @@
       <!-- Target Titles (Job Mode) -->
       <div class="form-group" id="titlesGroup">
         <label class="form-label" id="titlesLabel">Target Job Titles</label>
-        <p style="font-size:0.82rem;color:#777;margin-bottom:8px;line-height:1.5">Active jobs from the last 7 days. We automatically search abbreviations too, so "VP of Marketing" also finds "Vice President of Marketing". Try different titles to expand your results.</p>
+        <p style="font-size:0.82rem;color:#777;margin-bottom:8px;line-height:1.5">We search your exact titles plus common variations, abbreviations, and synonyms automatically. "VP of Marketing" also finds "Vice President of Marketing", "VP Marketing", and related growth and demand gen roles. Add multiple titles to cast a wider net. Results are scored against your resume, strongest matches appear first.</p>
         <div class="tag-input-wrap" id="titlesWrap">
           <input type="text" class="tag-field" id="titlesField" placeholder="e.g. VP of Marketing, press Enter to add">
         </div>
@@ -2860,7 +2860,8 @@ Return a JSON object with a "results" array. Each result:
             body: JSON.stringify({
               titles: state.titles,
               locations: state.locations,
-              workTypes
+              workTypes,
+              resumeKeywords: resumeSummary ? resumeSummary.substring(0, 200) : ''
             })
           });
 
@@ -2939,7 +2940,7 @@ Return a JSON array with one object per job:
           });
 
           stopProgress();
-          state.jobs = scoredJobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0));
+          state.jobs = scoredJobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0)).slice(0, 10);
           state.selectedJobs = [];
           renderJobs();
           logUsage('job_search', { mode: 'job_target', titles: state.titles, locations: state.locations, results: scoredJobs.length });
