@@ -3519,143 +3519,39 @@ Return a JSON array of objects with these exact fields:
           body: JSON.stringify({ jobs: selectedJobData })
         });
 
-        let braveResults = null;
-        if (searchRes.ok) {
-          braveResults = await searchRes.json();
+        if (!searchRes.ok) {
+          const err = await searchRes.json().catch(() => ({}));
+          throw new Error(err.error || 'Contact search failed');
         }
 
-        // Step 2: Have Claude organize, verify roles, and add rationale
-        showProgress(container, 'Organizing contacts and identifying roles...', 15);
+        const contactData = await searchRes.json();
+        stopProgress();
 
-        const systemPrompt = 'You are a networking assistant for senior leaders. Respond ONLY with a JSON object. No markdown, no explanation.';
-        let userPrompt;
+        // API now handles Claude verification, dedup, and founder search server-side
+        // contactData.results already has verified contacts
+        if (contactData && contactData.results && contactData.results.some(r => r.contacts && r.contacts.length > 0)) {
+          // Contacts already verified server-side
 
-        if (braveResults && braveResults.results && braveResults.results.some(r => r.raw_contacts && r.raw_contacts.length > 0)) {
-          // We have real LinkedIn data - have Claude verify and organize
-          const jobContexts = braveResults.results.map(r => {
-            const dt = r.derived || r.derived_titles || { hmTitles: [], slTitles: [], func: '' };
-            return `Job: ${r.job_title} at ${r.company} (${r.location || 'location unknown'})
-Function/Department: ${dt.func || 'Leadership'}
-Hiring Manager titles: ${(dt.hmTitles || dt.hiringManager || []).join(', ')}
-Skip-Level titles: ${(dt.slTitles || dt.skipLevel || []).join(', ')}
-Raw contacts found: ${r.raw_contacts.length}`;
-          }).join('\n\n');
-
-          userPrompt = `You are a contact role assigner and title extractor. Some contacts are already pre-qualified (marked preQualified: true). Do NOT reject pre-qualified contacts. Only assign their role type, extract their title, and write a reason.
-
-For contacts marked claudeDecide: true, apply verification rules to decide whether to include them. Be generous with medium confidence when the company name appears in the snippet.
-
-HIERARCHY: Coordinator < Manager < Senior Manager < Director < Senior Director < VP < SVP/EVP < C-Suite < CEO
-
-ROLE DEFINITIONS:
-- Hiring Manager = ONE level above the open role in the SAME function/department
-- Skip-Level = TWO levels above in the same function, following the function-to-skip-level mapping below
-- Recruiter/TA = internal recruiter at this company handling this level of hire
-
-TITLE EXTRACTION RULES:
-1. Extract current title from snippet if available
-2. If no title in snippet, use the inferredTitle field if provided
-3. If inferredTitle is empty, infer from URL slug: "-hr" = HR Professional, "-cpo" = Chief People Officer, "-cto" = CTO, "-talent" = Talent Professional, "-recruiting" = Recruiter, "human-resource" = HR Professional
-4. NEVER return a contact with an empty or null title. Use function-appropriate defaults: "HR Professional" for People, "Technology Leader" for Engineering, "Marketing Professional" for Marketing, etc.
-
-FUNCTION-TO-SKIP-LEVEL MAPPING (skip-level must follow the job's function):
-- HR/People/Learning/Talent/OD: CHRO, CPO, Chief People Officer, COO, CEO. NEVER CFO, CTO, CMO, CRO.
-- Marketing/Brand/Growth: CMO, Chief Marketing Officer, CEO, President, COO. NEVER CFO, CTO, CHRO.
-- Engineering/Product/Technology: CTO, CIO, CEO, COO, CPO. NEVER CMO, CFO, CHRO.
-- Sales/Revenue/BD: CRO, Chief Revenue Officer, CEO, President, COO. NEVER CTO, CHRO, CMO.
-- Finance/Accounting/FP&A: CFO, CEO, COO, President. NEVER CTO, CMO, CHRO.
-- Operations/Supply Chain: COO, CEO, President. NEVER CMO, CTO, CHRO.
-- Legal/Compliance: CLO, General Counsel, CEO, COO, CFO. NEVER CMO, CTO, CHRO.
-- Design/UX/Creative: CPO, CMO, CTO, CEO. NEVER CFO, CHRO, CRO.
-
-${jobContexts}
-
-STAFFING COMPANY RULE:
-If the target company is a staffing/recruiting firm (Insight Global, Robert Half, Korn Ferry, Randstad, ManpowerGroup, Kelly Services, Adecco, Allegis, or similar), only include contacts with titles like "Corporate Recruiter", "Internal Recruiter", "Internal Talent Acquisition". Reject "Professional Recruiter", "Staffing Consultant", "Account Manager" as these are client-facing, not internal hiring.
-
-ONE CONTACT PER ROLE TYPE PER JOB:
-- Hiring Manager: pick the one whose title most directly owns the function. Priority: C-suite functional owner > SVP/EVP > VP > Director/Head.
-- Recruiter/TA: pick the most senior internal recruiter for this function. Priority: Head/Director of TA > Senior TA Partner > TA Manager.
-- Skip-Level: pick the most direct functional owner two levels up per mapping above. Priority: Functional C-suite > COO > CEO/President.
-
-TITLE VAGUENESS REJECTION (always reject these):
-"Senior Executive", "Employee", "Team Member", "Leader", "Professional", bare "Manager"/"Director"/"Associate" with no department, "Consultant" without function context.
-
-WRONG FUNCTION REJECTION:
-For HR roles: reject Sales Director, Digital Analyst, Finance Manager, Engineer, Developer, Designer, Marketing Manager, Account Manager.
-For Marketing roles: reject HR Director, Finance Manager, Engineer, Developer, Sales Ops.
-For Engineering roles: reject HR Director, Marketing Manager, Finance Manager, Sales Director.
-Apply same logic to all functions. If title function does not match job function, reject.
-
-COMPANY NAME MATCHING:
-Accept: exact match, common abbreviations, parent/subsidiary with clear relationship, slight formatting differences.
-Reject: different entity (Phase2 Labs vs Phase2 Technology), former employer (past tense), unclear match. When in doubt, reject.
-
-UNIVERSITY RULES: For universities, HR hiring manager = AVP HR, VP HR, CHRO, Director of HR. Academic roles = Dean, Department Chair. Never assign President as Hiring Manager. Skip-Level = Provost, COO, President.
-GOVERNMENT: Surface LinkedIn fallback links rather than guessing contacts.
-
-CONFIDENCE SCORING:
-High = snippet confirms employment + title matches function + company matches exactly.
-Medium = employment confirmed but title is adjacent, or company match needs interpretation.
-Never include = employment unconfirmed, or title function mismatch, or company mismatch, or vague title.
-
-SMALL COMPANY RELAXED VERIFICATION:
-Apply when strict verification returns 0-1 contacts for a job. Accept a contact if ANY of these are true:
-1. Their LinkedIn URL slug contains a function keyword: "-hr", "-people", "-talent", "-recruiting", "-culture", "-learning"
-2. Their snippet contains the company name AND any leadership or people keyword
-3. They are a Founder, CEO, Co-Founder, or President. Accept automatically, no snippet verification needed.
-4. Their name appears in the company's search results at all. Presence in results is itself a signal.
-5. The contact data includes "isFounder: true" or "slugHasFunction: true" flags. These are pre-verified signals.
-For contacts accepted under relaxed rules, set confidence to "medium" and note the reason.
-
-PROFESSIONAL SERVICES / LAW FIRM RULE:
-If the data includes "is_professional_services: true", accept these additional skip-level titles: Chief Administrative Officer, Chief Talent Officer, Managing Partner, Administrative Partner, Director of Administration.
-
-PRE-QUALIFIED CONTACT RULES:
-- Contacts with preQualified: true have ALREADY been accepted. Do NOT reject them.
-- For pre-qualified contacts, ONLY assign role type, extract title, write reason.
-- Use the preQualReason and confidence fields already provided.
-- Use inferredTitle if no title can be extracted from snippet.
-
-CLAUDE-DECIDE CONTACT RULES:
-- Contacts with claudeDecide: true need your verification.
-- Be generous. Accept at medium confidence when company name appears in snippet.
-- Only reject when function is clearly wrong OR company name is absent.
-
-FINAL OUTPUT RULES:
-- Maximum 3 contacts per job (one per role type)
-- All pre-qualified contacts MUST appear in output (do not drop them)
-- If more than 3 are pre-qualified, pick the best one per role type
-- Never fabricate, modify, or construct LinkedIn URLs
-- Return valid JSON even if empty
-
-Search results:
-${JSON.stringify(braveResults.results, null, 2)}
-
-Return a JSON object with a "results" array. Each result:
-{
-  "job_id": "string",
-  "company": "string",
-  "job_title": "string",
-  "contacts": [
-    {
-      "name": "string",
-      "title": "string (actual current title)",
-      "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
-      "linkedin": "string (exact URL from search results)",
-      "confidence": "high" | "medium",
-      "note": "string (specific reason this person is relevant)"
-    }
-  ]
-}`;
+          // Use contactData directly - already verified server-side
+          state.contacts = contactData;
+          renderContacts(contactData);
+          logUsage('contact_search', { jobs: selectedJobData.length, contacts: (contactData.results || []).reduce(function(s,r){ return s + (r.contacts||[]).length; }, 0) });
+          // Save to pipeline in background
+          for (const sj of selectedJobData) {
+            const job = state.jobs.find(j => j.id === sj.job_id);
+            if (job && !state.pipeline.find(p => p.jobId === job.id)) {
+              addToPipeline(job).catch(e => console.error('Pipeline save error:', e));
+            }
+          }
+          return;
         } else {
-          // Brave search returned nothing - build proper LinkedIn fallback links
+          // No contacts found - show LinkedIn fallback links
           stopProgress();
           container.innerHTML = `<div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:28px;text-align:center">
             <h3 style="font-size:1.1rem;margin-bottom:10px">No contacts found automatically</h3>
             <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:16px;max-width:500px;margin-left:auto;margin-right:auto">We couldn't automatically verify contacts for these roles. Search LinkedIn directly with filters applied:</p>
             <div style="display:flex;flex-direction:column;gap:12px;max-width:500px;margin:0 auto">
-              ${(braveResults.results || selectedJobData.map(j => ({company: j.company, job_title: j.title, linkedin_slug: '', geo_urn: null, derived: {}}))).map(r => {
+              ${(contactData.results || selectedJobData.map(j => ({company: j.company, job_title: j.title, linkedin_slug: '', geo_urn: null, derived: {}}))).map(r => {
                 const slug = r.linkedin_slug || '';
                 const geoUrn = r.geo_urn || '';
                 const companyParam = slug ? '&currentCompany=%5B%22' + encodeURIComponent(slug) + '%22%5D' : '';
@@ -3678,67 +3574,7 @@ Return a JSON object with a "results" array. Each result:
           return;
         }
 
-        const data = await callClaude(systemPrompt, userPrompt);
-        stopProgress();
-        // Fix 4: Enhanced Claude output logging
-        console.log('\n📤 CLAUDE CONTACT OUTPUT:');
-        if (!data.results || data.results.length === 0) {
-          console.log('  ❌ Claude returned 0 results');
-          console.log('  Raw response:', JSON.stringify(data).substring(0, 500));
-        } else {
-          var totalKept = 0;
-          data.results.forEach(function(r) {
-            console.log('\n📤 ' + r.company + ':');
-            if (!r.contacts || r.contacts.length === 0) {
-              console.log('  ❌ 0 contacts returned');
-            } else {
-              r.contacts.forEach(function(c) {
-                console.log('  ' + (c.confidence === 'high' ? '✅' : '🔶') + ' ' + c.name + ' | ' + c.role + ' | ' + (c.title || 'NO TITLE') + ' | ' + (c.confidence || 'unknown'));
-              });
-              totalKept += r.contacts.length;
-            }
-          });
-          var totalPassed = braveResults && braveResults.results ? braveResults.results.reduce(function(s,r){ return s + (r.raw_contacts || []).length; }, 0) : 0;
-          console.log('\n📊 Pipeline: ' + totalPassed + ' passed to Claude → ' + totalKept + ' kept (' + (totalPassed > 0 ? Math.round(totalKept/totalPassed*100) : 0) + '% acceptance)');
-        }
-        // Merge linkedin_slug and geo_urn from Brave into Claude's results
-        if (data.results && braveResults && braveResults.results) {
-          data.results.forEach(function(r) {
-            var braveMatch = braveResults.results.find(function(br) { return br.company === r.company || br.job_id === r.job_id; });
-            if (braveMatch) {
-              r.linkedin_slug = braveMatch.linkedin_slug;
-              r.geo_urn = braveMatch.geo_urn;
-            }
-          });
-        }
-        // Fix 3: Cross-job deduplication
-        if (data.results) {
-          var seenUrls = {};
-          data.results = data.results.map(function(job) {
-            if (!job.contacts) return job;
-            job.contacts = job.contacts.filter(function(c) {
-              var url = (c.linkedin || c.linkedin_url || '').toLowerCase().split('?')[0].replace(/\/+$/, '');
-              if (!url) return true;
-              if (seenUrls[url]) {
-                console.log('⚠️ Duplicate removed:', c.name, 'at', job.company, '- appeared in earlier job');
-                return false;
-              }
-              seenUrls[url] = true;
-              return true;
-            });
-            return job;
-          });
-        }
-        state.contacts = data;
-        renderContacts(data);
-        logUsage('contact_search', { jobs: selectedJobData.length, contacts: (data.results || []).reduce(function(s,r){ return s + (r.contacts||[]).length; }, 0) });
-        // Save to pipeline in background
-        for (const sj of selectedJobData) {
-          const job = state.jobs.find(j => j.id === sj.job_id);
-          if (job && !state.pipeline.find(p => p.jobId === job.id)) {
-            addToPipeline(job).catch(e => console.error('Pipeline save error:', e));
-          }
-        }
+        // Old Claude call removed - handled server-side in search-contacts.js
       } catch (err) {
         stopProgress();
         console.error('Contacts error:', err);

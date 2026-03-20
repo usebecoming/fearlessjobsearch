@@ -198,25 +198,131 @@ export default async function handler(req, res) {
         console.log('Professional services detected, added alternative skip-level titles');
       }
 
+      // ── CLAUDE VERIFICATION (server-side) ──
+      const anthropicKey = process.env.ANTHROPIC_API_KEY;
+      const contactsPassedIn = toPassToClaude.length;
+      let verifiedContacts = [];
+
+      if (anthropicKey && contactsPassedIn > 0) {
+        console.log(`\n🤖 Calling Claude to verify ${contactsPassedIn} contacts for ${company}...`);
+
+        const claudePrompt = `You are a contact role assigner. Some contacts are pre-qualified (preQualified: true) — do NOT reject these. Only assign role type, extract title, write reason.
+
+Job: ${jobTitle} at ${company}
+Function: ${derived.func}
+HM titles: ${derived.hmTitles.join(', ')}
+SL titles: ${[...derived.slTitles, ...extraSlTitles].join(', ')}
+${isProfServices ? 'This is a law firm / professional services company. Accept Managing Partner, Chief Administrative Officer as skip-level.' : ''}
+
+For pre-qualified contacts: assign role, extract title from snippet or use inferredTitle, write reason. Do NOT reject.
+For claudeDecide contacts: verify employment, then assign role or reject.
+Never return empty titles — use inferredTitle or infer from slug.
+
+Contacts:
+${JSON.stringify(toPassToClaude.slice(0, 20), null, 2)}
+
+Return JSON array only:
+[{"name":"string","title":"string","role":"Hiring Manager|Skip-Level|Recruiter / TA","linkedin":"string (exact URL)","confidence":"high|medium","note":"string"}]`;
+
+        try {
+          const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, system: 'Respond ONLY with a JSON array. No markdown, no explanation.', messages: [{ role: 'user', content: claudePrompt }] })
+          });
+
+          if (claudeRes.ok) {
+            const claudeData = await claudeRes.json();
+            let rawText = claudeData.content?.[0]?.text || '';
+            console.log(`\n🤖 RAW CLAUDE RESPONSE for ${company}:`);
+            console.log(rawText.substring(0, 800));
+
+            rawText = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+            try {
+              verifiedContacts = JSON.parse(rawText);
+              if (!Array.isArray(verifiedContacts)) verifiedContacts = verifiedContacts.contacts || verifiedContacts.results?.[0]?.contacts || [];
+            } catch (e) {
+              console.log(`❌ Failed to parse Claude response: ${e.message}`);
+              verifiedContacts = [];
+            }
+
+            console.log(`\n📤 CLAUDE OUTPUT for ${company}:`);
+            if (verifiedContacts.length === 0) {
+              console.log(`  ❌ Claude returned 0 contacts (rejected all ${contactsPassedIn})`);
+            } else {
+              verifiedContacts.forEach(c => {
+                const icon = c.confidence === 'high' ? '✅' : '🔶';
+                console.log(`  ${icon} ${c.name} | ${c.role || c.role_type} | ${c.title} | ${c.confidence}`);
+              });
+              console.log(`\n  📊 Kept: ${verifiedContacts.length} of ${contactsPassedIn} (${Math.round(verifiedContacts.length/contactsPassedIn*100)}% acceptance)`);
+            }
+          } else {
+            console.log(`❌ Claude API error: ${claudeRes.status}`);
+          }
+        } catch (e) {
+          console.log(`❌ Claude call failed: ${e.message}`);
+        }
+      }
+
+      // Post-Claude founder search if too few verified
+      if (verifiedContacts.length < 3) {
+        console.log(`\n🔍 Low contact count (${verifiedContacts.length}) for ${company} — running post-Claude founder search`);
+        const fq = `"${company}" founder CEO president "linkedin.com/in"`;
+        console.log(`  Founder query: ${fq}`);
+        const fRes = await braveSearch(fq, braveKey);
+        console.log(`  Founder search returned: ${fRes.length} results`);
+        fRes.forEach(r => {
+          if (r.linkedin_url && !verifiedContacts.some(v => (v.linkedin || v.linkedin_url || '').includes(r.linkedin_url.split('/').pop()))) {
+            console.log(`  👤 Adding founder: ${r.name} — ${r.linkedin_url}`);
+            verifiedContacts.push({
+              name: r.name,
+              title: inferTitleFromSlug(r.linkedin_url) || 'Founder / CEO',
+              role: 'Skip-Level',
+              linkedin: r.linkedin_url,
+              confidence: 'medium',
+              note: 'Founder/CEO identified through web search'
+            });
+          }
+        });
+      }
+
       results.push({
         job_id: job.job_id,
         company,
         job_title: jobTitle,
         location: job.location || '',
-        derived: {
-          func: derived.func,
-          hmTitles: derived.hmTitles,
-          slTitles: [...derived.slTitles, ...extraSlTitles],
-          recTerms: derived.recTerms
-        },
-        raw_contacts: toPassToClaude.slice(0, 20),
+        derived: { func: derived.func, hmTitles: derived.hmTitles, slTitles: [...derived.slTitles, ...extraSlTitles], recTerms: derived.recTerms },
+        contacts: verifiedContacts,
         linkedin_slug: companySlug,
         geo_urn: geoUrn,
         is_professional_services: isProfServices
       });
     }
 
-    console.log(`\n=== TOTAL: ${results.reduce((s, r) => s + r.raw_contacts.length, 0)} contacts across ${results.length} jobs ===`);
+    // ── CROSS-JOB DEDUPLICATION ──
+    console.log(`\n🔄 Running cross-job deduplication...`);
+    const seenUrls = new Set();
+    const seenNames = new Set();
+    let totalRemoved = 0;
+    results.forEach(job => {
+      const before = (job.contacts || []).length;
+      job.contacts = (job.contacts || []).filter(c => {
+        const urlKey = (c.linkedin || c.linkedin_url || '').toLowerCase().split('?')[0].replace(/\/+$/, '');
+        const nameKey = (c.name || '').toLowerCase().replace(/\s+/g, '');
+        if ((urlKey && seenUrls.has(urlKey)) || (nameKey && seenNames.has(nameKey))) {
+          console.log(`  ⚠️ Duplicate removed: ${c.name} from ${job.company}`);
+          totalRemoved++;
+          return false;
+        }
+        if (urlKey) seenUrls.add(urlKey);
+        if (nameKey) seenNames.add(nameKey);
+        return true;
+      });
+      console.log(`  ${job.company}: ${before} → ${job.contacts.length} contacts after dedup`);
+    });
+    console.log(`✅ Deduplication complete — removed ${totalRemoved} duplicates`);
+
+    console.log(`\n=== FINAL: ${results.reduce((s, r) => s + (r.contacts || []).length, 0)} contacts across ${results.length} jobs ===`);
     return res.status(200).json({ results });
   } catch (err) {
     console.error('Contact search error:', err);
