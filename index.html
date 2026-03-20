@@ -2679,12 +2679,15 @@ ${getFavoriteContext()}`;
             return;
           }
 
-          // Now score with Claude
-          showProgress(container, 'Scoring opportunities against your profile...', 15);
+          // Score with Claude only if resume is provided
+          let scores = [];
+          if (resumeSummary) {
+            showProgress(container, 'Scoring opportunities against your profile...', 15);
 
-          const scoringPrompt = `Score each of the following real job listings against the candidate's resume. For each job, provide a fitScore (0-100) and a one-line fitReason explaining the match.
+            const scoringPrompt = `Score each of the following real job listings against the candidate's resume. For each job, provide a fitScore (0-100) and a one-line fitReason explaining the match.
 
-${resumeSummary ? 'Candidate resume:\n' + resumeSummary : 'No resume provided. Assign fitScore of 50 to all.'}
+Candidate resume:
+${resumeSummary}
 ${state.anchors.length ? 'The user has provided these job links as reference examples of what they are looking for. Analyze the role level, scope, industry, and responsibilities from these links when scoring: ' + state.anchors.join(', ') : ''}
 ${getFavoriteContext()}
 
@@ -2694,13 +2697,17 @@ ${JSON.stringify(realJobs.map(j => ({ id: j.id, title: j.title, company: j.compa
 Return a JSON array with one object per job:
 [{ "id": "string", "fitScore": number, "fitReason": "string" }]`;
 
-          const scores = await callClaude(
-            'You are a career fit scoring assistant. Respond ONLY with a JSON array. No markdown, no explanation.',
-            scoringPrompt
-          );
+            scores = await callClaude(
+              'You are a career fit scoring assistant. Respond ONLY with a JSON array. No markdown, no explanation.',
+              scoringPrompt
+            );
+          }
 
           // Merge scores into real jobs
           const scoredJobs = realJobs.map(job => {
+            if (!resumeSummary) {
+              return { ...job, fitScore: -1, fitReason: 'No resume uploaded. Add your resume for fit scoring.' };
+            }
             const score = (scores || []).find(s => s.id === job.id);
             return {
               ...job,
@@ -2799,16 +2806,21 @@ Return a JSON array of objects with these exact fields:
         card.style.animationDelay = `${i * 0.06}s`;
 
         const isNoListing = job.fitScore === 0 || (job.posted && job.posted.toLowerCase().includes('no active'));
-        const fitBadge = isNoListing ? 'badge-blue' :
+        const noResume = job.fitScore === -1;
+        const fitBadge = noResume ? 'badge-gold' :
+                         isNoListing ? 'badge-blue' :
                          job.fitScore >= 87 ? 'badge-green' :
                          job.fitScore >= 70 ? 'badge-gold' : 'badge-red';
-        const fitLabel = isNoListing ? 'Build Relationships' :
+        const fitLabel = noResume ? 'No Resume' :
+                         isNoListing ? 'Build Relationships' :
                          job.fitScore >= 87 ? 'Strong Match' :
                          job.fitScore >= 70 ? 'Good Match' : 'Stretch';
         const isFav = state.favorites.some(f => f.title === job.title && f.company === job.company);
 
         let stretchNote = '';
-        if (!isNoListing && job.fitScore < 87) {
+        if (noResume) {
+          stretchNote = `<div style="margin-top:10px;padding:10px 14px;background:rgba(184,168,138,0.08);border:1px solid rgba(184,168,138,0.2);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#7A6C52;font-weight:500">Upload your resume to see how well you match this role.</div>`;
+        } else if (!isNoListing && job.fitScore < 87) {
           stretchNote = `<div style="margin-top:10px;padding:10px 14px;background:rgba(201,68,68,0.06);border:1px solid rgba(201,68,68,0.15);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#C94444;font-weight:500">${job.fitScore < 70 ? 'Stretch' : 'Good Match'}. May need resume tailoring. <a href="#" onclick="event.stopPropagation();event.preventDefault();openBookingModal()" style="color:#B8A88A;font-weight:600">Get expert help &#8594;</a></div>`;
         }
 
@@ -2826,7 +2838,7 @@ Return a JSON array of objects with these exact fields:
               <div class="job-title">${esc(job.title)}</div>
               <div class="job-company">${esc(job.company)}</div>
             </div>
-            <span class="badge ${fitBadge}">${isNoListing ? fitLabel : job.fitScore + ' &middot; ' + fitLabel}</span>
+            <span class="badge ${fitBadge}">${noResume || isNoListing ? fitLabel : job.fitScore + ' &middot; ' + fitLabel}</span>
           </div>
           <div class="job-meta">
             <span>${esc(job.location)}</span>
