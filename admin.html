@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Fearless Job Search</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Sans', sans-serif; font-weight: 500; background: #FFF8F2; color: #111; min-height: 100vh; padding: 32px; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 24px; }
+    h2 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin: 32px 0 16px; }
+    .card { background: #fff; border: 1px solid #E5E4E2; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border: 1px solid #E5E4E2; border-radius: 12px; padding: 20px; text-align: center; }
+    .stat-number { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 800; color: #111; }
+    .stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: #777; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; text-transform: uppercase; color: #777; text-align: left; padding: 10px; border-bottom: 1px solid #E5E4E2; }
+    td { padding: 10px; border-bottom: 1px solid #F0EFED; font-size: 0.88rem; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; font-weight: 500; }
+    .badge-search { background: rgba(184,168,138,0.15); color: #7A6C52; }
+    .badge-contacts { background: rgba(58,138,92,0.1); color: #3A8A5C; }
+    .badge-outreach { background: rgba(107,131,168,0.1); color: #5A7A9A; }
+    .login-box { max-width: 360px; margin: 100px auto; }
+    .login-box input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #E5E4E2; border-radius: 8px; font-size: 0.95rem; }
+    .login-box button { width: 100%; padding: 12px; background: #111; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; cursor: pointer; }
+    #dashboard { display: none; }
+    .cost-estimate { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; color: #555; }
+    a { color: #B8A88A; }
+  </style>
+</head>
+<body>
+
+  <div class="login-box" id="loginBox">
+    <h1>Admin Dashboard</h1>
+    <input type="email" id="email" placeholder="Admin email">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Sign In</button>
+    <p id="loginError" style="color:#C94444;margin-top:10px;font-size:0.85rem"></p>
+  </div>
+
+  <div id="dashboard">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h1>Fearless Job Search - Admin</h1>
+      <div>
+        <a href="/">Back to app</a>
+        <span style="margin:0 12px;color:#E5E4E2">|</span>
+        <a href="#" onclick="loadData()">Refresh</a>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-number" id="totalUsers">-</div>
+        <div class="stat-label">Total Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="totalSearches">-</div>
+        <div class="stat-label">Searches (30 days)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="totalContacts">-</div>
+        <div class="stat-label">Contact Lookups (30 days)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="totalOutreach">-</div>
+        <div class="stat-label">Outreach Generated (30 days)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="estimatedCost">-</div>
+        <div class="stat-label">Est. API Cost (30 days)</div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <h2>Recent Activity</h2>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr>
+        </thead>
+        <tbody id="activityTable">
+          <tr><td colspan="4" style="color:#777;text-align:center">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Users -->
+    <h2>Users</h2>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Email</th><th>Signed Up</th><th>Searches</th><th>Last Active</th></tr>
+        </thead>
+        <tbody id="usersTable">
+          <tr><td colspan="4" style="color:#777;text-align:center">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cost Breakdown -->
+    <h2>Estimated Cost Breakdown</h2>
+    <div class="card">
+      <div class="cost-estimate" id="costBreakdown">Loading...</div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://tgicomrycbhrinobvnlr.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnaWNvbXJ5Y2Jocmlub2J2bmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NzcwOTMsImV4cCI6MjA4OTU1MzA5M30.nmC38E3meTH6mS0yjhyXaSYlwLc28mxqxLNf5e1KSdg';
+    const ADMIN_EMAILS = ['ritterbenjamin@gmail.com', 'ben@liveforyourselfconsulting.com'];
+
+    let sb;
+    try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {}
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      if (!sb) { document.getElementById('loginError').textContent = 'Could not connect'; return; }
+
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        document.getElementById('loginError').textContent = error.message;
+        return;
+      }
+
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session || !ADMIN_EMAILS.includes(session.user.email)) {
+        document.getElementById('loginError').textContent = 'Not an admin account';
+        await sb.auth.signOut();
+        return;
+      }
+
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      loadData();
+    }
+
+    // Check existing session
+    (async () => {
+      if (!sb) return;
+      const { data: { session } } = await sb.auth.getSession();
+      if (session && ADMIN_EMAILS.includes(session.user.email)) {
+        document.getElementById('loginBox').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        loadData();
+      }
+    })();
+
+    async function loadData() {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      // Get usage logs
+      const { data: logs } = await sb.from('usage_log').select('*').gte('created_at', thirtyDaysAgo).order('created_at', { ascending: false });
+
+      // Get profiles (users)
+      const { data: profiles } = await sb.from('profiles').select('*');
+
+      // Stats
+      const searches = (logs || []).filter(l => l.action === 'job_search').length;
+      const contacts = (logs || []).filter(l => l.action === 'contact_search').length;
+      const outreach = (logs || []).filter(l => l.action === 'outreach_generated').length;
+
+      document.getElementById('totalUsers').textContent = (profiles || []).length;
+      document.getElementById('totalSearches').textContent = searches;
+      document.getElementById('totalContacts').textContent = contacts;
+      document.getElementById('totalOutreach').textContent = outreach;
+
+      // Cost estimate
+      const claudeCalls = searches + contacts + outreach; // ~3 Claude calls per full workflow
+      const braveCalls = contacts * 5 * 2; // 5 queries * 2 pages per contact search
+      const jsearchCalls = searches;
+      const claudeCost = claudeCalls * 0.04;
+      const braveCost = braveCalls * 0.003;
+      const totalCost = claudeCost + braveCost;
+
+      document.getElementById('estimatedCost').textContent = '$' + totalCost.toFixed(2);
+      document.getElementById('costBreakdown').innerHTML = `
+        Claude API: ${claudeCalls} calls = $${claudeCost.toFixed(2)}<br>
+        Brave Search: ${braveCalls} queries = $${braveCost.toFixed(2)}<br>
+        JSearch: ${jsearchCalls} calls (free tier)<br>
+        <strong>Total estimated: $${totalCost.toFixed(2)}</strong>
+      `;
+
+      // Activity table
+      const tbody = document.getElementById('activityTable');
+      if (!logs || logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:#777;text-align:center">No activity yet. Run the usage_log SQL migration first.</td></tr>';
+      } else {
+        tbody.innerHTML = logs.slice(0, 50).map(l => {
+          const badge = l.action === 'job_search' ? 'badge-search' :
+                        l.action === 'contact_search' ? 'badge-contacts' : 'badge-outreach';
+          const time = new Date(l.created_at).toLocaleString();
+          const details = l.details ? JSON.stringify(l.details).substring(0, 80) : '';
+          return `<tr>
+            <td style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777">${time}</td>
+            <td style="font-size:0.82rem">${(l.user_id || '').substring(0, 8)}...</td>
+            <td><span class="badge ${badge}">${l.action}</span></td>
+            <td style="font-size:0.82rem;color:#777;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${details}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      // Users table
+      const utbody = document.getElementById('usersTable');
+      if (!profiles || profiles.length === 0) {
+        utbody.innerHTML = '<tr><td colspan="4" style="color:#777;text-align:center">No users yet</td></tr>';
+      } else {
+        // Count searches per user
+        const userSearches = {};
+        const userLastActive = {};
+        (logs || []).forEach(l => {
+          if (l.action === 'job_search') userSearches[l.user_id] = (userSearches[l.user_id] || 0) + 1;
+          if (!userLastActive[l.user_id] || l.created_at > userLastActive[l.user_id]) {
+            userLastActive[l.user_id] = l.created_at;
+          }
+        });
+
+        utbody.innerHTML = profiles.map(p => {
+          const searches = userSearches[p.id] || 0;
+          const lastActive = userLastActive[p.id] ? new Date(userLastActive[p.id]).toLocaleDateString() : 'Never';
+          const joined = new Date(p.created_at).toLocaleDateString();
+          return `<tr>
+            <td>${p.id.substring(0, 8)}...</td>
+            <td style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem">${joined}</td>
+            <td>${searches}</td>
+            <td style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem">${lastActive}</td>
+          </tr>`;
+        }).join('');
+      }
+    }
+  </script>
+</body>
+</html>

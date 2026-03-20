@@ -41,37 +41,58 @@ export default async function handler(req, res) {
 
       const allContacts = [];
 
+      // Skip if no company name
+      if (!company || company === 'Unknown' || company.length < 2) {
+        console.log('Skipping: no valid company name');
+        results.push({ job_id: job.job_id, company, job_title: jobTitle, location: job.location || '', derived_titles: derived, raw_contacts: [] });
+        continue;
+      }
+
       // Helper: run query with company name fallbacks
-      async function searchWithFallback(titleTerms, role) {
+      async function searchWithFallback(queryBuilder, role) {
         for (const coName of companyNames) {
-          const query = `site:linkedin.com/in "${coName}" (${titleTerms})`;
+          const query = queryBuilder(coName);
           console.log(`  Query [${role}] with "${coName}":`, query);
-          const results = await braveSearch(query, braveKey);
-          console.log(`  Results: ${results.length} profiles`);
-          allContacts.push(...results.map(r => ({ ...r, searchRole: role })));
-          if (results.length >= 3) break; // got enough, stop trying variations
+          const r = await braveSearch(query, braveKey);
+          console.log(`  Results: ${r.length} profiles`);
+          allContacts.push(...r.map(c => ({ ...c, searchRole: role })));
+          if (r.length >= 3) break;
         }
       }
 
-      // Query 1: Hiring managers - exact derived titles
-      const hmTerms = derived.hiringManager.map(t => `"${t}"`).join(' OR ');
-      await searchWithFallback(hmTerms, 'Hiring Manager');
+      // Query 1: Hiring managers - use derived titles loosely (no exact quotes on multi-word)
+      const hmKeywords = derived.hiringManager.map(t => t.length > 15 ? t.split(' ').slice(0, 2).join(' ') : t);
+      await searchWithFallback(
+        co => `site:linkedin.com/in "${co}" ${hmKeywords.map(t => `"${t}"`).join(' OR ')}`,
+        'Hiring Manager'
+      );
 
-      // Query 2: Department-specific recruiter
-      const deptRecTerms = `"${dept} recruiter" OR "${dept} talent acquisition" OR "${dept} talent partner" OR "recruiter" "${dept}"`;
-      await searchWithFallback(deptRecTerms, 'Recruiter / TA');
+      // Query 2: Broader hiring manager - just department + leadership level
+      await searchWithFallback(
+        co => `site:linkedin.com/in "${co}" ${dept} VP OR Director OR Head OR SVP OR Chief`,
+        'Hiring Manager'
+      );
 
-      // Query 3: Generic recruiter (catches TA partners not dept-specific)
-      const genRecTerms = `"recruiter" OR "talent acquisition" OR "talent partner" OR "recruiting manager" OR "people partner"`;
-      await searchWithFallback(genRecTerms, 'Recruiter / TA');
+      // Query 3: Recruiters - keep it simple, just recruiter at company
+      await searchWithFallback(
+        co => `site:linkedin.com/in "${co}" recruiter OR "talent acquisition" OR "talent partner" OR "people partner"`,
+        'Recruiter / TA'
+      );
 
-      // Query 4: Skip-level - exact derived titles
-      const slTerms = derived.skipLevel.map(t => `"${t}"`).join(' OR ');
-      await searchWithFallback(slTerms, 'Skip-Level');
+      // Query 4: Skip-level - C-suite and top leadership
+      await searchWithFallback(
+        co => `site:linkedin.com/in "${co}" CEO OR COO OR CTO OR CMO OR CPO OR CRO OR President OR "Chief"`,
+        'Skip-Level'
+      );
 
-      // Query 5: Broad department leadership (catches titles we didn't predict)
-      const broadTerms = `"${dept}" (VP OR SVP OR "Vice President" OR Director OR "Head of" OR Chief)`;
-      await searchWithFallback(broadTerms, 'Hiring Manager');
+      // Query 5: If still few results, try without site:linkedin filter (finds LinkedIn profiles indexed elsewhere)
+      if (allContacts.length < 5) {
+        console.log('  Few results, trying broader search...');
+        await searchWithFallback(
+          co => `linkedin.com/in "${co}" ${dept} VP OR Director OR recruiter`,
+          'Hiring Manager'
+        );
+      }
 
       // Dedupe and limit
       const deduped = dedupeContacts(allContacts);

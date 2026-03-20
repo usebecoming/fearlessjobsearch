@@ -22,47 +22,63 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'At least one job title is required' });
     }
 
-    // Build search query from titles
-    const query = titles.join(' OR ');
     const location = (locations && locations.length > 0)
       ? locations.filter(l => l.toLowerCase() !== 'remote').join(', ')
       : '';
     const isRemote = locations && locations.some(l => l.toLowerCase() === 'remote');
 
-    // Build JSearch params
-    const params = new URLSearchParams({
-      query: query + (location ? ` in ${location}` : ''),
-      page: '1',
-      num_pages: '1',
-      date_posted: 'week',
-      employment_types: 'FULLTIME',
-    });
+    // Run separate search per title for better results
+    const allJobs = [];
+    const seenJobIds = new Set();
 
-    if (isRemote) {
-      params.set('remote_jobs_only', 'true');
-    }
-
-    const response = await fetch(
-      `https://jsearch.p.rapidapi.com/search?${params.toString()}`,
-      {
-        method: 'GET',
-        headers: {
-          'X-RapidAPI-Key': rapidApiKey,
-          'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
-        }
-      }
-    );
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      console.error('JSearch API error:', err);
-      return res.status(response.status).json({
-        error: err.message || `Job search API error ${response.status}`
+    for (const title of titles) {
+      const params = new URLSearchParams({
+        query: title + (location ? ` in ${location}` : ''),
+        page: '1',
+        num_pages: '1',
+        date_posted: 'week',
+        employment_types: 'FULLTIME',
       });
+
+      if (isRemote) {
+        params.set('remote_jobs_only', 'true');
+      }
+
+      console.log('JSearch query:', title, location ? `in ${location}` : '', isRemote ? '(remote)' : '');
+
+      try {
+        const response = await fetch(
+          `https://jsearch.p.rapidapi.com/search?${params.toString()}`,
+          {
+            method: 'GET',
+            headers: {
+              'X-RapidAPI-Key': rapidApiKey,
+              'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
+            }
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const results = data.data || [];
+          console.log(`JSearch results for "${title}": ${results.length}`);
+          for (const job of results) {
+            const jid = job.job_id || '';
+            if (!seenJobIds.has(jid)) {
+              seenJobIds.add(jid);
+              allJobs.push(job);
+            }
+          }
+        } else {
+          console.error('JSearch error for', title, ':', response.status);
+        }
+      } catch (e) {
+        console.error('JSearch fetch error for', title, ':', e.message);
+      }
     }
 
-    const data = await response.json();
-    const jobs = (data.data || []).slice(0, 15);
+    console.log(`Total unique jobs across ${titles.length} title(s): ${allJobs.length}`);
+    const jobs = allJobs.slice(0, 15);
 
     // Filter out staffing agencies and map to our format
     const agencyKeywords = ['staffing', 'recruiting', 'talent agency', 'manpower', 'adecco', 'randstad', 'robert half', 'hays', 'kforce'];
