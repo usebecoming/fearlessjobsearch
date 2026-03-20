@@ -2848,9 +2848,16 @@ Return a JSON array of objects with these exact fields:
         return;
       }
 
-      // Save to localStorage
+      // Check for duplicate name
       var profiles = [];
       try { profiles = JSON.parse(localStorage.getItem('fjs_search_profiles') || '[]'); } catch(e) {}
+      var existingIdx = profiles.findIndex(function(p) { return p.name.toLowerCase() === name.toLowerCase(); });
+      if (existingIdx !== -1) {
+        if (!confirm('A search named "' + name + '" already exists. Overwrite it?')) return;
+        profiles.splice(existingIdx, 1);
+      }
+
+      // Save to localStorage
       profiles.push({
         id: String(Date.now()),
         name: name,
