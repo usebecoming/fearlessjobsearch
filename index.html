@@ -1542,6 +1542,7 @@
       <button class="nav-link" onclick="openPipeline()">Pipeline</button>
       <button class="nav-link accent" onclick="openBookingModal()">Get 1:1 Help</button>
       <div class="nav-divider"></div>
+      <a href="/admin" class="nav-link" id="navAdminLink" style="display:none;color:#3A8A5C">Admin</a>
       <button class="nav-link accent" id="navUpgradeBtn" onclick="openUpgradeModal()">Upgrade</button>
       <span class="user-email" id="navUserEmail"></span>
       <button class="nav-signout" onclick="doSignOut()">Sign Out</button>
@@ -2135,12 +2136,17 @@
       document.getElementById('accountEmail').textContent = user.email;
       document.getElementById('accountInitial').textContent = user.email.charAt(0).toUpperCase();
 
+      // Scroll to top on login
+      window.scrollTo({ top: 0 });
+
       // Hide upgrade UI for admins/paid users
       if (ADMIN_EMAILS.includes(user.email)) {
         state.hasPaid = true;
         document.getElementById('navUpgradeBtn').style.display = 'none';
         document.getElementById('upgradeBanner').style.display = 'none';
         document.getElementById('accountPlan').textContent = 'Admin';
+        // Show admin link
+        document.getElementById('navAdminLink').style.display = '';
       }
 
       // Load plan info from server
