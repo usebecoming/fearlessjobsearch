@@ -2015,19 +2015,31 @@ Return a JSON array of objects with these exact fields:
     }
 
     async function saveSearchProfile() {
-      const name = document.getElementById('profileName').value.trim();
+      const nameInput = document.getElementById('profileName');
+      const name = nameInput.value.trim();
       if (!name) {
-        document.getElementById('profileName').style.borderColor = '#C94444';
-        setTimeout(() => document.getElementById('profileName').style.borderColor = '', 1500);
+        nameInput.style.borderColor = '#C94444';
+        nameInput.placeholder = 'Enter a name first';
+        setTimeout(() => { nameInput.style.borderColor = ''; nameInput.placeholder = 'Name this search'; }, 2000);
         return;
       }
-      if (!supabase) return;
+      if (!supabase) {
+        alert('Could not save. Please refresh and try again.');
+        return;
+      }
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        alert('Please sign in to save searches.');
+        return;
+      }
 
       const workTypes = [...document.querySelectorAll('.work-type-option input:checked')].map(cb => cb.value);
+      const saveBtn = document.querySelector('[onclick="saveSearchProfile()"]');
+      const origText = saveBtn.textContent;
+      saveBtn.textContent = 'Saving...';
+      saveBtn.disabled = true;
 
-      await supabase.from('search_profiles').insert({
+      const { error } = await supabase.from('search_profiles').insert({
         user_id: user.id,
         name,
         titles: state.titles,
@@ -2042,7 +2054,19 @@ Return a JSON array of objects with these exact fields:
         ].filter(Boolean)
       });
 
-      document.getElementById('profileName').value = '';
+      if (error) {
+        console.error('Save search error:', error);
+        saveBtn.textContent = 'Error. Try again.';
+        saveBtn.style.color = '#C94444';
+        setTimeout(() => { saveBtn.textContent = origText; saveBtn.style.color = ''; saveBtn.disabled = false; }, 2000);
+        return;
+      }
+
+      nameInput.value = '';
+      saveBtn.textContent = 'Saved!';
+      saveBtn.style.color = '#3A8A5C';
+      saveBtn.style.borderColor = '#3A8A5C';
+      setTimeout(() => { saveBtn.textContent = origText; saveBtn.style.color = ''; saveBtn.style.borderColor = ''; saveBtn.disabled = false; }, 2000);
       await loadSearchProfiles();
     }
 
