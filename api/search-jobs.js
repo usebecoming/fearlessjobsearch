@@ -93,18 +93,18 @@ export default async function handler(req, res) {
     console.log(`Total unique jobs across ${titles.length} title(s) x ${locationQueries.length} location(s): ${allJobs.length}`);
     const jobs = allJobs.slice(0, 15);
 
-    // Filter out staffing agencies and map to our format
-    const agencyKeywords = ['staffing', 'recruiting', 'talent agency', 'manpower', 'adecco', 'randstad', 'robert half', 'hays', 'kforce'];
+    // Flag staffing agencies instead of filtering them out
+    const agencyKeywords = ['staffing', 'recruiting', 'talent agency', 'manpower', 'adecco', 'randstad', 'robert half', 'hays', 'kforce', 'kelly services', 'allegis', 'insight global', 'korn ferry', 'heidrick', 'aerotek', 'tek systems', 'teksystems', 'beacon hill', 'apex group', 'modis', 'volt', 'spherion', 'express employment', 'nesco', 'addison group', 'brooksource', 'procom', 'collabera', 'cybercoders', 'dice', 'jobspring', 'placement', 'search group', 'executive search', 'talent solutions', 'recruiting group'];
 
     const filtered = jobs
-      .filter(job => {
+      .map((job, i) => {
         const employer = (job.employer_name || '').toLowerCase();
-        return !agencyKeywords.some(kw => employer.includes(kw));
-      })
-      .map((job, i) => ({
+        const isAgency = agencyKeywords.some(kw => employer.includes(kw));
+        return {
         id: job.job_id || `jsearch-${i}`,
         title: job.job_title || 'Untitled',
         company: job.employer_name || 'Unknown',
+        isAgency,
         location: job.job_city && job.job_state
           ? `${job.job_city}, ${job.job_state}`
           : (job.job_is_remote ? 'Remote' : 'Location not specified'),
@@ -119,7 +119,8 @@ export default async function handler(req, res) {
         // These will be filled by Claude
         fitScore: 0,
         fitReason: ''
-      }));
+      };
+      });
 
     return res.status(200).json({ jobs: filtered.slice(0, 10) });
   } catch (err) {

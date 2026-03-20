@@ -3029,6 +3029,7 @@ Return a JSON array of objects with these exact fields:
 
         const isNoListing = job.fitScore === 0 || (job.posted && job.posted.toLowerCase().includes('no active'));
         const noResume = job.fitScore === -1;
+        const isAgency = job.isAgency || false;
         const fitBadge = noResume ? 'badge-gold' :
                          isNoListing ? 'badge-blue' :
                          job.fitScore >= 87 ? 'badge-green' :
@@ -3046,6 +3047,10 @@ Return a JSON array of objects with these exact fields:
           stretchNote = `<div style="margin-top:10px;padding:10px 14px;background:rgba(201,68,68,0.06);border:1px solid rgba(201,68,68,0.15);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#C94444;font-weight:500">${job.fitScore < 70 ? 'Stretch' : 'Good Match'}. May need resume tailoring. <a href="#" onclick="event.stopPropagation();event.preventDefault();openBookingModal()" style="color:#B8A88A;font-weight:600">Get expert help &#8594;</a></div>`;
         }
 
+        let agencyNote = '';
+        if (isAgency) {
+          agencyNote = `<div style="margin-top:10px;padding:10px 14px;background:rgba(201,68,68,0.06);border:1px solid rgba(201,68,68,0.15);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#C94444;font-weight:500">Posted by a recruiting agency, not the hiring company. The actual employer may be different. Contact the agency for details about the role.</div>`;
+        }
         let noListingNote = '';
         if (isNoListing) {
           noListingNote = `<div style="margin-top:10px;padding:12px 16px;background:rgba(107,131,168,0.06);border:1px solid rgba(107,131,168,0.15);border-radius:8px;font-size:0.82rem;color:#5A7A9A;font-weight:500">No active roles right now. Select this to get contacts and start building relationships so you're first in line when something opens.</div>`;
@@ -3058,7 +3063,7 @@ Return a JSON array of objects with these exact fields:
           <div class="job-card-header" style="padding-right:70px">
             <div>
               <div class="job-title">${esc(job.title)}</div>
-              <div class="job-company">${esc(job.company)}</div>
+              <div class="job-company">${esc(job.company)}${isAgency ? ' <span style="font-size:0.75rem;color:#C94444;font-weight:600;margin-left:6px">Recruiting Agency</span>' : ''}</div>
             </div>
             <span class="badge ${fitBadge}">${noResume || isNoListing ? fitLabel : job.fitScore + ' &middot; ' + fitLabel}</span>
           </div>
@@ -3072,6 +3077,7 @@ Return a JSON array of objects with these exact fields:
           ${job.highlights ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${job.highlights.map(h => `<span style="font-size:0.85rem;color:#555555;background:#F9F6F1;padding:3px 8px;border-radius:4px;border:1px solid #EEEEED;font-weight:500">${esc(h)}</span>`).join('')}</div>` : ''}
           <div class="fit-reason">"${esc(job.fitReason)}"</div>
           ${stretchNote}
+          ${agencyNote}
           ${noListingNote}
           <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
             <button class="job-view-btn" onclick="event.stopPropagation();openJobDetail('${esc(job.id)}')" style="margin:0">${isNoListing ? 'Select to get contacts' : 'Learn more'}</button>
