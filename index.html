@@ -3320,20 +3320,24 @@ Return a JSON object with a "results" array. Each result:
       const systemPrompt = 'You are a senior executive outreach copywriter. Respond ONLY with a JSON object. No markdown, no explanation.';
       const hasNoListingRoles = targets.some(t => t.job_title && (t.job_title.includes('No active') || t.fitScore === 0));
       const userPrompt = `Write personalized 4-message outreach sequences for each contact below. Two tracks:
-- Recruiter / TA track opener: "I noticed your organization is hiring for [role]..."
-- Hiring Manager / Skip-Level track opener: "I noticed your team is expanding..."
+- Recruiter / TA track: position-focused, efficient, direct
+- Hiring Manager / Skip-Level track: team and business impact focused, warm but professional
 
-IMPORTANT: If a role has "No active listing" in the posted field or is marked as a relationship-building opportunity (no current opening), adjust the messaging:
+MESSAGING RULES:
+1. ALWAYS address the contact by their first name in the connection request (e.g. "Hi Sarah," or "Sarah,")
+2. Do NOT sign off with the sender's name or initials on any message. Just end the message naturally.
+3. Tone should be warm, personable, and peer-level. You're starting a conversation, not pitching. Think "someone I'd want to grab coffee with" not "cold sales email."
+4. Each message should include one specific achievement or value statement from the resume, woven in naturally.
+5. Connection request must be under 300 characters.
+6. Be conversational. Use "I" not "we." Ask genuine questions. Show real curiosity about their work.
+
+If a role has "No active listing" or is a relationship-building opportunity (no current opening):
 - Do NOT reference a specific open role or active job posting
-- Instead focus on connecting, expressing interest in the company, and exploring potential future opportunities
-- Frame it as wanting to build a relationship and be on their radar for when the right opportunity comes up
-- Tone should be curious and confident, not desperate or presumptuous
+- Focus on genuine interest in the company and exploring future possibilities
+- Frame it as wanting to connect and stay on their radar
+- Be curious, not transactional
 
-Each message must include one specific brand value statement extracted from the resume. Voice: direct, confident, peer-level, short. Senior people skim. Connection request under 300 characters.
-
-NEVER use these phrases: "I hope this message finds you well", "I'm reaching out because", "I wanted to connect", "synergy", "leverage"
-
-Sign with first name only.
+NEVER use these phrases: "I hope this message finds you well", "I'm reaching out because", "I wanted to connect", "synergy", "leverage", "touch base", "pick your brain"
 
 Targets:
 ${JSON.stringify(targets, null, 2)}
