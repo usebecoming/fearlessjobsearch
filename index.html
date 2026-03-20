@@ -1115,7 +1115,7 @@
             <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">SVP of Marketing, Stripe</div>
             <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Directly owns this role. 8 years at Stripe, promoted from VP. Active on LinkedIn.</div>
             <div style="display:flex;gap:8px">
-              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">Copy Email</span>
+              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">View on LinkedIn</span>
               <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">LinkedIn &rarr;</span>
             </div>
           </div>
@@ -1127,7 +1127,7 @@
             <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">CRO, Stripe</div>
             <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Rachel's direct report chain. Influence over final hiring decision for VP-level roles.</div>
             <div style="display:flex;gap:8px">
-              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">Copy Email</span>
+              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">View on LinkedIn</span>
               <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">LinkedIn &rarr;</span>
             </div>
           </div>
@@ -1139,7 +1139,7 @@
             <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">Senior Talent Partner, Stripe</div>
             <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Handles VP-level marketing hires. Responsive to direct outreach on LinkedIn.</div>
             <div style="display:flex;gap:8px">
-              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">Copy Email</span>
+              <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">View on LinkedIn</span>
               <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">LinkedIn &rarr;</span>
             </div>
           </div>
@@ -2874,11 +2874,55 @@ Return a JSON array of objects with these exact fields:
         .filter(j => state.selectedJobs.includes(j.id))
         .map(j => ({ job_id: j.id, title: j.title, company: j.company, industry: j.industry, location: j.location }));
 
-      const contactEstimate = Math.max(20, selectedJobData.length * 8);
-      showProgress(container, 'Identifying the people behind the hiring decisions...', contactEstimate);
+      const contactEstimate = Math.max(25, selectedJobData.length * 10);
+      showProgress(container, 'Searching LinkedIn for real decision-makers...', contactEstimate);
 
-      const systemPrompt = 'You are a networking assistant for senior leaders. Respond ONLY with a JSON object. No markdown, no explanation.';
-      const userPrompt = `Surface 3-6 direct company contacts for each of the following roles. Include: internal recruiter/TA, most likely hiring manager, and a skip-level leader (their manager or C-suite peer). NO recruiting agencies. Provide realistic names, work email, LinkedIn URL, and one-line rationale.
+      try {
+        // Step 1: Search Brave for real LinkedIn profiles
+        const searchRes = await fetch('/api/search-contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobs: selectedJobData })
+        });
+
+        let braveResults = null;
+        if (searchRes.ok) {
+          braveResults = await searchRes.json();
+        }
+
+        // Step 2: Have Claude organize, verify roles, and add rationale
+        showProgress(container, 'Organizing contacts and identifying roles...', 15);
+
+        const systemPrompt = 'You are a networking assistant for senior leaders. Respond ONLY with a JSON object. No markdown, no explanation.';
+        let userPrompt;
+
+        if (braveResults && braveResults.results && braveResults.results.some(r => r.contacts.length > 0)) {
+          // We have real LinkedIn data - have Claude organize it
+          userPrompt = `I searched LinkedIn and found the following real contacts at each company. Review them, assign the correct role type (Recruiter / TA, Hiring Manager, or Skip-Level) based on their title relative to the job being filled, and write a one-line note explaining why this person is worth reaching out to.
+
+If any job is missing a key role type (no hiring manager found, no recruiter found), generate a likely contact for that role.
+
+Jobs and found contacts:
+${JSON.stringify(braveResults.results, null, 2)}
+
+Return a JSON object with a "results" array. Each result:
+{
+  "job_id": "string",
+  "company": "string",
+  "job_title": "string",
+  "contacts": [
+    {
+      "name": "string",
+      "title": "string",
+      "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
+      "linkedin": "string (the linkedin URL)",
+      "note": "string (one-line rationale for reaching out)"
+    }
+  ]
+}`;
+        } else {
+          // Brave search returned nothing - fall back to Claude generating contacts
+          userPrompt = `Surface 3-6 direct company contacts for each of the following roles. Include: internal recruiter/TA, most likely hiring manager (the person who would manage whoever fills this role), and a skip-level leader. NO recruiting agencies. Provide realistic names, titles, LinkedIn URLs, and one-line rationale.
 
 Jobs:
 ${JSON.stringify(selectedJobData, null, 2)}
@@ -2893,19 +2937,18 @@ Return a JSON object with a "results" array. Each result:
       "name": "string",
       "title": "string",
       "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
-      "email": "string (firstname.lastname@company.com format)",
       "linkedin": "string (linkedin.com/in/firstname-lastname format)",
       "note": "string (one-line rationale)"
     }
   ]
 }`;
+        }
 
-      try {
         const data = await callClaude(systemPrompt, userPrompt);
         stopProgress();
         state.contacts = data;
         renderContacts(data);
-        // Save to pipeline in background (don't block UI)
+        // Save to pipeline in background
         for (const sj of selectedJobData) {
           const job = state.jobs.find(j => j.id === sj.job_id);
           if (job && !state.pipeline.find(p => p.jobId === job.id)) {
@@ -2957,8 +3000,8 @@ Return a JSON object with a "results" array. Each result:
               <div class="contact-title">${esc(c.title)}</div>
               <div class="contact-note">${esc(c.note)}</div>
               <div class="contact-actions" onclick="event.stopPropagation()">
-                <button class="btn-copy" onclick="copyText('${esc(c.email)}', this)">Copy Email</button>
-                <a href="https://${esc(c.linkedin)}" target="_blank" class="btn-copy" style="text-decoration:none">LinkedIn →</a>
+                <a href="${c.linkedin && c.linkedin.startsWith('http') ? esc(c.linkedin) : 'https://' + esc(c.linkedin)}" target="_blank" class="btn-primary" style="text-decoration:none;padding:8px 18px;font-size:0.82rem;display:inline-flex">View on LinkedIn &#8599;</a>
+                <button class="btn-copy" onclick="copyText('${c.linkedin && c.linkedin.startsWith('http') ? esc(c.linkedin) : 'https://' + esc(c.linkedin)}', this)">Copy Link</button>
               </div>
             </div>`;
           contactIdx++;
@@ -3281,7 +3324,10 @@ Return a JSON object with a "sequences" array. Each sequence:
     }
 
     function copyAllLinkedIn() {
-      const urls = getAllContacts().map(c => 'https://' + c.linkedin).join('\n');
+      const urls = getAllContacts().map(c => {
+        const li = c.linkedin || c.linkedinUrl || '';
+        return li.startsWith('http') ? li : 'https://' + li;
+      }).join('\n');
       navigator.clipboard.writeText(urls).then(() => {
         const btn = document.querySelector('[onclick="copyAllLinkedIn()"]');
         const orig = btn.textContent;
@@ -3319,11 +3365,15 @@ Return a JSON object with a "sequences" array. Each sequence:
 
     function exportCSV() {
       const contacts = getAllContacts();
-      const headers = ['Name', 'Title', 'Role', 'Email', 'LinkedIn', 'Company', 'Job Title', 'Note'];
-      const rows = contacts.map(c => [
-        c.name, c.title, c.role, c.email,
-        'https://' + c.linkedin, c.company, c.job_title, c.note
-      ].map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(','));
+      const headers = ['Name', 'Title', 'Role', 'LinkedIn', 'Company', 'Job Title', 'Note'];
+      const rows = contacts.map(c => {
+        const li = c.linkedin || c.linkedinUrl || '';
+        return [
+          c.name, c.title, c.role,
+          li.startsWith('http') ? li : 'https://' + li,
+          c.company, c.job_title, c.note
+        ].map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(',');
+      });
       const csv = [headers.join(','), ...rows].join('\n');
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
