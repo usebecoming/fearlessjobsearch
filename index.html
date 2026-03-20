@@ -3428,6 +3428,18 @@ Return a JSON object with a "sequences" array. Each sequence:
 
         const trackBadge = seq.track === 'Recruiter' ? 'badge-blue' : 'badge-green';
 
+        // Find LinkedIn URL from contacts data
+        let linkedinUrl = '';
+        if (state.contacts && state.contacts.results) {
+          for (const group of state.contacts.results) {
+            const match = (group.contacts || []).find(c => c.name === seq.contact_name);
+            if (match && match.linkedin) {
+              linkedinUrl = match.linkedin.startsWith('http') ? match.linkedin : 'https://' + match.linkedin;
+              break;
+            }
+          }
+        }
+
         let html = `
           <div class="sequence-header">
             <div style="display:flex;justify-content:space-between;align-items:center">
@@ -3435,7 +3447,10 @@ Return a JSON object with a "sequences" array. Each sequence:
                 <div class="sequence-contact">${esc(seq.contact_name)}</div>
                 <div class="sequence-track">${esc(seq.job_title)} · ${esc(seq.company)}</div>
               </div>
-              <span class="badge ${trackBadge}">${esc(seq.track)} Track</span>
+              <div style="display:flex;gap:8px;align-items:center">
+                ${linkedinUrl ? `<a href="${esc(linkedinUrl)}" target="_blank" class="job-view-btn" style="margin:0;padding:6px 14px;font-size:0.82rem">LinkedIn &#8599;</a>` : ''}
+                <span class="badge ${trackBadge}">${esc(seq.track)} Track</span>
+              </div>
             </div>
           </div>`;
 
@@ -3628,13 +3643,24 @@ Return a JSON object with a "sequences" array. Each sequence:
         alert('No outreach sequences to export yet.');
         return;
       }
-      const headers = ['Contact Name', 'Title', 'Company', 'Role', 'Channel', 'Day', 'Message Type', 'Message Text'];
+      const headers = ['Contact Name', 'Title', 'Company', 'Role', 'LinkedIn', 'Channel', 'Day', 'Message Type', 'Message Text'];
       const rows = [];
       seqs.forEach(seq => {
+        // Find LinkedIn URL for this contact
+        let li = '';
+        if (state.contacts && state.contacts.results) {
+          for (const group of state.contacts.results) {
+            const match = (group.contacts || []).find(c => c.name === seq.contact_name);
+            if (match && match.linkedin) {
+              li = match.linkedin.startsWith('http') ? match.linkedin : 'https://' + match.linkedin;
+              break;
+            }
+          }
+        }
         (seq.messages || []).forEach(msg => {
           rows.push([
             seq.contact_name, seq.job_title, seq.company, seq.contact_role || seq.track,
-            msg.channel, msg.timing, msg.step, msg.body
+            li, msg.channel, msg.timing, msg.step, msg.body
           ].map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(','));
         });
       });

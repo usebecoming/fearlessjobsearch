@@ -23,49 +23,64 @@ export default async function handler(req, res) {
 
       // Step 1: Derive correct titles
       const derived = deriveTitles(jobTitle);
+      const dept = derived.department;
+      console.log('Department:', dept);
       console.log('Derived hiring manager titles:', derived.hiringManager);
       console.log('Derived skip-level titles:', derived.skipLevel);
 
+      // Get company name variations for retry
+      const companyNames = getCompanyVariations(company);
+      console.log('Company variations:', companyNames);
+
       const allContacts = [];
 
-      // Step 2: Run Brave searches
-      // Search 1: Hiring managers (one level above)
-      const hmQuery = `site:linkedin.com/in "${company}" (${derived.hiringManager.map(t => `"${t}"`).join(' OR ')})`;
-      console.log('Query 1 (Hiring Manager):', hmQuery);
-      const hmResults = await braveSearch(hmQuery, braveKey);
-      console.log(`Query 1 results: ${hmResults.length} LinkedIn profiles found`);
-      allContacts.push(...hmResults.map(r => ({ ...r, searchRole: 'Hiring Manager' })));
-
-      // If few results, try shorter company name
-      if (hmResults.length < 3) {
-        const shortCompany = company.split(/\s+/)[0];
-        if (shortCompany !== company) {
-          const hmQuery2 = `site:linkedin.com/in "${shortCompany}" (${derived.hiringManager.map(t => `"${t}"`).join(' OR ')})`;
-          console.log('Query 1b (retry shorter company):', hmQuery2);
-          const hmResults2 = await braveSearch(hmQuery2, braveKey);
-          console.log(`Query 1b results: ${hmResults2.length} LinkedIn profiles found`);
-          allContacts.push(...hmResults2.map(r => ({ ...r, searchRole: 'Hiring Manager' })));
+      // Helper: run query with company name fallbacks
+      async function searchWithFallback(titleTerms, role) {
+        for (const coName of companyNames) {
+          const query = `site:linkedin.com/in "${coName}" (${titleTerms})`;
+          console.log(`  Query [${role}] with "${coName}":`, query);
+          const results = await braveSearch(query, braveKey);
+          console.log(`  Results: ${results.length} profiles`);
+          allContacts.push(...results.map(r => ({ ...r, searchRole: role })));
+          if (results.length >= 3) break; // got enough, stop trying variations
         }
       }
 
-      // Search 2: Recruiters
-      const recQuery = `site:linkedin.com/in "${company}" (recruiter OR "talent acquisition" OR "senior recruiter" OR "recruiting manager" OR "talent partner")`;
-      console.log('Query 2 (Recruiter):', recQuery);
-      const recResults = await braveSearch(recQuery, braveKey);
-      console.log(`Query 2 results: ${recResults.length} LinkedIn profiles found`);
-      allContacts.push(...recResults.map(r => ({ ...r, searchRole: 'Recruiter / TA' })));
+      // Query 1: Hiring managers - exact derived titles
+      const hmTerms = derived.hiringManager.map(t => `"${t}"`).join(' OR ');
+      await searchWithFallback(hmTerms, 'Hiring Manager');
 
-      // Search 3: Skip-level (two levels above)
-      const slQuery = `site:linkedin.com/in "${company}" (${derived.skipLevel.map(t => `"${t}"`).join(' OR ')})`;
-      console.log('Query 3 (Skip-Level):', slQuery);
-      const slResults = await braveSearch(slQuery, braveKey);
-      console.log(`Query 3 results: ${slResults.length} LinkedIn profiles found`);
-      allContacts.push(...slResults.map(r => ({ ...r, searchRole: 'Skip-Level' })));
+      // Query 2: Department-specific recruiter
+      const deptRecTerms = `"${dept} recruiter" OR "${dept} talent acquisition" OR "${dept} talent partner" OR "recruiter" "${dept}"`;
+      await searchWithFallback(deptRecTerms, 'Recruiter / TA');
+
+      // Query 3: Generic recruiter (catches TA partners not dept-specific)
+      const genRecTerms = `"recruiter" OR "talent acquisition" OR "talent partner" OR "recruiting manager" OR "people partner"`;
+      await searchWithFallback(genRecTerms, 'Recruiter / TA');
+
+      // Query 4: Skip-level - exact derived titles
+      const slTerms = derived.skipLevel.map(t => `"${t}"`).join(' OR ');
+      await searchWithFallback(slTerms, 'Skip-Level');
+
+      // Query 5: Broad department leadership (catches titles we didn't predict)
+      const broadTerms = `"${dept}" (VP OR SVP OR "Vice President" OR Director OR "Head of" OR Chief)`;
+      await searchWithFallback(broadTerms, 'Hiring Manager');
 
       // Dedupe and limit
       const deduped = dedupeContacts(allContacts);
       console.log(`Total deduped contacts for ${company}: ${deduped.length}`);
       console.log('Contact URLs:', deduped.map(c => c.linkedin_url));
+
+      // Try Apollo as fallback if Brave found very few
+      const apolloKey = process.env.APOLLO_API_KEY;
+      if (deduped.length < 3 && apolloKey) {
+        console.log('Few Brave results, trying Apollo fallback...');
+        const apolloContacts = await apolloSearch(company, derived, dept, apolloKey);
+        console.log(`Apollo returned: ${apolloContacts.length} contacts`);
+        allContacts.push(...apolloContacts);
+      }
+
+      const finalContacts = dedupeContacts(allContacts);
 
       results.push({
         job_id: job.job_id,
@@ -73,7 +88,7 @@ export default async function handler(req, res) {
         job_title: jobTitle,
         location: job.location || '',
         derived_titles: derived,
-        raw_contacts: deduped.slice(0, 15)
+        raw_contacts: finalContacts.slice(0, 20)
       });
     }
 
@@ -291,4 +306,99 @@ function dedupeContacts(contacts) {
     return true;
   });
 }
-// Fri Mar 20 13:28:03 CDT 2026
+
+// Company name variations for retry logic
+function getCompanyVariations(company) {
+  const variations = [company];
+  const known = {
+    'RTX': ['Raytheon', 'RTX Corporation'],
+    'Meta': ['Facebook', 'Meta Platforms'],
+    'Alphabet': ['Google'],
+    'Google': ['Alphabet'],
+    'Amazon': ['AWS', 'Amazon Web Services'],
+    'AWS': ['Amazon', 'Amazon Web Services'],
+    'Microsoft': ['MSFT'],
+    'JPMorgan': ['JP Morgan', 'JPMorgan Chase', 'Chase'],
+    'JP Morgan': ['JPMorgan', 'JPMorgan Chase'],
+    'Goldman Sachs': ['Goldman'],
+    'McKinsey': ['McKinsey & Company'],
+    'BCG': ['Boston Consulting Group'],
+    'Bain': ['Bain & Company'],
+    'Deloitte': ['Deloitte Consulting'],
+    'EY': ['Ernst & Young'],
+    'PwC': ['PricewaterhouseCoopers'],
+    'KPMG': ['KPMG US'],
+    'Salesforce': ['Salesforce.com'],
+    'CrowdStrike': ['Crowdstrike'],
+    'Palo Alto Networks': ['Palo Alto'],
+    'ServiceNow': ['Service Now'],
+  };
+
+  // Check known aliases
+  const upper = company.toUpperCase();
+  for (const [key, aliases] of Object.entries(known)) {
+    if (key.toUpperCase() === upper) {
+      variations.push(...aliases);
+      break;
+    }
+  }
+
+  // Also try first word if multi-word (e.g. "Live Nation" → "Live Nation", "Live")
+  const firstWord = company.split(/\s+/)[0];
+  if (firstWord !== company && firstWord.length > 3) {
+    variations.push(firstWord);
+  }
+
+  return [...new Set(variations)];
+}
+
+// Apollo.io fallback search
+async function apolloSearch(company, derived, dept, apiKey) {
+  try {
+    // Search for people at the company with relevant titles
+    const titles = [...derived.hiringManager, ...derived.skipLevel, 'Recruiter', 'Talent Acquisition'];
+    const response = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'X-Api-Key': apiKey
+      },
+      body: JSON.stringify({
+        q_organization_name: company,
+        person_titles: titles.slice(0, 5),
+        page: 1,
+        per_page: 10
+      })
+    });
+
+    if (!response.ok) {
+      console.error('Apollo API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    const people = data.people || [];
+
+    return people
+      .filter(p => p.linkedin_url && p.linkedin_url.includes('linkedin.com/in/'))
+      .map(p => ({
+        name: [p.first_name, p.last_name].filter(Boolean).join(' '),
+        linkedin_url: p.linkedin_url.split('?')[0],
+        snippet: `${p.title || ''} at ${p.organization?.name || company}`,
+        page_title: `${p.first_name} ${p.last_name} - ${p.title || ''}`,
+        searchRole: categorizeApolloRole(p.title, derived)
+      }));
+  } catch (err) {
+    console.error('Apollo search failed:', err.message);
+    return [];
+  }
+}
+
+function categorizeApolloRole(title, derived) {
+  if (!title) return 'Hiring Manager';
+  const t = title.toLowerCase();
+  if (t.includes('recruit') || t.includes('talent acq') || t.includes('talent partner')) return 'Recruiter / TA';
+  if (t.includes('ceo') || t.includes('president') || t.includes('coo') || t.includes('chairman')) return 'Skip-Level';
+  return 'Hiring Manager';
+}
