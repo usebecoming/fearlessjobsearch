@@ -2853,100 +2853,57 @@ Return a JSON array of objects with these exact fields:
     }
 
     async function saveSearchProfile() {
-      console.log('saveSearchProfile() called');
-      try {
-        const nameInput = document.getElementById('profileName');
-        const saveBtn = document.getElementById('saveSearchBtn');
-        const name = nameInput.value.trim();
+      const nameInput = document.getElementById('profileName');
+      const saveBtn = document.getElementById('saveSearchBtn');
+      const name = (nameInput && nameInput.value) ? nameInput.value.trim() : '';
 
-        if (!name) {
+      if (!name) {
+        if (nameInput) {
           nameInput.style.borderColor = '#C94444';
           nameInput.placeholder = 'Enter a name first';
           setTimeout(() => { nameInput.style.borderColor = ''; nameInput.placeholder = 'Name this search'; }, 2000);
-          return;
         }
+        return;
+      }
 
-        if (!supabase) {
-          alert('Could not save. Please refresh and try again.');
-          return;
-        }
+      // Save to localStorage
+      var profiles = [];
+      try { profiles = JSON.parse(localStorage.getItem('fjs_search_profiles') || '[]'); } catch(e) {}
+      profiles.push({
+        id: String(Date.now()),
+        name: name,
+        titles: state.titles || [],
+        locations: state.locations || [],
+        work_types: (function(){ try { return [...document.querySelectorAll('.work-type-option input:checked')].map(function(cb){return cb.value}); } catch(e){ return []; } })(),
+        salary_min: (document.getElementById('salaryMin') || {}).value || '',
+        salary_max: (document.getElementById('salaryMax') || {}).value || '',
+        anchors: [
+          ((document.getElementById('anchor1') || {}).value || '').trim(),
+          ((document.getElementById('anchor2') || {}).value || '').trim(),
+          ((document.getElementById('anchor3') || {}).value || '').trim()
+        ].filter(Boolean),
+        created_at: new Date().toISOString()
+      });
+      localStorage.setItem('fjs_search_profiles', JSON.stringify(profiles));
 
-        let user;
-        try {
-          const resp = await supabase.auth.getUser();
-          user = resp.data.user;
-        } catch (e) {
-          console.error('Auth error:', e);
-        }
-
-        if (!user) {
-          alert('Please sign in to save searches.');
-          return;
-        }
-
-        const workTypes = [...document.querySelectorAll('.work-type-option input:checked')].map(cb => cb.value);
-        saveBtn.textContent = 'Saving...';
-        saveBtn.disabled = true;
-
-        const insertData = {
-          user_id: user.id,
-          name,
-          titles: state.titles,
-          locations: state.locations,
-          work_types: workTypes,
-          salary_min: document.getElementById('salaryMin').value || '',
-          salary_max: document.getElementById('salaryMax').value || '',
-          anchors: [
-            document.getElementById('anchor1').value.trim(),
-            document.getElementById('anchor2').value.trim(),
-            document.getElementById('anchor3').value.trim()
-          ].filter(Boolean)
-        };
-
-        console.log('Saving search profile:', insertData);
-
-        const { data, error } = await supabase
-          .from('search_profiles')
-          .insert(insertData)
-          .select();
-
-        console.log('Save result:', { data, error });
-
-        // Always save to localStorage as backup
-        const localProfiles = JSON.parse(localStorage.getItem('fjs_search_profiles') || '[]');
-        localProfiles.push({ id: Date.now().toString(), name, titles: state.titles, locations: state.locations, work_types: insertData.work_types, salary_min: insertData.salary_min, salary_max: insertData.salary_max, anchors: insertData.anchors, created_at: new Date().toISOString() });
-        localStorage.setItem('fjs_search_profiles', JSON.stringify(localProfiles));
-
-        if (error) {
-          console.error('Save search error:', error);
-          console.log('Saved to localStorage instead');
-        }
-
-        nameInput.value = '';
+      // Clear input and show success
+      nameInput.value = '';
+      if (saveBtn) {
         saveBtn.textContent = 'Saved!';
         saveBtn.style.color = '#3A8A5C';
         saveBtn.style.borderColor = '#3A8A5C';
-
-        // Show visible success notification
-        const notification = document.createElement('div');
-        notification.style.cssText = 'position:fixed;top:80px;right:24px;background:#3A8A5C;color:#fff;padding:12px 20px;border-radius:8px;font-family:"IBM Plex Mono",monospace;font-size:0.88rem;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:fadeUp 0.3s ease-out';
-        notification.textContent = 'Search saved: ' + name;
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 3000);
-
-        setTimeout(() => { saveBtn.textContent = 'Save Current Search'; saveBtn.style.color = ''; saveBtn.style.borderColor = ''; saveBtn.disabled = false; }, 2000);
-        // Refresh the dropdown immediately
-        await loadSearchProfiles();
-      } catch (err) {
-        console.error('saveSearchProfile() caught error:', err);
-        alert('Save failed: ' + (err.message || String(err)));
-        const saveBtn = document.getElementById('saveSearchBtn');
-        if (saveBtn) {
-          saveBtn.textContent = 'Save Current Search';
-          saveBtn.style.color = '';
-          saveBtn.disabled = false;
-        }
+        setTimeout(function() { saveBtn.textContent = 'Save Current Search'; saveBtn.style.color = ''; saveBtn.style.borderColor = ''; }, 2000);
       }
+
+      // Green notification
+      var note = document.createElement('div');
+      note.style.cssText = 'position:fixed;top:80px;right:24px;background:#3A8A5C;color:#fff;padding:12px 20px;border-radius:8px;font-family:IBM Plex Mono,monospace;font-size:0.88rem;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
+      note.textContent = 'Search saved: ' + name;
+      document.body.appendChild(note);
+      setTimeout(function() { note.remove(); }, 3000);
+
+      // Refresh dropdown
+      loadSearchProfiles();
     }
 
     function loadSearchProfile() {
