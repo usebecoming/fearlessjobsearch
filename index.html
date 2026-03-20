@@ -2262,12 +2262,14 @@
         document.getElementById('companiesGroup').style.display = 'none';
         document.getElementById('jobModeInstructions').style.display = '';
         document.getElementById('companyModeInstructions').style.display = 'none';
+        document.getElementById('searchBtn').textContent = 'Find Opportunities';
       } else {
         document.querySelectorAll('.search-mode-btn')[1].classList.add('active');
         document.getElementById('titlesGroup').style.display = 'none';
         document.getElementById('companiesGroup').style.display = '';
         document.getElementById('jobModeInstructions').style.display = 'none';
         document.getElementById('companyModeInstructions').style.display = '';
+        document.getElementById('searchBtn').textContent = 'Find Decision-Makers';
       }
       validateSearch();
     }
@@ -2641,24 +2643,112 @@
       const resumeSummary = sanitizeInput(state.resumeText, 1200);
       const systemPrompt = 'You are a job search assistant for senior leaders. Respond ONLY with a JSON array. No markdown, no explanation, no extra text.';
 
-      let userPrompt;
+      // Company Target: skip job listings, go straight to contacts
       if (state.searchMode === 'companies') {
-        userPrompt = `For each target company below, find relevant leadership-level openings (Director, VP, SVP, C-Suite). If a company has active roles, list them with details. If a company has NO relevant active roles right now, still include one entry for that company with:
-- title set to the most likely leadership role they would hire for
-- posted set to "No active listing"
-- a fitReason that says "No open roles right now, but this is the type of position to watch for. Start building relationships with their team."
-- fitScore of 0
+        // Build job data from company names + user's background
+        const companyJobData = state.companies.map((co, i) => ({
+          job_id: 'company-' + i,
+          title: state.titles.length > 0 ? state.titles[0] : 'Leadership',
+          company: co,
+          industry: '',
+          location: state.locations.length ? state.locations.join(', ') : ''
+        }));
 
-This way the user can still get contacts and begin outreach even when no role is posted.
+        // Go directly to Step 3
+        goToStep(3);
+        const contactContainer = document.getElementById('contactsContainer');
+        const contactEstimate = Math.max(25, companyJobData.length * 10);
+        showProgress(contactContainer, 'Searching for decision-makers at your target companies...', contactEstimate);
 
-Target companies: ${JSON.stringify(state.companies)}
-Location: ${state.locations.length ? state.locations.join(', ') : 'Any'}
-Work type: ${workTypes.length ? workTypes.join(', ') : 'Any'}
-${salaryStr ? 'Salary range: ' + salaryStr : ''}
-${state.anchors.length ? 'The user has provided these job links as reference examples of what they are looking for. Analyze the role level, scope, industry, and responsibilities from these links to find similar opportunities: ' + state.anchors.join(', ') : ''}
-${resumeSummary ? 'Candidate resume summary (score fit against this):\n' + resumeSummary : 'No resume provided. Assign fitScore of 50 to all.'}
-${getFavoriteContext()}`;
-      } else {
+        try {
+          const searchRes = await fetch('/api/search-contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobs: companyJobData })
+          });
+
+          let braveResults = null;
+          if (searchRes.ok) {
+            braveResults = await searchRes.json();
+          }
+
+          showProgress(contactContainer, 'Organizing contacts and identifying roles...', 15);
+
+          const systemPrompt2 = 'You are a networking assistant for senior leaders. Respond ONLY with a JSON object. No markdown, no explanation.';
+          let userPrompt2;
+
+          if (braveResults && braveResults.results && braveResults.results.some(r => r.raw_contacts && r.raw_contacts.length > 0)) {
+            const jobContexts = braveResults.results.map(r => {
+              const dt = r.derived_titles || { hiringManager: [], skipLevel: [] };
+              return `Company: ${r.company} (${r.location || 'any location'})
+User's background: ${state.titles.length > 0 ? state.titles.join(', ') : 'Leadership roles'}
+Looking for: hiring managers, skip-level leaders, and recruiters to build relationships with
+Hiring Manager titles: ${dt.hiringManager.join(', ')}
+Skip-Level titles: ${dt.skipLevel.join(', ')}
+Raw contacts found: ${r.raw_contacts.length}`;
+            }).join('\n\n');
+
+            userPrompt2 = `You are verifying LinkedIn search results to find real people at target companies for networking.
+
+The user wants to BUILD RELATIONSHIPS at these companies. There may not be an active job opening. The goal is to identify the right people to connect with proactively.
+
+${jobContexts}
+
+RULES:
+1. ONLY include people who CURRENTLY work at the exact company. If ambiguous, exclude.
+2. Assign roles: Hiring Manager (would manage someone at user's level), Skip-Level (senior leadership), Recruiter/TA (internal recruiter)
+3. Keep LinkedIn URLs exactly as provided. Do NOT fabricate.
+4. Quality over quantity. 1-2 verified contacts > 4-5 questionable ones.
+5. Write notes focused on relationship building, not job applications.
+
+Search results:
+${JSON.stringify(braveResults.results, null, 2)}
+
+Return a JSON object with a "results" array. Each result:
+{
+  "job_id": "string",
+  "company": "string",
+  "job_title": "Networking",
+  "contacts": [
+    {
+      "name": "string",
+      "title": "string (current title)",
+      "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
+      "linkedin": "string (exact URL)",
+      "note": "string (why connect with this person)"
+    }
+  ]
+}`;
+          } else {
+            stopProgress();
+            contactContainer.innerHTML = `<div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:28px;text-align:center">
+              <h3 style="font-size:1.1rem;margin-bottom:10px">No contacts found automatically</h3>
+              <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:16px">Search LinkedIn directly:</p>
+              <div style="display:flex;flex-direction:column;gap:12px;max-width:500px;margin:0 auto">
+                ${state.companies.map(co => {
+                  const enc = encodeURIComponent(co);
+                  return '<div style="background:#F9F6F1;border-radius:10px;padding:14px 18px"><div style="font-weight:600;font-size:0.92rem;margin-bottom:8px">' + esc(co) + '</div><div style="display:flex;flex-wrap:wrap;gap:6px"><a href="https://www.linkedin.com/search/results/people/?keywords=' + enc + '+VP+Director+Head" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Leadership &#8599;</a><a href="https://www.linkedin.com/search/results/people/?keywords=' + enc + '+recruiter+talent" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters &#8599;</a></div></div>';
+                }).join('')}
+              </div>
+              <div style="margin-top:20px"><button class="btn-secondary" onclick="goToStep(1)">Back to search</button></div>
+            </div>`;
+            return;
+          }
+
+          const contactData = await callClaude(systemPrompt2, userPrompt2);
+          stopProgress();
+          state.contacts = contactData;
+          renderContacts(contactData);
+          logUsage('contact_search', { mode: 'company_target', companies: state.companies, contacts: (contactData.results || []).reduce(function(s,r){ return s + (r.contacts||[]).length; }, 0) });
+        } catch (err) {
+          stopProgress();
+          contactContainer.innerHTML = '<div class="error-box">Something went wrong: ' + esc(err.message) + '<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="goToStep(1)">Try again</button></div>';
+        }
+        return;
+      }
+
+      let userPrompt;
+      {
         // Job Target mode: use JSearch API for real listings, then Claude for scoring
         try {
           showProgress(container, 'Searching real job listings...', 10);
