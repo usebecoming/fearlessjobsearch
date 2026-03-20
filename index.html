@@ -1992,7 +1992,16 @@
         state.userId = '';
         state.hasPaid = false;
       }
-      // Sign out of Supabase in background (don't block)
+      // Clear Supabase session from localStorage directly
+      try {
+        var keys = Object.keys(localStorage);
+        for (var i = 0; i < keys.length; i++) {
+          if (keys[i].startsWith('sb-') || keys[i].includes('supabase')) {
+            localStorage.removeItem(keys[i]);
+          }
+        }
+      } catch(e) {}
+      // Also try Supabase signOut in background
       try { if (window._supabase) window._supabase.auth.signOut().catch(function(){}); } catch(e) {}
       setTimeout(function() { isSigningOut = false; }, 1000);
     }
