@@ -763,6 +763,26 @@
     }
     .landing-footer a { color: #B8A88A; }
 
+    /* ── Location Suggestions ── */
+    .location-suggestions {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #FFFFFF; border: 1px solid #E5E4E2;
+      border-radius: 0 0 10px 10px; border-top: none;
+      max-height: 220px; overflow-y: auto; z-index: 50;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    .location-suggestions.active { display: block; }
+    .location-suggestion {
+      padding: 10px 16px; cursor: pointer;
+      font-size: 0.88rem; color: #111; font-weight: 500;
+      transition: background 0.15s;
+    }
+    .location-suggestion:hover { background: #F9F6F1; }
+    .location-suggestion .loc-state {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem; color: #858585; margin-left: 6px;
+    }
+
     /* ── Upgrade Banner ── */
     .upgrade-banner {
       background: linear-gradient(135deg, rgba(184,168,138,0.08), rgba(184,168,138,0.15));
@@ -1252,11 +1272,12 @@
       </div>
 
       <!-- Location -->
-      <div class="form-group">
+      <div class="form-group" style="position:relative">
         <label class="form-label">Locations <span style="color:#858585;font-weight:300">(up to 5)</span></label>
         <div class="tag-input-wrap" id="locationsWrap">
-          <input type="text" class="tag-field" id="locationField" placeholder="e.g. New York, NY, press Enter to add">
+          <input type="text" class="tag-field" id="locationField" placeholder="Start typing a city..." autocomplete="off">
         </div>
+        <div class="location-suggestions" id="locationSuggestions"></div>
       </div>
 
       <!-- Work Type -->
@@ -1679,21 +1700,79 @@
       validateSearch();
     }
 
-    // ── Location tag input ──
+    // ── Location autocomplete ──
+    const LOCATIONS = [
+      'Remote',
+      'New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX', 'Phoenix, AZ',
+      'Philadelphia, PA', 'San Antonio, TX', 'San Diego, CA', 'Dallas, TX', 'Austin, TX',
+      'San Jose, CA', 'San Francisco, CA', 'Jacksonville, FL', 'Columbus, OH', 'Indianapolis, IN',
+      'Charlotte, NC', 'Seattle, WA', 'Denver, CO', 'Nashville, TN', 'Washington, DC',
+      'Boston, MA', 'Portland, OR', 'Las Vegas, NV', 'Atlanta, GA', 'Miami, FL',
+      'Minneapolis, MN', 'Raleigh, NC', 'Tampa, FL', 'Salt Lake City, UT', 'Pittsburgh, PA',
+      'Cincinnati, OH', 'Kansas City, MO', 'Orlando, FL', 'Cleveland, OH', 'St. Louis, MO',
+      'Detroit, MI', 'Baltimore, MD', 'Milwaukee, WI', 'Scottsdale, AZ', 'Richmond, VA',
+      'Oakland, CA', 'Durham, NC', 'Boulder, CO', 'Boise, ID', 'Des Moines, IA',
+      'Irvine, CA', 'Santa Monica, CA', 'Palo Alto, CA', 'Mountain View, CA', 'Sunnyvale, CA',
+      'Bellevue, WA', 'Redmond, WA', 'Stamford, CT', 'Greenwich, CT', 'Hoboken, NJ',
+      'Jersey City, NJ', 'Princeton, NJ', 'Cambridge, MA', 'Arlington, VA', 'Bethesda, MD',
+      'Plano, TX', 'Frisco, TX', 'Fort Worth, TX', 'Omaha, NE', 'Tulsa, OK',
+      'Honolulu, HI', 'Anchorage, AK', 'Birmingham, AL', 'Memphis, TN', 'Louisville, KY',
+      'Oklahoma City, OK', 'Hartford, CT', 'Providence, RI', 'Charleston, SC', 'Savannah, GA',
+      'New Orleans, LA', 'Albuquerque, NM', 'Tucson, AZ', 'Sacramento, CA', 'Wilmington, DE',
+      'Toronto, Canada', 'Vancouver, Canada', 'London, UK', 'Berlin, Germany', 'Singapore',
+      'Sydney, Australia', 'Dublin, Ireland', 'Amsterdam, Netherlands', 'Paris, France'
+    ];
+
     const locationField = document.getElementById('locationField');
     const locationsWrap = document.getElementById('locationsWrap');
+    const locationSuggestions = document.getElementById('locationSuggestions');
+
+    locationField.addEventListener('input', () => {
+      const val = locationField.value.trim().toLowerCase();
+      if (val.length < 1) {
+        locationSuggestions.classList.remove('active');
+        return;
+      }
+      const matches = LOCATIONS.filter(l =>
+        l.toLowerCase().includes(val) && !state.locations.includes(l)
+      ).slice(0, 8);
+      if (matches.length === 0) {
+        locationSuggestions.classList.remove('active');
+        return;
+      }
+      locationSuggestions.innerHTML = matches.map(l => {
+        const parts = l.split(', ');
+        return `<div class="location-suggestion" onclick="addLocation('${l.replace(/'/g, "\\'")}')">${esc(parts[0])}${parts[1] ? `<span class="loc-state">${esc(parts[1])}</span>` : ''}</div>`;
+      }).join('');
+      locationSuggestions.classList.add('active');
+    });
 
     locationField.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        const val = locationField.value.trim();
-        if (val && !state.locations.includes(val) && state.locations.length < 5) {
-          state.locations.push(val);
-          renderLocationTags();
-          locationField.value = '';
+        const firstSuggestion = locationSuggestions.querySelector('.location-suggestion');
+        if (firstSuggestion) {
+          firstSuggestion.click();
         }
       }
+      if (e.key === 'Escape') {
+        locationSuggestions.classList.remove('active');
+      }
     });
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#locationsWrap') && !e.target.closest('#locationSuggestions')) {
+        locationSuggestions.classList.remove('active');
+      }
+    });
+
+    function addLocation(loc) {
+      if (state.locations.length >= 5 || state.locations.includes(loc)) return;
+      state.locations.push(loc);
+      renderLocationTags();
+      locationField.value = '';
+      locationSuggestions.classList.remove('active');
+    }
 
     function renderLocationTags() {
       locationsWrap.querySelectorAll('.tag').forEach(t => t.remove());
