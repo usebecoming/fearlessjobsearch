@@ -2967,6 +2967,11 @@ Return a JSON array with one object per job:
 
           stopProgress();
           state.jobs = scoredJobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0)).slice(0, 10);
+          console.log('\n🏆 TOP SCORED JOBS:');
+          state.jobs.forEach(function(job, i) {
+            var badge = job.fitScore >= 87 ? 'Strong Match' : job.fitScore >= 70 ? 'Good Match' : job.fitScore === -1 ? 'No Resume' : 'Stretch';
+            console.log('  ' + (i+1) + '. ' + job.title + ' at ' + job.company + ' — Score: ' + job.fitScore + ' — ' + badge);
+          });
           state.selectedJobs = [];
           renderJobs();
           logUsage('job_search', { mode: 'job_target', titles: state.titles, locations: state.locations, results: scoredJobs.length });

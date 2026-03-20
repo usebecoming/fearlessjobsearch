@@ -113,9 +113,10 @@ export default async function handler(req, res) {
       }
     }
 
-    console.log(`Total unique jobs: ${allJobs.length}`);
+    const totalFromJSearch = allJobs.length;
+    console.log(`Total from JSearch: ${totalFromJSearch}`);
 
-    // Dedupe by company+title combo (in addition to job ID dedup above)
+    // Dedupe by company+title combo
     const seenCompanyTitle = new Set();
     const dedupedJobs = allJobs.filter(job => {
       const key = ((job.employer_name || '') + '|' + (job.job_title || '')).toLowerCase();
@@ -123,19 +124,20 @@ export default async function handler(req, res) {
       seenCompanyTitle.add(key);
       return true;
     });
-    console.log(`After company+title dedup: ${dedupedJobs.length}`);
+    const afterDedup = dedupedJobs.length;
 
-    // Cap at 30 for Claude scoring, Claude returns top 10
+    // Cap at 30 for Claude scoring
     const jobs = dedupedJobs.slice(0, 30);
 
-    // Flag staffing agencies instead of filtering them out
+    // Flag staffing agencies
     const agencyKeywords = ['staffing', 'recruiting', 'talent agency', 'manpower', 'adecco', 'randstad', 'robert half', 'hays', 'kforce', 'kelly services', 'allegis', 'insight global', 'korn ferry', 'heidrick', 'aerotek', 'tek systems', 'teksystems', 'beacon hill', 'apex group', 'modis', 'volt', 'spherion', 'express employment', 'nesco', 'addison group', 'brooksource', 'procom', 'collabera', 'cybercoders', 'dice', 'jobspring', 'placement', 'search group', 'executive search', 'talent solutions', 'recruiting group'];
 
-    const filtered = jobs
-      .map((job, i) => {
-        const employer = (job.employer_name || '').toLowerCase();
-        const isAgency = agencyKeywords.some(kw => employer.includes(kw));
-        return {
+    let agencyCount = 0;
+    const filtered = jobs.map((job, i) => {
+      const employer = (job.employer_name || '').toLowerCase();
+      const isAgency = agencyKeywords.some(kw => employer.includes(kw));
+      if (isAgency) agencyCount++;
+      return {
         id: job.job_id || `jsearch-${i}`,
         title: job.job_title || 'Untitled',
         company: job.employer_name || 'Unknown',
@@ -151,11 +153,20 @@ export default async function handler(req, res) {
         url: job.job_apply_link || '',
         description: (job.job_description || '').substring(0, 800),
         highlights: extractHighlights(job),
-        // These will be filled by Claude
         fitScore: 0,
         fitReason: ''
       };
-      });
+    });
+
+    // Pipeline summary
+    console.log(`\n📊 JOB PIPELINE SUMMARY:`);
+    console.log(`  Total from JSearch: ${totalFromJSearch}`);
+    console.log(`  After deduplication: ${afterDedup}`);
+    console.log(`  Staffing agencies flagged: ${agencyCount}`);
+    console.log(`  Passed to Claude for scoring: ${filtered.length}`);
+    filtered.forEach((job, i) => {
+      console.log(`  ${i+1}. ${job.title} at ${job.company}${job.isAgency ? ' [AGENCY]' : ''} — ${job.location}`);
+    });
 
     return res.status(200).json({ jobs: filtered.slice(0, 30) });
   } catch (err) {
