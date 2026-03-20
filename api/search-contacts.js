@@ -19,35 +19,29 @@ export default async function handler(req, res) {
 
     for (const job of jobs) {
       const contacts = [];
-
-      // Claude determines the right titles to search for based on the job
-      // But we do the Brave searches here with smart queries
       const company = job.company;
-      const title = job.title;
-      const department = extractDepartment(title);
+      const department = extractDepartment(job.title);
 
-      // 1. Hiring Manager - one level above the role
-      const hmTitles = getHiringManagerTitles(title);
-      const hmQuery = `site:linkedin.com/in "${company}" ${hmTitles.map(t => `"${t}"`).join(' OR ')}`;
-      const hmResults = await braveSearch(hmQuery, braveKey);
-      contacts.push(...hmResults.map(r => ({ ...r, searchRole: 'Hiring Manager' })));
+      // Search 1: People at this company in this department (leadership)
+      const deptQuery = `site:linkedin.com/in "${company}" "${department}" (VP OR Director OR Head OR SVP OR Chief)`;
+      const deptResults = await braveSearch(deptQuery, braveKey);
+      contacts.push(...deptResults);
 
-      // 2. Skip-Level - two levels above or C-suite
-      const slTitles = getSkipLevelTitles(title, department);
-      const slQuery = `site:linkedin.com/in "${company}" ${slTitles.map(t => `"${t}"`).join(' OR ')}`;
-      const slResults = await braveSearch(slQuery, braveKey);
-      contacts.push(...slResults.map(r => ({ ...r, searchRole: 'Skip-Level' })));
-
-      // 3. Recruiter / TA
-      const recQuery = `site:linkedin.com/in "${company}" recruiter OR "talent acquisition" OR "talent partner"`;
+      // Search 2: Recruiters at this company
+      const recQuery = `site:linkedin.com/in "${company}" (recruiter OR "talent acquisition" OR "talent partner" OR "people partner")`;
       const recResults = await braveSearch(recQuery, braveKey);
-      contacts.push(...recResults.map(r => ({ ...r, searchRole: 'Recruiter / TA' })));
+      contacts.push(...recResults);
+
+      // Search 3: C-suite at this company
+      const csuiteQuery = `site:linkedin.com/in "${company}" (CEO OR COO OR "Chief" OR President OR "General Manager")`;
+      const csuiteResults = await braveSearch(csuiteQuery, braveKey);
+      contacts.push(...csuiteResults);
 
       results.push({
         job_id: job.job_id,
         company: job.company,
         job_title: job.title,
-        contacts: dedupeContacts(contacts).slice(0, 6)
+        raw_contacts: dedupeContacts(contacts).slice(0, 12)
       });
     }
 
@@ -84,21 +78,16 @@ async function braveSearch(query, apiKey) {
     }
 
     const data = await response.json();
-    const results = (data.web && data.web.results) || [];
+    const webResults = (data.web && data.web.results) || [];
 
-    return results
+    return webResults
       .filter(r => r.url && r.url.includes('linkedin.com/in/'))
-      .map(r => {
-        const name = extractNameFromLinkedIn(r.title, r.url);
-        const title = extractTitleFromSnippet(r.description || r.title);
-        return {
-          name: name,
-          title: title,
-          linkedin: r.url.replace(/^https?:\/\//, '').replace(/\/$/, ''),
-          linkedinUrl: r.url,
-          snippet: (r.description || '').substring(0, 200)
-        };
-      })
+      .map(r => ({
+        name: extractNameFromResult(r.title, r.url),
+        snippet: (r.description || r.title || '').substring(0, 300),
+        linkedin: r.url,
+        pageTitle: r.title || ''
+      }))
       .filter(r => r.name && r.name.length > 2);
   } catch (err) {
     console.error('Brave search request failed:', err);
@@ -106,8 +95,8 @@ async function braveSearch(query, apiKey) {
   }
 }
 
-function extractNameFromLinkedIn(title, url) {
-  // Try to get name from the LinkedIn URL slug
+function extractNameFromResult(title, url) {
+  // Try from URL slug first (most reliable)
   const slug = url.split('linkedin.com/in/')[1];
   if (slug) {
     const cleanSlug = slug.split('?')[0].replace(/\/$/, '');
@@ -117,7 +106,7 @@ function extractNameFromLinkedIn(title, url) {
     }
   }
 
-  // Fallback: try to get from the page title
+  // Fallback: from page title
   if (title) {
     const cleaned = title
       .replace(/\s*[-|].*linkedin.*/i, '')
@@ -130,23 +119,6 @@ function extractNameFromLinkedIn(title, url) {
   }
 
   return '';
-}
-
-function extractTitleFromSnippet(snippet) {
-  if (!snippet) return '';
-  // Common patterns in LinkedIn snippets
-  const patterns = [
-    /(?:^|\s)([A-Z][^.]*?)\s+at\s+/i,
-    /(?:^|\s)([A-Z][^.]*?)\s+[-|]\s+/i,
-    /(?:Title|Role|Position):\s*([^.]+)/i,
-  ];
-  for (const pattern of patterns) {
-    const match = snippet.match(pattern);
-    if (match && match[1] && match[1].length < 80) {
-      return match[1].trim();
-    }
-  }
-  return snippet.substring(0, 80);
 }
 
 function extractDepartment(jobTitle) {
@@ -162,58 +134,16 @@ function extractDepartment(jobTitle) {
   if (title.includes('design')) return 'Design';
   if (title.includes('legal')) return 'Legal';
   if (title.includes('strategy')) return 'Strategy';
-  return 'Leadership';
-}
-
-function getHiringManagerTitles(jobTitle) {
-  const title = jobTitle.toLowerCase();
-  // Map job level to one level up
-  if (title.includes('director')) {
-    const dept = extractDepartment(jobTitle);
-    return [`VP of ${dept}`, `VP ${dept}`, `SVP ${dept}`, `Head of ${dept}`];
-  }
-  if (title.includes('vp') || title.includes('vice president')) {
-    const dept = extractDepartment(jobTitle);
-    return [`SVP ${dept}`, `Chief ${dept.charAt(0)}O`, `EVP ${dept}`, `C-level ${dept}`];
-  }
-  if (title.includes('head of')) {
-    const dept = extractDepartment(jobTitle);
-    return [`VP of ${dept}`, `VP ${dept}`, `SVP ${dept}`];
-  }
-  if (title.includes('svp') || title.includes('senior vice president')) {
-    const dept = extractDepartment(jobTitle);
-    return [`Chief`, `CEO`, `COO`, `President`];
-  }
-  if (title.includes('chief') || title.includes('cmo') || title.includes('cto') || title.includes('cpo') || title.includes('cro')) {
-    return [`CEO`, `President`, `COO`, `Founder`];
-  }
-  if (title.includes('manager')) {
-    const dept = extractDepartment(jobTitle);
-    return [`Director of ${dept}`, `Director ${dept}`, `Head of ${dept}`, `VP ${dept}`];
-  }
-  // Default: search one level up
-  const dept = extractDepartment(jobTitle);
-  return [`VP ${dept}`, `Director ${dept}`, `Head of ${dept}`];
-}
-
-function getSkipLevelTitles(jobTitle, department) {
-  const title = jobTitle.toLowerCase();
-  if (title.includes('director') || title.includes('head of')) {
-    return [`SVP`, `Chief`, `CMO`, `CTO`, `CPO`, `CRO`, `COO`];
-  }
-  if (title.includes('vp') || title.includes('vice president')) {
-    return [`CEO`, `President`, `Founder`, `COO`];
-  }
-  if (title.includes('manager')) {
-    return [`VP ${department}`, `SVP ${department}`, `Chief`];
-  }
-  return [`CEO`, `President`, `COO`, `Founder`];
+  if (title.includes('growth')) return 'Growth';
+  if (title.includes('revenue')) return 'Revenue';
+  if (title.includes('customer')) return 'Customer';
+  return '';
 }
 
 function dedupeContacts(contacts) {
   const seen = new Set();
   return contacts.filter(c => {
-    const key = c.linkedin.toLowerCase();
+    const key = c.linkedin.toLowerCase().split('?')[0].replace(/\/$/, '');
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

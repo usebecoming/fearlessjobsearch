@@ -1779,20 +1779,16 @@
       <p class="section-sub">The people who actually make hiring decisions. No agencies, no gatekeepers.</p>
 
       <!-- Instructions -->
-      <div id="contactsInstructions" style="display:none;background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:20px;margin-bottom:20px">
-        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
-          <div style="flex:1;min-width:200px">
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">How to use</div>
-            <p style="font-size:0.85rem;color:#555;font-weight:500;line-height:1.6">Check the contacts you want to message. Click "Generate Outreach" to create personalized 4-message sequences for each selected contact.</p>
-          </div>
-          <div style="display:flex;gap:12px">
+      <div id="contactsInstructions" style="display:none;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div style="display:flex;gap:8px">
             <button class="btn-secondary btn-small" onclick="selectAllContacts()">Select All</button>
             <button class="btn-secondary btn-small" onclick="deselectAllContacts()">Deselect All</button>
           </div>
-        </div>
-        <div class="export-bar" id="exportBar" style="display:flex;padding:0;margin:0;border:none">
-          <button class="btn-secondary btn-small" onclick="copyAllLinkedIn()">Copy All LinkedIn URLs</button>
-          <button class="btn-secondary btn-small" onclick="exportCSV()">Export CSV</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary btn-small" onclick="copyAllLinkedIn()">Copy All LinkedIn URLs</button>
+            <button class="btn-secondary btn-small" onclick="exportCSV()">Export CSV</button>
+          </div>
         </div>
       </div>
 
@@ -3136,13 +3132,22 @@ Return a JSON array of objects with these exact fields:
         const systemPrompt = 'You are a networking assistant for senior leaders. Respond ONLY with a JSON object. No markdown, no explanation.';
         let userPrompt;
 
-        if (braveResults && braveResults.results && braveResults.results.some(r => r.contacts.length > 0)) {
-          // We have real LinkedIn data - have Claude organize it
-          userPrompt = `I searched LinkedIn and found the following real contacts at each company. Review them, assign the correct role type (Recruiter / TA, Hiring Manager, or Skip-Level) based on their title relative to the job being filled, and write a one-line note explaining why this person is worth reaching out to.
+        if (braveResults && braveResults.results && braveResults.results.some(r => r.raw_contacts && r.raw_contacts.length > 0)) {
+          // We have real LinkedIn data - have Claude verify and organize
+          userPrompt = `I searched LinkedIn and found potential contacts for each company below. Each contact has a name, LinkedIn URL, and a snippet from their LinkedIn page.
 
-If any job is missing a key role type (no hiring manager found, no recruiter found), generate a likely contact for that role.
+CRITICAL RULES:
+1. ONLY include people who CURRENTLY work at the company. Look at the snippet for clues. If someone's snippet mentions a different company as their current role, EXCLUDE them.
+2. For each contact you keep, determine their actual title from the snippet and assign a role type:
+   - "Hiring Manager" = the person who would directly manage whoever fills the open role (one level above the role)
+   - "Skip-Level" = the hiring manager's boss or a relevant C-suite leader
+   - "Recruiter / TA" = internal recruiter, talent acquisition, talent partner, or HR at the company
+3. Write a one-line note explaining why this person is the right one to reach out to for this specific role.
+4. Keep the original LinkedIn URL exactly as provided.
+5. If the search didn't find a good hiring manager or recruiter, that's OK. Only include real people you're confident work there. Do NOT make up contacts.
+6. Return 3-6 contacts per job maximum.
 
-Jobs and found contacts:
+Jobs and search results:
 ${JSON.stringify(braveResults.results, null, 2)}
 
 Return a JSON object with a "results" array. Each result:
@@ -3153,9 +3158,9 @@ Return a JSON object with a "results" array. Each result:
   "contacts": [
     {
       "name": "string",
-      "title": "string",
+      "title": "string (their actual current title at the company)",
       "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
-      "linkedin": "string (the linkedin URL)",
+      "linkedin": "string (the exact linkedin URL from the search results)",
       "note": "string (one-line rationale for reaching out)"
     }
   ]
