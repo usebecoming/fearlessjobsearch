@@ -2865,8 +2865,9 @@ Return a JSON object with a "results" array. Each result:
       {
         // Job Target mode: use JSearch API for real listings, then Claude for scoring
         try {
-          // Fetch anchor links first to extract additional search titles
+          // Fetch anchor links - extract titles for search + full details for scoring
           let anchorTitles = [];
+          let anchorJobs = [];
           if (state.anchors.length > 0) {
             try {
               showProgress(container, 'Reading your reference job links...', 6);
@@ -2878,13 +2879,14 @@ Return a JSON object with a "results" array. Each result:
               if (fetchRes.ok) {
                 const fetchData = await fetchRes.json();
                 (fetchData.results || []).forEach(function(r) {
-                  if (r.title) {
-                    // Extract job title from page title (usually "Job Title - Company | Site")
-                    var t = r.title.split(/\s*[-|]\s*/)[0].trim();
-                    if (t.length > 5 && t.length < 80) anchorTitles.push(t);
+                  if (r.found) {
+                    anchorJobs.push(r);
+                    if (r.title && r.title.length > 5 && r.title.length < 80) {
+                      anchorTitles.push(r.title);
+                    }
                   }
                 });
-                console.log('Anchor titles extracted:', anchorTitles);
+                console.log('Anchor jobs found:', anchorJobs.length, 'Titles:', anchorTitles);
               }
             } catch (e) {
               console.log('Anchor fetch skipped:', e.message);
@@ -2938,6 +2940,7 @@ Below 60: Few matches, major gaps in skills, industry, or level
 Candidate resume:
 ${resumeSummary}
 ${getFavoriteContext()}
+${anchorJobs.length > 0 ? '\nANCHOR JOBS — the user identified these as their target roles. Score other jobs higher if similar in seniority, scope, industry, and skills:\n' + anchorJobs.map(j => 'Title: ' + (j.title || 'Unknown') + '\nCompany: ' + (j.company || 'Unknown') + '\nKey details: ' + (j.description || '').substring(0, 400)).join('\n\n') : ''}
 
 Jobs to score:
 ${JSON.stringify(realJobs.map(j => ({ id: j.id, title: j.title, company: j.company, location: j.location, description: j.description })), null, 2)}

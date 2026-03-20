@@ -138,7 +138,7 @@ export default async function handler(req, res) {
       let autoRejected = 0;
 
       for (const contact of finalContacts) {
-        const result = preQualifyContact(contact.linkedin_url, contact.snippet, company);
+        const result = preQualifyContact(contact.linkedin_url, contact.snippet, company, contact.page_title);
         if (result.accepted === true) {
           contact.preQualified = true;
           contact.confidence = result.confidence;
@@ -262,6 +262,30 @@ Return JSON array only:
         } catch (e) {
           console.log(`❌ Claude call failed: ${e.message}`);
         }
+
+        // Post-Claude quality filters
+        const beforeFilter = verifiedContacts.length;
+        verifiedContacts = verifiedContacts.filter(c => {
+          // Fix 2: Reject vague titles
+          if (isTitleTooVague(c.title)) {
+            console.log(`  ❌ Vague title rejected: ${c.name} — "${c.title}"`);
+            return false;
+          }
+          // Fix 3: Reject former employees
+          if (isFormerEmployee(c.title, c.note)) {
+            console.log(`  ❌ Former employee rejected: ${c.name} — "${c.title}"`);
+            return false;
+          }
+          // Fix 4: Function relevance check
+          if (!isFunctionRelevant(c.title, derived.func)) {
+            console.log(`  ❌ Wrong function rejected: ${c.name} — "${c.title}" not relevant to ${derived.func}`);
+            return false;
+          }
+          return true;
+        });
+        if (beforeFilter !== verifiedContacts.length) {
+          console.log(`  Post-filter: ${beforeFilter} → ${verifiedContacts.length} contacts`);
+        }
       }
 
       // Post-Claude founder search if too few verified
@@ -300,27 +324,32 @@ Return JSON array only:
     }
 
     // ── CROSS-JOB DEDUPLICATION ──
-    console.log(`\n🔄 Running cross-job deduplication...`);
-    const seenUrls = new Set();
-    const seenNames = new Set();
+    // Fix 1: Cross-COMPANY dedup (same company = keep, different company = remove)
+    console.log(`\n🔄 Running cross-company deduplication...`);
+    const urlToCompany = new Map();
     let totalRemoved = 0;
     results.forEach(job => {
+      const companyKey = (job.company || '').toLowerCase().trim();
       const before = (job.contacts || []).length;
       job.contacts = (job.contacts || []).filter(c => {
         const urlKey = (c.linkedin || c.linkedin_url || '').toLowerCase().split('?')[0].replace(/\/+$/, '');
-        const nameKey = (c.name || '').toLowerCase().replace(/\s+/g, '');
-        if ((urlKey && seenUrls.has(urlKey)) || (nameKey && seenNames.has(nameKey))) {
-          console.log(`  ⚠️ Duplicate removed: ${c.name} from ${job.company}`);
+        if (!urlKey) return true;
+        const claimedBy = urlToCompany.get(urlKey);
+        if (claimedBy && claimedBy !== companyKey) {
+          // Same person at DIFFERENT company - remove
+          console.log(`  ⚠️ Cross-company duplicate: ${c.name} (${claimedBy} → ${companyKey})`);
           totalRemoved++;
           return false;
         }
-        if (urlKey) seenUrls.add(urlKey);
-        if (nameKey) seenNames.add(nameKey);
+        // Same company or first time - keep
+        urlToCompany.set(urlKey, companyKey);
         return true;
       });
-      console.log(`  ${job.company}: ${before} → ${job.contacts.length} contacts after dedup`);
+      if (before !== (job.contacts || []).length) {
+        console.log(`  ${job.company} (${job.job_title}): ${before} → ${job.contacts.length}`);
+      }
     });
-    console.log(`✅ Deduplication complete — removed ${totalRemoved} duplicates`);
+    console.log(`✅ Deduplication complete — removed ${totalRemoved} cross-company duplicates`);
 
     console.log(`\n=== FINAL: ${results.reduce((s, r) => s + (r.contacts || []).length, 0)} contacts across ${results.length} jobs ===`);
     return res.status(200).json({ results });
@@ -699,8 +728,12 @@ function preQualifyContact(url, snippet, companyName) {
   const pastSignals = ['formerly', 'previously', 'ex-', 'alumni', 'former ', 'left ', 'worked at'];
   const hasPastTense = pastSignals.some(s => snippetLower.includes(s));
 
+  // Also check page_title for former indicators
+  const pageTitle = (arguments[3] || '').toLowerCase();
+  const titleHasFormer = /\bformer\b|\bex-|\bretired\b|\bemeritus\b/i.test(snippetLower + ' ' + pageTitle);
+
   // Decision
-  if (hasPastTense && !hasCurrentSignal) {
+  if ((hasPastTense || titleHasFormer) && !hasCurrentSignal) {
     return { accepted: false, reason: 'past tense employment' };
   }
   if (hasCsuite) {
@@ -746,6 +779,46 @@ function inferTitleFromSlug(slug) {
   if (s.includes('-legal')) return 'Legal Professional';
   if (s.includes('-operations')) return 'Operations Professional';
   return '';
+}
+
+// Fix 2: Vague title check
+function isTitleTooVague(title) {
+  if (!title) return true;
+  const t = title.toLowerCase().trim();
+  const vague = ['employee', 'team member', 'staff', 'professional', 'works at', 'member at'];
+  if (vague.some(v => t.includes(v))) {
+    return !/(manager|director|vp|president|officer|analyst|specialist|partner|lead|head|coordinator|recruiter|advisor|consultant|engineer|developer|designer)/i.test(title);
+  }
+  if (t.length < 3) return true;
+  return false;
+}
+
+// Fix 3: Former employee check
+function isFormerEmployee(title, note) {
+  const text = `${title || ''} ${note || ''}`;
+  return /\bformer\b|\bex-|\bpreviously\b|\bretired\b|\balumni\b|\bemeritus\b/i.test(text);
+}
+
+// Fix 4: Function relevance check
+function isFunctionRelevant(title, jobFunction) {
+  if (!title) return false;
+  const t = title.toLowerCase();
+  if (/(ceo|coo|president|chief executive|chief operating|founder|co-founder|managing director|chairman)/i.test(t)) return true;
+  if (/(vp|vice president|svp|evp|chief)/i.test(t)) return true;
+  const funcKeywords = {
+    'People': ['hr', 'human resources', 'people', 'talent', 'learning', 'training', 'organizational', 'culture', 'workforce', 'recruiting', 'recruiter', 'hrbp', 'compensation', 'benefits'],
+    'Marketing': ['marketing', 'brand', 'growth', 'demand', 'content', 'communications', 'pr', 'creative', 'campaign'],
+    'Engineering': ['engineering', 'software', 'technology', 'technical', 'developer', 'devops', 'infrastructure', 'platform', 'data', 'security'],
+    'Product': ['product', 'ux', 'user experience', 'design', 'research'],
+    'Sales': ['sales', 'revenue', 'account', 'business development', 'partnerships', 'commercial'],
+    'Finance': ['finance', 'financial', 'accounting', 'treasury', 'fp&a', 'controller'],
+    'Operations': ['operations', 'ops', 'supply chain', 'logistics', 'facilities', 'procurement'],
+    'Legal': ['legal', 'counsel', 'compliance', 'risk', 'regulatory', 'attorney'],
+    'General': [] // accept anything
+  };
+  const keywords = funcKeywords[jobFunction] || [];
+  if (keywords.length === 0) return true;
+  return keywords.some(kw => t.includes(kw));
 }
 
 function dedupeContacts(contacts) {
