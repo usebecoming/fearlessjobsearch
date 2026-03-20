@@ -1309,11 +1309,12 @@
 
   <!-- ── Nav ── -->
   <nav id="mainNav" style="display:none">
-    <div class="nav-brand">
+    <div class="nav-brand" style="cursor:pointer" onclick="goToStep(1)">
       <img src="assets/phoenix-logo.png" alt="Fearless Job Search" onerror="this.style.display='none'">
       <span>FEARLESS JOB SEARCH</span>
     </div>
     <div class="nav-right">
+      <button class="nav-btn" onclick="goToStep(1)">Home</button>
       <button class="nav-btn" onclick="openPipeline()">Pipeline</button>
       <button class="nav-btn" style="border-color:#B8A88A;color:#B8A88A" onclick="openBookingModal()">Work With Ben</button>
       <button class="nav-btn" id="navUpgradeBtn" style="border-color:#B8A88A;color:#B8A88A" onclick="openUpgradeModal()">Upgrade</button>
