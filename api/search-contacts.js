@@ -171,17 +171,21 @@ function getDeptAbbrev(dept) {
 }
 
 // Step 2: Brave Search with URL extraction (Step 3)
+// Fetches two pages of 20 results each for ~40 total raw results
 async function braveSearch(query, apiKey) {
   try {
-    const params = new URLSearchParams({
+    const allWebResults = [];
+
+    // Page 1: results 0-19
+    const params1 = new URLSearchParams({
       q: query,
-      count: '10',
+      count: '20',
+      offset: '0',
       text_decorations: 'false',
       search_lang: 'en'
     });
-
-    const response = await fetch(
-      `https://api.search.brave.com/res/v1/web/search?${params.toString()}`,
+    const res1 = await fetch(
+      `https://api.search.brave.com/res/v1/web/search?${params1.toString()}`,
       {
         headers: {
           'Accept': 'application/json',
@@ -190,13 +194,38 @@ async function braveSearch(query, apiKey) {
         }
       }
     );
-
-    if (!response.ok) {
-      console.error('Brave API error:', response.status, response.statusText);
-      return [];
+    if (res1.ok) {
+      const data1 = await res1.json();
+      allWebResults.push(...((data1.web && data1.web.results) || []));
+    } else {
+      console.error('Brave API error page 1:', res1.status, res1.statusText);
     }
 
-    const data = await response.json();
+    // Page 2: results 20-39
+    const params2 = new URLSearchParams({
+      q: query,
+      count: '20',
+      offset: '20',
+      text_decorations: 'false',
+      search_lang: 'en'
+    });
+    const res2 = await fetch(
+      `https://api.search.brave.com/res/v1/web/search?${params2.toString()}`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip',
+          'X-Subscription-Token': apiKey
+        }
+      }
+    );
+    if (res2.ok) {
+      const data2 = await res2.json();
+      allWebResults.push(...((data2.web && data2.web.results) || []));
+    }
+
+    console.log(`  Brave raw results: ${allWebResults.length} total web results (2 pages)`);
+    const data = { web: { results: allWebResults } };
     const webResults = (data.web && data.web.results) || [];
     console.log(`  Brave raw results: ${webResults.length} total web results`);
 
