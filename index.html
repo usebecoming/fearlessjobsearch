@@ -2139,6 +2139,7 @@
 
     function showApp(user) {
       state.userEmail = user.email;
+      state.userId = user.id;
       document.getElementById('landingPage').classList.add('hidden');
       closeAuthModal();
       document.getElementById('mainNav').style.display = 'flex';
@@ -2221,6 +2222,7 @@
       currentStep: 1,
       hasPaid: false,
       userEmail: '',
+      userId: '',
       searchMode: 'jobs'
     };
 
@@ -2533,16 +2535,17 @@
     // ── API Call Helper ──
     // Usage tracking
     function logUsage(action, details) {
-      if (!supabase) return;
-      supabase.auth.getSession().then(function(r) {
-        var user = r.data.session?.user;
-        if (!user) return;
-        supabase.from('usage_log').insert({
-          user_id: user.id,
-          action: action,
-          details: details || {}
-        }).catch(function() {});
-      }).catch(function() {});
+      if (!supabase) { console.log('logUsage skipped: no supabase'); return; }
+      if (!state.userId) { console.log('logUsage skipped: no userId'); return; }
+      console.log('logUsage:', action, details);
+      supabase.from('usage_log').insert({
+        user_id: state.userId,
+        action: action,
+        details: details || {}
+      }).then(function(r) {
+        if (r.error) console.error('logUsage error:', r.error);
+        else console.log('logUsage success');
+      }).catch(function(e) { console.error('logUsage failed:', e); });
     }
 
     // Input sanitization
