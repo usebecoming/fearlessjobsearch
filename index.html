@@ -763,6 +763,19 @@
     }
     .landing-footer a { color: #B8A88A; }
 
+    /* ── Upgrade Banner ── */
+    .upgrade-banner {
+      background: linear-gradient(135deg, rgba(184,168,138,0.08), rgba(184,168,138,0.15));
+      border: 1px solid rgba(184,168,138,0.3);
+      border-radius: 12px; padding: 20px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .upgrade-banner p {
+      font-size: 0.88rem; color: #555; font-weight: 500;
+    }
+    .upgrade-banner strong { color: #111; }
+
     /* ── Auth Modal ── */
     .auth-modal {
       display: none; position: fixed; inset: 0;
@@ -1178,6 +1191,7 @@
     </div>
     <div class="nav-right">
       <button class="nav-btn" onclick="openPipeline()">Pipeline</button>
+      <button class="nav-btn" style="border-color:#B8A88A;color:#B8A88A" onclick="openUpgradeModal()">Upgrade</button>
       <span class="user-email" id="navUserEmail"></span>
       <button class="nav-signout" onclick="doSignOut()">Sign Out</button>
     </div>
@@ -1206,6 +1220,12 @@
   <div class="container" id="appContent" style="display:none">
   <div class="app-wrapper">
     <div class="section active" id="section-1">
+      <!-- Upgrade Banner -->
+      <div class="upgrade-banner" id="upgradeBanner">
+        <p><strong>Want more searches?</strong> Upgrade your plan for weekly or unlimited access to AI-matched roles, contacts, and outreach.</p>
+        <button class="btn-primary" style="padding:10px 22px;font-size:0.82rem;white-space:nowrap" onclick="openUpgradeModal()">View Plans</button>
+      </div>
+
       <h2 class="section-title">Define Your Search</h2>
       <p class="section-sub">Tell us what you're looking for. We'll find roles that match your leadership profile.</p>
 
@@ -1366,6 +1386,49 @@
     </div>
   </div>
 
+  <!-- ── Upgrade Modal ── -->
+  <div class="modal-overlay" id="upgradeModal">
+    <div class="modal" style="max-width:720px">
+      <div class="modal-header">
+        <h2 style="font-size:1.3rem">Upgrade Your Plan</h2>
+        <button class="modal-close" onclick="closeUpgradeModal()">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+        <div style="border:1px solid #E5E4E2;border-radius:12px;padding:20px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#858585;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Starter</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$29<span style="font-size:0.9rem;color:#858585;font-weight:400">/mo</span></div>
+          <ul style="list-style:none;margin:16px 0;font-size:0.82rem;color:#555;font-weight:500">
+            <li style="padding:4px 0">1 search/month</li>
+            <li style="padding:4px 0">90 contacts</li>
+            <li style="padding:4px 0">360 messages</li>
+          </ul>
+          <button class="btn-secondary" style="width:100%;justify-content:center;padding:10px" onclick="startCheckout('starter')">Select</button>
+        </div>
+        <div style="border:2px solid #B8A88A;border-radius:12px;padding:20px;box-shadow:0 4px 16px rgba(184,168,138,0.12)">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Pro</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$59<span style="font-size:0.9rem;color:#858585;font-weight:400">/mo</span></div>
+          <ul style="list-style:none;margin:16px 0;font-size:0.82rem;color:#555;font-weight:500">
+            <li style="padding:4px 0">4 searches/month</li>
+            <li style="padding:4px 0">360 contacts</li>
+            <li style="padding:4px 0">1,440 messages</li>
+          </ul>
+          <button class="btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="startCheckout('pro')">Select</button>
+        </div>
+        <div style="border:2px solid #111;border-radius:12px;padding:20px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Unlimited</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$99<span style="font-size:0.9rem;color:#858585;font-weight:400">/mo</span></div>
+          <ul style="list-style:none;margin:16px 0;font-size:0.82rem;color:#555;font-weight:500">
+            <li style="padding:4px 0">Unlimited searches</li>
+            <li style="padding:4px 0">Unlimited contacts</li>
+            <li style="padding:4px 0">Unlimited messages</li>
+          </ul>
+          <button class="btn-primary" style="width:100%;justify-content:center;padding:10px;background:#111" onclick="startCheckout('unlimited')">Select</button>
+          <div style="text-align:center;margin-top:8px"><a href="#" onclick="event.preventDefault();startCheckout('unlimited_yearly')" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem">$599/year (save $589)</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ── Sign Out (defined early so it always works) ──
     function doSignOut() {
@@ -1391,6 +1454,17 @@
     }
     const supabase = sb;
     window._supabase = sb;
+
+    // ── Upgrade Modal ──
+    function openUpgradeModal() {
+      document.getElementById('upgradeModal').classList.add('active');
+    }
+    function closeUpgradeModal() {
+      document.getElementById('upgradeModal').classList.remove('active');
+    }
+    document.getElementById('upgradeModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeUpgradeModal();
+    });
 
     // ── Stripe Checkout ──
     async function startCheckout(plan) {
