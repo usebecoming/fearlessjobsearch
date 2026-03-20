@@ -97,7 +97,7 @@
     }
     .nav-btn {
       background: transparent; color: #6E6E6E; border: 1px solid #E5E4E2;
-      padding: 8px 18px; border-radius: 8px; font-size: 0.85rem;
+      padding: 8px 18px; border-radius: 8px; font-size: 0.88rem;
       font-family: 'IBM Plex Mono', monospace; font-weight: 400;
       transition: all 0.2s;
     }
@@ -131,8 +131,8 @@
       padding: 8px 0 24px;
     }
     .step-label {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
-      color: #858585; text-align: center; width: 80px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
+      color: #777777; text-align: center; width: 80px;
       transition: color 0.3s; font-weight: 500;
     }
     .step-label.active { color: #111111; font-weight: 600; }
@@ -144,10 +144,11 @@
     /* ── Cards ── */
     .card {
       background: #FFFFFF; border: 1px solid #E5E4E2;
-      border-radius: 12px; padding: 24px;
+      border-radius: 12px; padding: 28px;
       transition: all 0.25s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.03);
     }
-    .card:hover { border-color: #B8A88A; }
+    .card:hover { border-color: #B8A88A; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
 
     /* ── Form elements ── */
     .form-group { margin-bottom: 22px; }
@@ -164,7 +165,7 @@
       transition: border-color 0.2s;
     }
     .form-input:focus { border-color: #B8A88A; }
-    .form-input::placeholder { color: #858585; }
+    .form-input::placeholder { color: #999999; }
     textarea.form-input { min-height: 120px; resize: vertical; }
 
     /* ── Tag input ── */
@@ -194,7 +195,7 @@
       font-size: 0.92rem; flex: 1; min-width: 140px;
       padding: 4px 0;
     }
-    .tag-field::placeholder { color: #858585; }
+    .tag-field::placeholder { color: #999999; }
     .tag-field:focus { outline: none; }
 
     /* ── Buttons ── */
@@ -214,33 +215,33 @@
     }
     .btn-secondary {
       background: transparent; border: 1px solid #E5E4E2;
-      color: #6E6E6E; padding: 10px 22px; border-radius: 8px;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
+      color: #6E6E6E; padding: 12px 24px; border-radius: 8px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.94rem;
       transition: all 0.2s;
     }
     .btn-secondary:hover { border-color: #B8A88A; color: #111111; }
     .btn-small {
-      padding: 6px 14px; font-size: 0.75rem; border-radius: 6px;
+      padding: 8px 16px; font-size: 0.82rem; border-radius: 6px;
       font-family: 'IBM Plex Mono', monospace;
     }
     .btn-copy {
       background: rgba(184,168,138,0.1); border: 1px solid rgba(184,168,138,0.25);
-      color: #7A6C52; padding: 6px 14px; border-radius: 6px;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+      color: #7A6C52; padding: 8px 16px; border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       transition: all 0.2s;
     }
     .btn-copy:hover { background: rgba(184,168,138,0.2); }
 
     /* ── Badges ── */
     .badge {
-      display: inline-block; padding: 3px 10px; border-radius: 4px;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem;
+      display: inline-block; padding: 5px 12px; border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       font-weight: 500; letter-spacing: 0.3px;
     }
     .badge-green { background: rgba(58,138,92,0.1); color: #3A8A5C; border: 1px solid rgba(58,138,92,0.25); }
     .badge-gold { background: rgba(184,168,138,0.15); color: #7A6C52; border: 1px solid rgba(184,168,138,0.3); }
     .badge-red { background: rgba(224,92,92,0.1); color: #C94444; border: 1px solid rgba(224,92,92,0.25); }
-    .badge-blue { background: rgba(91,141,238,0.1); color: #4A7AD4; border: 1px solid rgba(91,141,238,0.25); }
+    .badge-blue { background: rgba(107,131,168,0.1); color: #5A7A9A; border: 1px solid rgba(107,131,168,0.25); }
 
     /* ── Job Cards ── */
     .job-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
@@ -275,12 +276,12 @@
       width: 24px; height: 24px; border-radius: 50%;
       border: 2px solid #E5E4E2; background: #FFFFFF;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.7rem; font-weight: 700; color: transparent;
+      font-size: 0.82rem; font-weight: 700; color: transparent;
       transition: all 0.2s; cursor: pointer;
     }
     .job-select-check:hover { border-color: #B8A88A; }
     .job-view-btn {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       color: #B8A88A; background: none; border: none;
       cursor: pointer; font-weight: 500; transition: color 0.2s;
       margin-top: 10px; padding: 0;
@@ -317,7 +318,7 @@
     .job-company { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; color: #B8A88A; margin: 4px 0; }
     .job-meta {
       display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: #6E6E6E;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: #6E6E6E;
     }
     .job-meta span { display: flex; align-items: center; gap: 4px; }
     .fit-reason {
@@ -338,9 +339,9 @@
     }
     .contact-card {
       background: #FFFFFF; border: 1px solid #E5E4E2;
-      border-radius: 12px; padding: 20px; margin-bottom: 12px;
+      border-radius: 12px; padding: 24px; margin-bottom: 14px;
       transition: all 0.25s;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.03);
     }
     .contact-card:hover {
       border-color: #B8A88A; transform: translateY(-1px);
@@ -361,8 +362,8 @@
     }
     .sequence-contact { font-weight: 600; font-size: 1rem; color: #111111; }
     .sequence-track {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
-      color: #858585; margin-top: 4px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
+      color: #777777; margin-top: 4px;
     }
     .message-card {
       background: #FDFBF8; border: 1px solid #E5E4E2;
@@ -376,11 +377,11 @@
       margin-bottom: 10px;
     }
     .message-step {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       font-weight: 500; color: #B8A88A;
     }
     .message-timing {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: #858585;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: #777777;
     }
     .message-body {
       font-size: 0.92rem; color: #111111; line-height: 1.7; font-weight: 500;
@@ -406,7 +407,7 @@
       margin-bottom: 24px;
     }
     .modal-close {
-      background: none; border: none; color: #858585;
+      background: none; border: none; color: #777777;
       font-size: 1.4rem; cursor: pointer; transition: color 0.2s;
     }
     .modal-close:hover { color: #111111; }
@@ -414,8 +415,8 @@
     /* ── Pipeline Table ── */
     .pipeline-table { width: 100%; border-collapse: collapse; }
     .pipeline-table th {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
-      text-transform: uppercase; color: #858585; font-weight: 500;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
+      text-transform: uppercase; color: #777777; font-weight: 500;
       text-align: left; padding: 10px 12px;
       border-bottom: 1px solid #E5E4E2; letter-spacing: 0.5px;
     }
@@ -425,18 +426,18 @@
     }
     .pipeline-status-select {
       background: #FFFFFF; border: 1px solid #E5E4E2;
-      color: #111111; padding: 5px 10px; border-radius: 6px;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+      color: #111111; padding: 6px 12px; border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
     }
     .pipeline-empty {
-      text-align: center; padding: 48px 0; color: #858585;
+      text-align: center; padding: 48px 0; color: #777777;
       font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
     }
 
     /* ── Loading & Error ── */
     .loading-state {
       display: flex; flex-direction: column; align-items: center;
-      gap: 16px; padding: 60px 0; color: #858585;
+      gap: 16px; padding: 60px 0; color: #777777;
       font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
     }
     .error-box {
@@ -452,7 +453,7 @@
       padding: 16px 0; margin-top: 12px;
     }
     .selection-count {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: #858585;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: #777777;
     }
 
     /* ── Section titles ── */
@@ -479,7 +480,7 @@
     }
     .file-upload-area:hover { border-color: #B8A88A; background: rgba(184,168,138,0.03); }
     .file-upload-area.has-file { border-color: #3A8A5C; background: rgba(58,138,92,0.03); }
-    .file-upload-area p { font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: #858585; }
+    .file-upload-area p { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; color: #777777; }
     .file-upload-area .file-name { color: #3A8A5C; font-weight: 500; margin-top: 6px; }
     .file-upload-area input { display: none; }
 
@@ -487,7 +488,7 @@
     .resume-hint {
       background: rgba(184,168,138,0.08); border: 1px solid rgba(184,168,138,0.2);
       border-radius: 8px; padding: 12px 16px;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       color: #7A6C52; margin-top: 8px;
     }
 
@@ -521,7 +522,7 @@
     /* ── Back button ── */
     .back-row { margin-bottom: 20px; }
     .btn-back {
-      background: none; border: none; color: #858585;
+      background: none; border: none; color: #777777;
       font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       cursor: pointer; transition: color 0.2s;
       display: flex; align-items: center; gap: 6px;
@@ -541,7 +542,7 @@
       color: #111111; text-align: center;
     }
     .auth-gate .auth-subtitle {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.88rem;
       color: #6E6E6E; text-align: center; margin-top: -8px;
     }
     .auth-box {
@@ -553,31 +554,31 @@
       font-size: 1.2rem; margin-bottom: 20px; text-align: center;
     }
     .auth-box .form-group { margin-bottom: 16px; }
-    .auth-box .form-label { font-size: 0.75rem; margin-bottom: 6px; }
+    .auth-box .form-label { font-size: 0.82rem; margin-bottom: 6px; }
     .auth-box .form-input { font-size: 0.9rem; }
     .auth-box .btn-primary { width: 100%; justify-content: center; margin-top: 8px; }
     .auth-toggle {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
       color: #6E6E6E; text-align: center; margin-top: 16px;
     }
     .auth-toggle a { color: #B8A88A; cursor: pointer; font-weight: 500; }
     .auth-toggle a:hover { color: #111111; }
     .auth-error {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
       color: #C94444; text-align: center; margin-top: 10px; min-height: 20px;
     }
     .auth-success {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
       color: #3A8A5C; text-align: center; margin-top: 10px;
     }
     .user-email {
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       color: #6E6E6E; max-width: 120px; overflow: hidden;
       text-overflow: ellipsis; white-space: nowrap;
     }
     .nav-signout {
-      background: none; border: none; color: #858585;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+      background: none; border: none; color: #777777;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       cursor: pointer; transition: color 0.2s;
     }
     .nav-signout:hover { color: #C94444; }
@@ -587,7 +588,7 @@
     .landing.hidden { display: none; }
 
     .hero {
-      padding: 80px 24px 60px;
+      padding: 100px 24px 80px;
       text-align: center;
       max-width: 800px;
       margin: 0 auto;
@@ -595,7 +596,7 @@
     .hero-badge {
       display: inline-block;
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.75rem; font-weight: 600;
+      font-size: 0.82rem; font-weight: 600;
       color: #B8A88A; text-transform: uppercase;
       letter-spacing: 1.5px; margin-bottom: 20px;
       background: rgba(184,168,138,0.1); border: 1px solid rgba(184,168,138,0.25);
@@ -617,13 +618,13 @@
     .hero-cta .btn-primary { font-size: 1rem; padding: 16px 36px; }
 
     .social-proof {
-      text-align: center; padding: 20px 0 40px;
+      text-align: center; padding: 24px 0 48px;
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.8rem; color: #858585;
+      font-size: 0.88rem; color: #6E6E6E;
     }
 
     .features-section {
-      padding: 60px 24px;
+      padding: 80px 24px;
       max-width: 1000px; margin: 0 auto;
     }
     .features-section h2 {
@@ -641,13 +642,14 @@
     }
     .feature-card {
       background: #FFFFFF; border: 1px solid #E5E4E2;
-      border-radius: 12px; padding: 28px;
+      border-radius: 12px; padding: 32px;
       transition: all 0.25s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.03);
     }
     .feature-card:hover { border-color: #B8A88A; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.04); }
     .feature-num {
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.75rem; font-weight: 600;
+      font-size: 0.82rem; font-weight: 600;
       color: #B8A88A; margin-bottom: 12px;
     }
     .feature-card h3 {
@@ -658,7 +660,7 @@
     }
 
     .screenshots-section {
-      padding: 60px 24px;
+      padding: 80px 24px;
       max-width: 1000px; margin: 0 auto;
       text-align: center;
     }
@@ -674,6 +676,7 @@
       background: #FFFFFF; border: 1px solid #E5E4E2;
       border-radius: 12px; overflow: hidden;
       transition: all 0.25s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.03);
     }
     .screenshot-card:hover { border-color: #B8A88A; box-shadow: 0 8px 24px rgba(0,0,0,0.04); }
     .screenshot-mockup {
@@ -693,11 +696,11 @@
     }
     .mock-company {
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.72rem; color: #B8A88A; margin-bottom: 8px;
+      font-size: 0.82rem; color: #B8A88A; margin-bottom: 8px;
     }
     .mock-badge {
       display: inline-block; padding: 2px 8px; border-radius: 3px;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; font-weight: 500;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; font-weight: 500;
     }
     .mock-line {
       height: 8px; background: #EEEEED; border-radius: 4px; margin: 6px 0;
@@ -708,7 +711,7 @@
     }
 
     .problem-section {
-      padding: 60px 24px;
+      padding: 80px 24px;
       max-width: 800px; margin: 0 auto;
     }
     .problem-section h2 {
@@ -733,21 +736,21 @@
     .problem-item strong { color: #111111; }
 
     .pricing-section {
-      padding: 60px 24px 80px;
+      padding: 80px 24px 100px;
       max-width: 500px; margin: 0 auto;
       text-align: center;
     }
     .pricing-section h2 { font-size: 2rem; margin-bottom: 12px; }
     .pricing-card {
       background: #FFFFFF; border: 2px solid #B8A88A;
-      border-radius: 16px; padding: 36px; margin-top: 32px;
+      border-radius: 16px; padding: 40px; margin-top: 32px;
       box-shadow: 0 8px 32px rgba(184,168,138,0.12);
     }
     .pricing-amount {
       font-family: 'Playfair Display', serif;
       font-size: 3rem; font-weight: 800; color: #111111;
     }
-    .pricing-amount span { font-size: 1.2rem; font-weight: 400; color: #858585; }
+    .pricing-amount span { font-size: 1.2rem; font-weight: 400; color: #777777; }
     .pricing-annual {
       font-family: 'IBM Plex Mono', monospace;
       font-size: 0.8rem; color: #B8A88A; margin-top: 4px;
@@ -768,10 +771,10 @@
     .pricing-card .btn-primary { width: 100%; justify-content: center; font-size: 1rem; padding: 16px; }
 
     .landing-footer {
-      text-align: center; padding: 40px 24px;
+      text-align: center; padding: 48px 24px;
       border-top: 1px solid #E5E4E2;
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.78rem; color: #858585;
+      font-size: 0.85rem; color: #777777;
     }
     .landing-footer a { color: #B8A88A; }
 
@@ -792,7 +795,7 @@
     .location-suggestion:hover { background: #F9F6F1; }
     .location-suggestion .loc-state {
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.75rem; color: #858585; margin-left: 6px;
+      font-size: 0.82rem; color: #777777; margin-left: 6px;
     }
 
     /* ── Upgrade Banner ── */
@@ -858,8 +861,9 @@
     .booking-modal.active { display: flex; }
     .booking-card {
       background: #FFFFFF; border: 1px solid #E5E4E2;
-      border-radius: 12px; padding: 20px; margin-bottom: 12px;
+      border-radius: 12px; padding: 24px; margin-bottom: 16px;
       transition: all 0.25s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.03);
     }
     .booking-card:hover { border-color: #B8A88A; }
 
@@ -878,26 +882,30 @@
 
     /* ── Credibility Section ── */
     .credibility-section {
-      padding: 60px 24px; max-width: 800px; margin: 0 auto; text-align: center;
+      padding: 80px 24px; max-width: 800px; margin: 0 auto; text-align: center;
+      background: rgba(184,168,138,0.04);
+      border-top: 1px solid rgba(184,168,138,0.15);
+      border-bottom: 1px solid rgba(184,168,138,0.15);
     }
     .credibility-section h2 {
-      font-size: 1.8rem; line-height: 1.3; margin-bottom: 16px;
+      font-size: 2.1rem; line-height: 1.3; margin-bottom: 20px;
     }
     .proof-badges {
-      display: flex; flex-wrap: wrap; gap: 12px;
-      justify-content: center; margin: 28px 0;
+      display: flex; flex-wrap: wrap; gap: 14px;
+      justify-content: center; margin: 32px 0;
     }
     .proof-badge {
       background: rgba(184,168,138,0.1); border: 1px solid rgba(184,168,138,0.25);
-      border-radius: 8px; padding: 8px 16px;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+      border-radius: 8px; padding: 10px 20px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.88rem;
       color: #7A6C52; font-weight: 500;
     }
     .credibility-quote {
-      font-family: 'Playfair Display', serif; font-size: 1.15rem;
-      font-style: italic; color: #444; line-height: 1.6;
-      border-left: 3px solid #B8A88A; padding: 16px 24px;
-      margin: 28px auto; max-width: 600px; text-align: left;
+      font-family: 'Playfair Display', serif; font-size: 1.25rem;
+      font-style: italic; color: #333; line-height: 1.6;
+      border-left: 4px solid #B8A88A; padding: 20px 28px;
+      margin: 36px auto; max-width: 600px; text-align: left;
+      background: rgba(184,168,138,0.05); border-radius: 0 10px 10px 0;
     }
 
     /* ── Responsive ── */
@@ -908,11 +916,18 @@
       .section-title { font-size: 1.3rem; }
       .step-line { width: 32px; }
       .step-labels { gap: 20px; }
-      .modal { padding: 20px; width: 95%; }
-      .hero { padding: 48px 16px 36px; }
+      .step-label { font-size: 0.82rem; }
+      .modal { padding: 24px; width: 95%; }
+      .hero { padding: 60px 16px 48px; }
       .hero h1 { font-size: 2rem; }
       .hero p { font-size: 1rem; }
       .pricing-amount { font-size: 2.4rem; }
+      .credibility-section { padding: 60px 16px; }
+      .credibility-section h2 { font-size: 1.6rem; }
+      .credibility-quote { font-size: 1.1rem; padding: 16px 20px; }
+      .proof-badge { font-size: 0.82rem; padding: 8px 14px; }
+      .features-section, .screenshots-section, .problem-section { padding: 60px 16px; }
+      .pricing-section { padding: 60px 16px 80px; }
     }
   </style>
 </head>
@@ -928,7 +943,7 @@
         <span>FEARLESS JOB SEARCH</span>
       </div>
       <div class="nav-right">
-        <button class="btn-primary" style="padding:10px 22px;font-size:0.85rem" onclick="openAuthModal('login')">Sign In</button>
+        <button class="btn-primary" style="padding:10px 22px;font-size:0.94rem" onclick="openAuthModal('login')">Sign In</button>
       </div>
     </nav>
 
@@ -1011,30 +1026,30 @@
 
       <!-- Step 1: Search -->
       <div style="margin-bottom:48px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 1: Position Your Search</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 1: Position Your Search</div>
         <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:14px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,0.04)">
           <div style="margin-bottom:16px">
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Target Job Titles</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Target Job Titles</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#7A6C52">VP of Marketing</span>
-              <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#7A6C52">CMO</span>
-              <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#7A6C52">Head of Growth</span>
+              <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#7A6C52">VP of Marketing</span>
+              <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#7A6C52">CMO</span>
+              <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#7A6C52">Head of Growth</span>
             </div>
           </div>
           <div style="display:flex;gap:24px;flex-wrap:wrap">
             <div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Locations</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Locations</div>
               <div style="display:flex;gap:8px">
-                <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#7A6C52">New York</span>
-                <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#7A6C52">Remote</span>
+                <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#7A6C52">New York</span>
+                <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#7A6C52">Remote</span>
               </div>
             </div>
             <div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Salary</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Salary</div>
               <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#555;font-weight:500">$200,000 - $400,000</span>
             </div>
             <div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Work Type</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Work Type</div>
               <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#555;font-weight:500">Remote, Hybrid</span>
             </div>
           </div>
@@ -1043,10 +1058,10 @@
 
       <!-- Step 2: Jobs -->
       <div style="margin-bottom:48px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 2: AI-Matched Jobs</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 2: AI-Matched Jobs</div>
         <div style="display:flex;flex-direction:column;gap:12px">
           <div style="background:#FFFFFF;border:2px solid #B8A88A;border-radius:14px;padding:20px;box-shadow:0 0 0 2px #B8A88A,0 4px 16px rgba(184,168,138,0.1);position:relative">
-            <div style="position:absolute;top:12px;right:14px;background:#111;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700">&#10003;</div>
+            <div style="position:absolute;top:12px;right:14px;background:#111;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.82rem;font-weight:700">&#10003;</div>
             <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-right:40px">
               <div>
                 <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">VP of Marketing</div>
@@ -1054,7 +1069,7 @@
               </div>
               <span class="mock-badge" style="background:rgba(58,138,92,0.1);color:#3A8A5C;border:1px solid rgba(58,138,92,0.2);padding:4px 10px">92 · Strong Match</span>
             </div>
-            <div style="display:flex;gap:14px;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:0.73rem;color:#6E6E6E">
+            <div style="display:flex;gap:14px;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#6E6E6E">
               <span>New York, NY</span><span>Fintech</span><span>1 day ago</span><span>$280K-$350K</span>
             </div>
             <div style="margin-top:10px;padding-top:10px;border-top:1px solid #EEEEED;font-size:0.82rem;color:#555;font-style:italic;font-weight:500">"Strong alignment with candidate's B2B SaaS growth experience and team leadership at scale."</div>
@@ -1067,7 +1082,7 @@
               </div>
               <span class="mock-badge" style="background:rgba(58,138,92,0.1);color:#3A8A5C;border:1px solid rgba(58,138,92,0.2);padding:4px 10px">87 · Strong Match</span>
             </div>
-            <div style="display:flex;gap:14px;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:0.73rem;color:#6E6E6E">
+            <div style="display:flex;gap:14px;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#6E6E6E">
               <span>Remote</span><span>SaaS</span><span>2 days ago</span><span>$250K-$320K</span>
             </div>
             <div style="margin-top:10px;padding-top:10px;border-top:1px solid #EEEEED;font-size:0.82rem;color:#555;font-style:italic;font-weight:500">"PLG expertise and cross-functional leadership directly applicable to Notion's expansion phase."</div>
@@ -1080,7 +1095,7 @@
               </div>
               <span class="mock-badge" style="background:rgba(184,168,138,0.15);color:#7A6C52;border:1px solid rgba(184,168,138,0.3);padding:4px 10px">71 · Good Match</span>
             </div>
-            <div style="display:flex;gap:14px;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:0.73rem;color:#6E6E6E">
+            <div style="display:flex;gap:14px;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#6E6E6E">
               <span>San Francisco, CA</span><span>Health & Wellness</span><span>3 days ago</span><span>$300K-$400K</span>
             </div>
             <div style="margin-top:10px;padding-top:10px;border-top:1px solid #EEEEED;font-size:0.82rem;color:#555;font-style:italic;font-weight:500">"Brand marketing background is strong; DTC consumer health is a slight pivot from B2B SaaS."</div>
@@ -1090,14 +1105,14 @@
 
       <!-- Step 3: Contacts -->
       <div style="margin-bottom:48px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 3: Decision-Makers at Stripe</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 3: Decision-Makers at Stripe</div>
         <div style="display:flex;flex-direction:column;gap:10px">
           <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,0.02)">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <span style="font-weight:600;font-size:0.92rem;color:#111">Rachel Torres</span>
               <span class="mock-badge" style="background:rgba(58,138,92,0.1);color:#3A8A5C;border:1px solid rgba(58,138,92,0.2)">Hiring Manager</span>
             </div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#666;margin-bottom:6px">SVP of Marketing, Stripe</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">SVP of Marketing, Stripe</div>
             <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Directly owns this role. 8 years at Stripe, promoted from VP. Active on LinkedIn.</div>
             <div style="display:flex;gap:8px">
               <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">Copy Email</span>
@@ -1109,7 +1124,7 @@
               <span style="font-weight:600;font-size:0.92rem;color:#111">James Liu</span>
               <span class="mock-badge" style="background:rgba(184,168,138,0.15);color:#7A6C52;border:1px solid rgba(184,168,138,0.3)">Skip-Level</span>
             </div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#666;margin-bottom:6px">CRO, Stripe</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">CRO, Stripe</div>
             <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Rachel's direct report chain. Influence over final hiring decision for VP-level roles.</div>
             <div style="display:flex;gap:8px">
               <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">Copy Email</span>
@@ -1119,9 +1134,9 @@
           <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,0.02)">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <span style="font-weight:600;font-size:0.92rem;color:#111">Priya Kapoor</span>
-              <span class="mock-badge" style="background:rgba(91,141,238,0.1);color:#4A7AD4;border:1px solid rgba(91,141,238,0.2)">Recruiter / TA</span>
+              <span class="mock-badge" style="background:rgba(107,131,168,0.1);color:#5A7A9A;border:1px solid rgba(107,131,168,0.25)">Recruiter / TA</span>
             </div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#666;margin-bottom:6px">Senior Talent Partner, Stripe</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">Senior Talent Partner, Stripe</div>
             <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Handles VP-level marketing hires. Responsive to direct outreach on LinkedIn.</div>
             <div style="display:flex;gap:8px">
               <span class="mock-badge" style="background:rgba(184,168,138,0.1);color:#7A6C52;border:1px solid rgba(184,168,138,0.2);cursor:pointer">Copy Email</span>
@@ -1133,20 +1148,20 @@
 
       <!-- Step 4: Outreach -->
       <div style="margin-bottom:32px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 4: Personalized Outreach</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 4: Personalized Outreach</div>
         <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:14px 14px 0 0;padding:18px 22px;box-shadow:0 1px 2px rgba(0,0,0,0.02)">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
               <div style="font-weight:600;font-size:0.95rem;color:#111">Rachel Torres</div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#858585;margin-top:2px">VP of Marketing · Stripe</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#777777;margin-top:2px">VP of Marketing · Stripe</div>
             </div>
             <span class="mock-badge" style="background:rgba(58,138,92,0.1);color:#3A8A5C;border:1px solid rgba(58,138,92,0.2)">Hiring Manager Track</span>
           </div>
         </div>
         <div style="background:#FDFBF8;border:1px solid #E5E4E2;border-top:none;padding:20px 22px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#B8A88A">Connection Request</span>
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#858585">LinkedIn · Day 1</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A">Connection Request</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777">LinkedIn · Day 1</span>
           </div>
           <div style="font-size:0.88rem;color:#111;line-height:1.65;font-weight:500">Rachel, I noticed your team is expanding Stripe's marketing org. I built and scaled a 25-person marketing team that drove $180M in pipeline at a Series D fintech. Would value a quick conversation about the VP role. - Alex</div>
         </div>
@@ -1154,22 +1169,22 @@
           <div style="filter:blur(5px);pointer-events:none;user-select:none">
             <div style="background:#FDFBF8;border:1px solid #E5E4E2;border-top:none;padding:20px 22px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#B8A88A">Follow-Up</span>
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#858585">LinkedIn DM · Day 2</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A">Follow-Up</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777">LinkedIn DM · Day 2</span>
               </div>
               <div style="font-size:0.88rem;color:#111;line-height:1.65;font-weight:500">Thanks for connecting, Rachel. Wanted to share a bit more context. At my last role, I repositioned our brand during a market downturn and grew enterprise revenue 3x in 18 months.</div>
             </div>
             <div style="background:#FDFBF8;border:1px solid #E5E4E2;border-top:none;padding:20px 22px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#B8A88A">Re-Engage</span>
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#858585">Email · Day 8</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A">Re-Engage</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777">Email · Day 8</span>
               </div>
               <div style="font-size:0.88rem;color:#111;line-height:1.65;font-weight:500">Rachel, circling back on this. I've also led demand gen at scale, running $12M+ in annual paid spend with a 4.2x blended ROAS.</div>
             </div>
             <div style="background:#FDFBF8;border:1px solid #E5E4E2;border-top:none;padding:20px 22px;border-radius:0 0 14px 14px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#B8A88A">Final Circle Back</span>
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#858585">LinkedIn DM · Day 14</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A">Final Circle Back</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777">LinkedIn DM · Day 14</span>
               </div>
               <div style="font-size:0.88rem;color:#111;line-height:1.65;font-weight:500">Rachel, I know how busy VP-level hiring gets. No pressure at all. If the timing shifts or another role opens up, I'm here.</div>
             </div>
@@ -1190,7 +1205,7 @@
     <!-- Credibility Section -->
     <div class="credibility-section">
       <h2>Built by the coach who has helped executives land the jobs they actually want</h2>
-      <p class="section-sub">This is not another AI gimmick. Fearless Job Search was created by Dr. Benjamin Ritter, an ICF PCC-certified executive coach with a Doctorate in Organizational Leadership.</p>
+      <p class="section-sub" style="font-size:1.05rem;max-width:650px;margin-left:auto;margin-right:auto">This is not another AI gimmick. Fearless Job Search was created by Dr. Benjamin Ritter, an ICF PCC-certified executive coach with a Doctorate in Organizational Leadership.</p>
       <div class="proof-badges">
         <span class="proof-badge">ICF PCC Certified</span>
         <span class="proof-badge">Doctorate in Organizational Leadership</span>
@@ -1199,13 +1214,13 @@
         <span class="proof-badge">Founder, Live for Yourself Consulting</span>
       </div>
       <div class="credibility-quote">"You don't need to apply to more jobs. You need to have better conversations with the right people. I built this tool to make that happen."</div>
-      <p style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#858585;margin-top:8px">Dr. Benjamin Ritter</p>
-      <a href="https://liveforyourselfconsulting.com" target="_blank" style="display:inline-block;margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem">Learn more about LFY Consulting &#8594;</a>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:0.95rem;color:#444444;margin-top:12px;font-weight:600">Dr. Benjamin Ritter</p>
+      <a href="https://liveforyourselfconsulting.com" target="_blank" style="display:inline-block;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:0.92rem;font-weight:500">Learn more about LFY Consulting &#8594;</a>
     </div>
 
     <!-- Coaching Upsell -->
-    <div style="padding:48px 24px;max-width:700px;margin:0 auto;text-align:center">
-      <h2 style="font-size:1.6rem;margin-bottom:12px">Need more than AI?</h2>
+    <div style="padding:64px 24px;max-width:700px;margin:0 auto;text-align:center">
+      <h2 style="font-size:1.8rem;margin-bottom:16px">Need more than AI?</h2>
       <p style="font-size:0.95rem;color:#555;font-weight:500;line-height:1.7;margin-bottom:8px">The tool finds the opportunities and writes the outreach. But if your resume isn't landing, your LinkedIn is invisible, or you need help figuring out your next move, that's where 1:1 coaching comes in.</p>
       <p style="font-size:0.88rem;color:#555;font-weight:500;line-height:1.7;margin-bottom:24px">Work directly with Dr. Benjamin Ritter to sharpen your positioning, rewrite your resume, or build a strategy that gets you in the room.</p>
       <button class="btn-secondary" style="padding:14px 32px;font-size:0.95rem;border-color:#B8A88A;color:#B8A88A" onclick="openBookingModal()">Explore 1:1 Coaching</button>
@@ -1217,13 +1232,13 @@
       <p class="section-sub">Start free. Upgrade when you're ready to move faster.</p>
       <div style="text-align:center;margin-top:24px;margin-bottom:28px">
         <button class="btn-primary" style="padding:14px 36px;font-size:0.95rem" onclick="openAuthModal('signup')">Try It Free</button>
-        <p style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#858585;margin-top:10px">No credit card required. See 3 matched opportunities instantly.</p>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#777777;margin-top:10px">No credit card required. See 3 matched opportunities instantly.</p>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;text-align:left">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;text-align:left">
 
         <!-- Starter -->
         <div class="pricing-card" style="border-color:#E5E4E2">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#858585;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Starter</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#777777;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Starter</div>
           <div class="pricing-amount">$29<span>/mo</span></div>
           <div class="pricing-annual">1 search per month</div>
           <ul class="pricing-features">
@@ -1238,7 +1253,7 @@
 
         <!-- Pro -->
         <div class="pricing-card">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Pro</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Pro</div>
           <div class="pricing-amount">$59<span>/mo</span></div>
           <div class="pricing-annual">4 searches per month</div>
           <ul class="pricing-features">
@@ -1255,10 +1270,10 @@
 
         <!-- Unlimited -->
         <div class="pricing-card" style="border-color:#111111">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#111111;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Unlimited</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#111111;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Unlimited</div>
           <div class="pricing-amount">$99<span>/mo</span></div>
           <div class="pricing-annual">or $599/year (save $589)
-            <br><a href="#" onclick="event.preventDefault();startCheckout('unlimited_yearly')" style="font-size:0.75rem">Choose annual</a>
+            <br><a href="#" onclick="event.preventDefault();startCheckout('unlimited_yearly')" style="font-size:0.85rem">Choose annual</a>
           </div>
           <ul class="pricing-features">
             <li>Unlimited job searches</li>
@@ -1274,11 +1289,11 @@
         </div>
 
       </div>
-      <p style="text-align:center;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#858585;max-width:500px;margin-left:auto;margin-right:auto">By completing your purchase you agree to our <a href="/policies" style="color:#B8A88A">Refund &amp; Cancellation Policy</a>. Subscriptions can be cancelled anytime. Coaching sessions are non-refundable and non-cancellable once booked. Rescheduling available with 48+ hours notice.</p>
+      <p style="text-align:center;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777;max-width:500px;margin-left:auto;margin-right:auto">By completing your purchase you agree to our <a href="/policies" style="color:#B8A88A">Refund &amp; Cancellation Policy</a>. Subscriptions can be cancelled anytime. Coaching sessions are non-refundable and non-cancellable once booked. Rescheduling available with 48+ hours notice.</p>
     </div>
 
     <!-- Final CTA -->
-    <div style="padding:60px 24px;text-align:center;max-width:700px;margin:0 auto">
+    <div style="padding:80px 24px;text-align:center;max-width:700px;margin:0 auto">
       <h2 style="font-size:2rem;line-height:1.3;margin-bottom:16px">Your next move starts with a conversation. <span style="color:#B8A88A">Start it today.</span></h2>
       <p style="font-size:1.05rem;color:#555;font-weight:500;line-height:1.7;margin-bottom:32px">Every day you wait is a day someone else is building the relationship that lands the role you want. Stop scrolling job boards. Start having real conversations with the people who actually make hiring decisions.</p>
       <button class="btn-primary" style="font-size:1.05rem;padding:18px 40px" onclick="document.getElementById('pricingSection').scrollIntoView({behavior:'smooth'})">Start Your Fearless Job Search</button>
@@ -1287,7 +1302,7 @@
     <!-- Footer -->
     <div class="landing-footer">
       <p>Fearless Job Search &middot; A product of <a href="https://liveforyourselfconsulting.com" target="_blank">Live for Yourself Consulting</a> &middot; Dr. Benjamin Ritter</p>
-      <p style="margin-top:8px;font-size:0.72rem">Questions? <a href="mailto:support@lfyconsulting.com">support@lfyconsulting.com</a> &middot; <a href="/policies">Policies</a></p>
+      <p style="margin-top:8px;font-size:0.82rem">Questions? <a href="mailto:support@lfyconsulting.com">support@lfyconsulting.com</a> &middot; <a href="/policies">Policies</a></p>
     </div>
   </div>
 
@@ -1342,7 +1357,7 @@
         <img src="assets/phoenix-logo.png" alt="Fearless Job Search" onerror="this.style.display='none'">
         <span>FEARLESS JOB SEARCH</span>
       </div>
-      <button class="nav-link" onclick="doSignOut()" title="Back to home page" style="font-size:0.75rem;color:#858585">&#8962; Home</button>
+      <button class="nav-link" onclick="doSignOut()" title="Back to home page" style="font-size:0.85rem;color:#777777">&#8962; Home</button>
     </div>
     <div class="nav-right">
       <button class="nav-link" onclick="goToStep(1)">Search</button>
@@ -1381,7 +1396,7 @@
       <!-- Upgrade Banner -->
       <div class="upgrade-banner" id="upgradeBanner">
         <p><strong>Want more searches?</strong> Upgrade your plan for weekly or unlimited access to AI-matched roles, contacts, and outreach.</p>
-        <button class="btn-primary" style="padding:10px 22px;font-size:0.82rem;white-space:nowrap" onclick="openUpgradeModal()">View Plans</button>
+        <button class="btn-primary" style="padding:12px 24px;font-size:0.94rem;white-space:nowrap" onclick="openUpgradeModal()">View Plans</button>
       </div>
 
       <h2 class="section-title">Position Your Search</h2>
@@ -1434,7 +1449,7 @@
 
       <!-- Location -->
       <div class="form-group" style="position:relative">
-        <label class="form-label">Locations <span style="color:#858585;font-weight:300">(up to 5)</span></label>
+        <label class="form-label">Locations <span style="color:#777777;font-weight:300">(up to 5)</span></label>
         <div class="tag-input-wrap" id="locationsWrap">
           <input type="text" class="tag-field" id="locationField" placeholder="Start typing a city..." autocomplete="off">
         </div>
@@ -1465,7 +1480,7 @@
             <option value="400000">$400,000</option>
             <option value="500000">$500,000</option>
           </select>
-          <span style="color:#858585;font-family:'IBM Plex Mono',monospace;font-size:0.8rem">to</span>
+          <span style="color:#777777;font-family:'IBM Plex Mono',monospace;font-size:0.8rem">to</span>
           <select class="form-input" id="salaryMax" style="width:auto">
             <option value="">No maximum</option>
             <option value="200000">$200,000</option>
@@ -1481,7 +1496,7 @@
 
       <!-- Anchor Links -->
       <div class="form-group">
-        <label class="form-label">Anchor Job Links <span style="color:#858585;font-weight:300">(optional, up to 3)</span></label>
+        <label class="form-label">Anchor Job Links <span style="color:#777777;font-weight:300">(optional, up to 3)</span></label>
         <input type="url" class="form-input" id="anchor1" placeholder="https://linkedin.com/jobs/..." style="margin-bottom:8px">
         <input type="url" class="form-input" id="anchor2" placeholder="Second job link (optional)" style="margin-bottom:8px">
         <input type="url" class="form-input" id="anchor3" placeholder="Third job link (optional)">
@@ -1494,10 +1509,10 @@
         <div id="resumeUploadState">
           <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('resumeFile').click()">
             <p>Drop a file here or click to upload</p>
-            <p style="font-size:0.72rem;color:#858585;margin-top:4px">TXT, PDF, or DOCX</p>
+            <p style="font-size:0.82rem;color:#777777;margin-top:4px">TXT, PDF, or DOCX</p>
             <input type="file" id="resumeFile" accept=".txt,.pdf,.docx">
           </div>
-          <p style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#858585;text-align:center;margin-bottom:8px">or paste your resume below</p>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#777777;text-align:center;margin-bottom:8px">or paste your resume below</p>
           <textarea class="form-input" id="resumeText" placeholder="Paste your resume text here..."></textarea>
         </div>
         <!-- Loaded state -->
@@ -1559,7 +1574,7 @@
       <div id="contactsInstructions" style="display:none;background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:20px;margin-bottom:20px">
         <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
           <div style="flex:1;min-width:200px">
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">How to use</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">How to use</div>
             <p style="font-size:0.85rem;color:#555;font-weight:500;line-height:1.6">Check the contacts you want to message. Click "Generate Outreach" to create personalized 4-message sequences for each selected contact.</p>
           </div>
           <div style="display:flex;gap:12px">
@@ -1625,36 +1640,36 @@
         <button class="modal-close" onclick="closeUpgradeModal()">✕</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
-        <div style="border:1px solid #E5E4E2;border-radius:12px;padding:20px">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#858585;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Starter</div>
-          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$29<span style="font-size:0.9rem;color:#858585;font-weight:400">/mo</span></div>
-          <ul style="list-style:none;margin:16px 0;font-size:0.82rem;color:#555;font-weight:500">
+        <div style="border:1px solid #E5E4E2;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#777777;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Starter</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$29<span style="font-size:1rem;color:#777777;font-weight:400">/mo</span></div>
+          <ul style="list-style:none;margin:16px 0;font-size:0.88rem;color:#555;font-weight:500">
             <li style="padding:4px 0">1 search/month</li>
             <li style="padding:4px 0">60 decision-maker contacts</li>
             <li style="padding:4px 0">240 personalized outreach messages</li>
           </ul>
-          <button class="btn-secondary" style="width:100%;justify-content:center;padding:10px" onclick="startCheckout('starter')">Select</button>
+          <button class="btn-secondary" style="width:100%;justify-content:center;padding:12px" onclick="startCheckout('starter')">Select</button>
         </div>
-        <div style="border:2px solid #B8A88A;border-radius:12px;padding:20px;box-shadow:0 4px 16px rgba(184,168,138,0.12)">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Pro</div>
-          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$59<span style="font-size:0.9rem;color:#858585;font-weight:400">/mo</span></div>
-          <ul style="list-style:none;margin:16px 0;font-size:0.82rem;color:#555;font-weight:500">
+        <div style="border:2px solid #B8A88A;border-radius:12px;padding:24px;box-shadow:0 4px 16px rgba(184,168,138,0.12)">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Pro</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$59<span style="font-size:1rem;color:#777777;font-weight:400">/mo</span></div>
+          <ul style="list-style:none;margin:16px 0;font-size:0.88rem;color:#555;font-weight:500">
             <li style="padding:4px 0">4 searches/month</li>
             <li style="padding:4px 0">240 decision-maker contacts</li>
             <li style="padding:4px 0">960 personalized outreach messages</li>
           </ul>
-          <button class="btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="startCheckout('pro')">Select</button>
+          <button class="btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="startCheckout('pro')">Select</button>
         </div>
-        <div style="border:2px solid #111;border-radius:12px;padding:20px">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Unlimited</div>
-          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$99<span style="font-size:0.9rem;color:#858585;font-weight:400">/mo</span></div>
-          <ul style="list-style:none;margin:16px 0;font-size:0.82rem;color:#555;font-weight:500">
+        <div style="border:2px solid #111;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Unlimited</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$99<span style="font-size:1rem;color:#777777;font-weight:400">/mo</span></div>
+          <ul style="list-style:none;margin:16px 0;font-size:0.88rem;color:#555;font-weight:500">
             <li style="padding:4px 0">Unlimited searches</li>
             <li style="padding:4px 0">Unlimited contacts</li>
             <li style="padding:4px 0">Unlimited messages</li>
           </ul>
           <button class="btn-primary" style="width:100%;justify-content:center;padding:10px;background:#111" onclick="startCheckout('unlimited')">Select</button>
-          <div style="text-align:center;margin-top:8px"><a href="#" onclick="event.preventDefault();startCheckout('unlimited_yearly')" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem">$599/year (save $589)</a></div>
+          <div style="text-align:center;margin-top:8px"><a href="#" onclick="event.preventDefault();startCheckout('unlimited_yearly')" style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem">$599/year (save $589)</a></div>
         </div>
       </div>
       <!-- Coaching Upsell -->
@@ -1674,22 +1689,22 @@
         <button class="modal-close" onclick="closeBookingModal()">&#10005;</button>
       </div>
       <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:6px">The AI finds the opportunities. Dr. Benjamin Ritter helps you win them.</p>
-      <p style="font-size:0.82rem;color:#858585;font-weight:500;margin-bottom:24px;font-family:'IBM Plex Mono',monospace">ICF PCC Coach · Clients at Google, Amazon, Pinterest, Coursera</p>
+      <p style="font-size:0.82rem;color:#777777;font-weight:500;margin-bottom:24px;font-family:'IBM Plex Mono',monospace">ICF PCC Coach · Clients at Google, Amazon, Pinterest, Coursera</p>
       <div class="booking-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">Resume That Opens Doors</div>
           <span style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:600;color:#B8A88A">$500</span>
         </div>
         <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">Your resume isn't getting you in the room? Ben rewrites it so it does. Includes a 60-minute strategy call and a fully repositioned resume built for the roles you actually want.</p>
-        <ul style="font-size:0.8rem;color:#6E6E6E;font-weight:500;margin-bottom:14px;padding-left:18px;line-height:1.7">
+        <ul style="font-size:0.88rem;color:#6E6E6E;font-weight:500;margin-bottom:14px;padding-left:18px;line-height:1.7">
           <li>Send your existing resume and complete a pre-coaching needs assessment</li>
           <li>60-minute video or phone call to clarify details</li>
           <li>Receive a revised resume draft from your coach</li>
           <li>Unlimited rounds of edits for 2 weeks after first draft</li>
           <li>Final draft, ready to send out</li>
         </ul>
-        <p style="font-size:0.72rem;color:#858585;font-style:italic;margin-bottom:12px">This is a review and enhancement of your existing resume, not a from-scratch build. Have your current resume ready.</p>
-        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book Now</a>
+        <p style="font-size:0.82rem;color:#777777;font-style:italic;margin-bottom:12px">This is a review and enhancement of your existing resume, not a from-scratch build. Have your current resume ready.</p>
+        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:12px 24px;font-size:0.94rem;text-decoration:none;display:inline-flex">Book Now</a>
       </div>
       <div class="booking-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -1697,13 +1712,13 @@
           <span style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:600;color:#B8A88A">$800</span>
         </div>
         <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">Stop being invisible to the right people. Ben overhauls your resume and LinkedIn so recruiters and hiring managers come to you.</p>
-        <ul style="font-size:0.8rem;color:#6E6E6E;font-weight:500;margin-bottom:14px;padding-left:18px;line-height:1.7">
+        <ul style="font-size:0.88rem;color:#6E6E6E;font-weight:500;margin-bottom:14px;padding-left:18px;line-height:1.7">
           <li>Everything in the Resume package</li>
           <li>Fully updated and optimized LinkedIn profile tailored to your goals</li>
           <li>Headline, summary, experience, and positioning all reworked</li>
         </ul>
-        <p style="font-size:0.72rem;color:#858585;font-style:italic;margin-bottom:12px">This is a review and enhancement of your existing resume and LinkedIn. Have your current resume ready.</p>
-        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book Now</a>
+        <p style="font-size:0.82rem;color:#777777;font-style:italic;margin-bottom:12px">This is a review and enhancement of your existing resume and LinkedIn. Have your current resume ready.</p>
+        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:12px 24px;font-size:0.94rem;text-decoration:none;display:inline-flex">Book Now</a>
       </div>
       <div class="booking-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -1711,9 +1726,9 @@
           <span style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:600;color:#B8A88A">$650</span>
         </div>
         <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">60 minutes to get clear on your direction, sharpen your positioning, and build a plan that actually moves. For leaders who are done guessing and ready to act.</p>
-        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:10px 22px;font-size:0.82rem;text-decoration:none;display:inline-flex">Book Now</a>
+        <a href="https://calendly.com/liveforyourself" target="_blank" class="btn-primary" style="padding:12px 24px;font-size:0.94rem;text-decoration:none;display:inline-flex">Book Now</a>
       </div>
-      <p style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#858585;margin-top:16px;text-align:center">Non-refundable once booked. Rescheduling available with 48+ hours notice. <a href="/policies" style="color:#B8A88A">Full policy</a></p>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777;margin-top:16px;text-align:center">Non-refundable once booked. Rescheduling available with 48+ hours notice. <a href="/policies" style="color:#B8A88A">Full policy</a></p>
     </div>
   </div>
 
@@ -2155,7 +2170,7 @@
       const ext = file.name.split('.').pop().toLowerCase();
 
       fileUploadArea.classList.remove('has-file');
-      fileUploadArea.innerHTML = `<p style="color:#858585">Processing ${esc(file.name)}...</p>`;
+      fileUploadArea.innerHTML = `<p style="color:#777777">Processing ${esc(file.name)}...</p>`;
 
       try {
         let text = '';
@@ -2205,7 +2220,7 @@
       document.getElementById('resumeLoadedState').style.display = 'none';
       document.getElementById('resumeText').value = '';
       fileUploadArea.classList.remove('has-file');
-      fileUploadArea.innerHTML = '<p>Drop a file here or click to upload</p><p style="font-size:0.72rem;color:#858585;margin-top:4px">TXT, PDF, or DOCX</p><input type="file" id="resumeFile" accept=".txt,.pdf,.docx">';
+      fileUploadArea.innerHTML = '<p>Drop a file here or click to upload</p><p style="font-size:0.82rem;color:#777777;margin-top:4px">TXT, PDF, or DOCX</p><input type="file" id="resumeFile" accept=".txt,.pdf,.docx">';
       document.getElementById('resumeFile').addEventListener('change', e => handleResumeFile(e.target.files[0]));
       saveResume();
     }
@@ -2399,12 +2414,12 @@ Return a JSON array of objects with these exact fields:
 
         let stretchNote = '';
         if (!isNoListing && job.fitScore < 87) {
-          stretchNote = `<div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#C94444;font-weight:500">${job.fitScore < 70 ? 'Stretch' : 'Good Match'}. May need resume tailoring. <a href="#" onclick="event.stopPropagation();event.preventDefault();openBookingModal()" style="color:#B8A88A;font-weight:600">Get 1:1 help with this.</a></div>`;
+          stretchNote = `<div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#C94444;font-weight:500">${job.fitScore < 70 ? 'Stretch' : 'Good Match'}. May need resume tailoring. <a href="#" onclick="event.stopPropagation();event.preventDefault();openBookingModal()" style="color:#B8A88A;font-weight:600">Get 1:1 help with this.</a></div>`;
         }
 
         let noListingNote = '';
         if (isNoListing) {
-          noListingNote = `<div style="margin-top:10px;padding:12px 16px;background:rgba(91,141,238,0.06);border:1px solid rgba(91,141,238,0.15);border-radius:8px;font-size:0.82rem;color:#4A7AD4;font-weight:500">No active roles right now. Select this to get contacts and start building relationships so you're first in line when something opens.</div>`;
+          noListingNote = `<div style="margin-top:10px;padding:12px 16px;background:rgba(107,131,168,0.06);border:1px solid rgba(107,131,168,0.15);border-radius:8px;font-size:0.82rem;color:#5A7A9A;font-weight:500">No active roles right now. Select this to get contacts and start building relationships so you're first in line when something opens.</div>`;
         }
 
         card.innerHTML = `
@@ -2423,9 +2438,9 @@ Return a JSON array of objects with these exact fields:
             <span>${esc(job.industry || '')}</span>
             <span>${esc(job.posted)}</span>
             ${job.salary ? `<span>${esc(job.salary)}</span>` : ''}
-            ${job.source ? `<span class="mono" style="color:#858585">${esc(job.source)}</span>` : ''}
+            ${job.source ? `<span class="mono" style="color:#777777">${esc(job.source)}</span>` : ''}
           </div>
-          ${job.highlights ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${job.highlights.map(h => `<span style="font-size:0.75rem;color:#555555;background:#F9F6F1;padding:3px 8px;border-radius:4px;border:1px solid #EEEEED;font-weight:500">${esc(h)}</span>`).join('')}</div>` : ''}
+          ${job.highlights ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${job.highlights.map(h => `<span style="font-size:0.85rem;color:#555555;background:#F9F6F1;padding:3px 8px;border-radius:4px;border:1px solid #EEEEED;font-weight:500">${esc(h)}</span>`).join('')}</div>` : ''}
           <div class="fit-reason">"${esc(job.fitReason)}"</div>
           ${stretchNote}
           ${noListingNote}
@@ -3140,15 +3155,15 @@ Return a JSON object with a "sequences" array. Each sequence:
         html += `<tr>
           <td>${esc(p.title)}</td>
           <td style="color:#B8A88A">${esc(p.company)}</td>
-          <td style="color:#858585">${esc(p.location)}</td>
+          <td style="color:#777777">${esc(p.location)}</td>
           <td><span class="badge ${fitBadge}">${p.fitScore}</span></td>
-          <td class="mono" style="color:#858585;font-size:0.78rem">${esc(p.addedAt)}</td>
+          <td class="mono" style="color:#777777;font-size:0.85rem">${esc(p.addedAt)}</td>
           <td>
             <select class="pipeline-status-select" onchange="updatePipelineStatus(${i}, this.value)">
               ${statuses.map(s => `<option value="${s}" ${s === p.status ? 'selected' : ''}>${s}</option>`).join('')}
             </select>
           </td>
-          <td><button class="btn-back" style="font-size:0.72rem;color:#C94444" onclick="removePipelineItem(${i})">Remove</button></td>
+          <td><button class="btn-back" style="font-size:0.82rem;color:#C94444" onclick="removePipelineItem(${i})">Remove</button></td>
         </tr>`;
       });
 
@@ -3249,7 +3264,7 @@ Return a JSON object with a "sequences" array. Each sequence:
           <div style="margin-top:8px;width:240px;height:4px;background:#E5E4E2;border-radius:2px;overflow:hidden">
             <div id="progressBar" style="width:0%;height:100%;background:#B8A88A;border-radius:2px;transition:width 1s linear"></div>
           </div>
-          <span id="progressTime" style="font-size:0.75rem;color:#858585">Estimated ${estimatedSec}s remaining</span>
+          <span id="progressTime" style="font-size:0.85rem;color:#777777">Estimated ${estimatedSec}s remaining</span>
         </div>`;
 
       const workingMessages = [
