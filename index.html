@@ -2896,7 +2896,8 @@ Return a JSON object with a "results" array. Each result:
           showProgress(container, 'Searching real job listings...', 10);
 
           // Combine user titles + anchor-derived titles
-          const searchTitles = [...state.titles, ...anchorTitles];
+          // Only use user-entered titles for search. Anchor jobs calibrate scoring, not search.
+          const searchTitles = [...state.titles];
 
           const searchRes = await fetch('/api/search-jobs', {
             method: 'POST',

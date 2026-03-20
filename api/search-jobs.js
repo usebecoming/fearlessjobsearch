@@ -126,8 +126,45 @@ export default async function handler(req, res) {
     });
     const afterDedup = dedupedJobs.length;
 
+    // Fix 2: Filter irrelevant jobs (nursing L&D, entry-level, etc.)
+    const irrelevantKeywords = [
+      'labor & delivery', 'labor and delivery', 'l&d rn', 'registered nurse', 'nursing',
+      'patient care', 'antepartum', 'obstetric', 'maternal', 'postpartum', 'nicu',
+      'flight nurse', 'med surg', 'icu', 'er nurse', 'travel nurse', 'rn ',
+      'sdr', 'bdr', 'sales development rep', 'teach english', 'esl teacher',
+      'water safety', 'lifeguard', 'math tutor', 'mathnasium', 'kumon'
+    ];
+
+    let irrelevantRemoved = 0;
+    const relevantJobs = dedupedJobs.filter(job => {
+      const combined = ((job.job_title || '') + ' ' + (job.job_description || '').substring(0, 200)).toLowerCase();
+      if (irrelevantKeywords.some(kw => combined.includes(kw))) {
+        console.log(`  ❌ Irrelevant: ${job.job_title} at ${job.employer_name}`);
+        irrelevantRemoved++;
+        return false;
+      }
+      return true;
+    });
+
+    // Fix 3: Seniority filter
+    const searchSeniority = detectSearchSeniority(titles);
+    console.log(`📊 Search seniority: ${searchSeniority}`);
+    let seniorityRemoved = 0;
+
+    const seniorityFiltered = (searchSeniority === 'director' || searchSeniority === 'executive')
+      ? relevantJobs.filter(job => {
+          const t = (job.job_title || '').toLowerCase();
+          if (/\b(coordinator|associate|assistant|entry level|junior|specialist|facilitator|instructor|trainer)\b/i.test(t)) {
+            console.log(`  ❌ Too junior: ${job.job_title}`);
+            seniorityRemoved++;
+            return false;
+          }
+          return true;
+        })
+      : relevantJobs;
+
     // Cap at 30 for Claude scoring
-    const jobs = dedupedJobs.slice(0, 30);
+    const jobs = seniorityFiltered.slice(0, 30);
 
     // Flag staffing agencies
     const agencyKeywords = ['staffing', 'recruiting', 'talent agency', 'manpower', 'adecco', 'randstad', 'robert half', 'hays', 'kforce', 'kelly services', 'allegis', 'insight global', 'korn ferry', 'heidrick', 'aerotek', 'tek systems', 'teksystems', 'beacon hill', 'apex group', 'modis', 'volt', 'spherion', 'express employment', 'nesco', 'addison group', 'brooksource', 'procom', 'collabera', 'cybercoders', 'dice', 'jobspring', 'placement', 'search group', 'executive search', 'talent solutions', 'recruiting group'];
@@ -162,6 +199,8 @@ export default async function handler(req, res) {
     console.log(`\n📊 JOB PIPELINE SUMMARY:`);
     console.log(`  Total from JSearch: ${totalFromJSearch}`);
     console.log(`  After deduplication: ${afterDedup}`);
+    console.log(`  Irrelevant removed: ${irrelevantRemoved}`);
+    console.log(`  Too junior removed: ${seniorityRemoved}`);
     console.log(`  Staffing agencies flagged: ${agencyCount}`);
     console.log(`  Passed to Claude for scoring: ${filtered.length}`);
     filtered.forEach((job, i) => {
@@ -317,6 +356,14 @@ function expandTitle(title) {
 }
 
 // ── 4. Seniority filter ──
+function detectSearchSeniority(titles) {
+  const text = titles.join(' ').toLowerCase();
+  if (/(vp|vice president|svp|evp|chief|cmo|cto|coo|ceo|chro|cpo|cro)/i.test(text)) return 'executive';
+  if (/\bdirector\b/i.test(text)) return 'director';
+  if (/\bsenior\b|\bsr\b|\blead\b|\bmanager\b|\bhead of\b/i.test(text)) return 'senior';
+  return 'any';
+}
+
 function getSeniority(title) {
   const t = title.toLowerCase();
   if (/\b(coordinator|specialist|associate|assistant)\b/.test(t)) return 'entry_level,mid_level';
@@ -329,37 +376,24 @@ function getSeniority(title) {
 
 // ── 5. Resume keyword extraction ──
 function extractResumeKeywords(resumeText) {
-  if (!resumeText || resumeText.length < 100) {
+  if (!resumeText || resumeText.length < 50) {
     console.log('⚠️ Resume too short for keyword extraction');
     return null;
   }
 
-  // Skip header (name, email, phone, address)
-  const bodyText = resumeText.slice(300);
-  const cleaned = bodyText
+  // Skip first 400 chars (header with name/email/phone)
+  const body = resumeText.slice(400);
+  const cleaned = body
     .replace(/\b[\w.+-]+@[\w-]+\.[\w.]+\b/g, '')
     .replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '')
-    .replace(/https?:\/\/\S+/g, '')
-    .replace(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/gi, '')
-    .replace(/\b(present|current|today)\b/gi, '');
+    .replace(/https?:\/\/\S+/g, '');
 
-  const skillPatterns = [
-    /\b(leadership|coaching|facilitation|organizational development|talent management|learning|training|curriculum|instructional design)\b/gi,
-    /\b(marketing|demand generation|brand|content|SEO|paid media|analytics)\b/gi,
-    /\b(product management|roadmap|agile|scrum|user research)\b/gi,
-    /\b(engineering|software development|architecture|DevOps|cloud)\b/gi,
-    /\b(sales|business development|revenue|account management)\b/gi,
-    /\b(finance|FP&A|forecasting|budgeting|financial modeling)\b/gi,
-    /\b(operations|process improvement|project management|PMO)\b/gi,
-    /\b(SaaS|B2B|B2C|fintech|healthtech|edtech|ecommerce|enterprise)\b/gi,
-    /\b(executive|director|VP|vice president|C-suite|leadership team)\b/gi
-  ];
+  // Broader skill patterns
+  const skillRegex = /(leadership|coaching|facilitation|organizational development|talent management|learning|training|curriculum|instructional design|executive coaching|career development|change management|performance management|succession planning|employee engagement|culture|workforce development|program management|stakeholder management|strategic planning|marketing|demand generation|brand|content|SEO|paid media|analytics|product management|roadmap|agile|scrum|user research|engineering|software development|architecture|DevOps|cloud|sales|business development|revenue|account management|finance|FP&A|forecasting|budgeting|financial modeling|operations|process improvement|project management|PMO|SaaS|B2B|B2C|fintech|healthtech|edtech|ecommerce|enterprise|Fortune|startup|data-driven)/gi;
 
   const keywords = new Set();
-  skillPatterns.forEach(pattern => {
-    const matches = cleaned.match(pattern) || [];
-    matches.forEach(m => keywords.add(m.trim()));
-  });
+  const matches = cleaned.match(skillRegex) || [];
+  matches.forEach(m => keywords.add(m.toLowerCase().trim()));
 
   const keywordArray = Array.from(keywords).slice(0, 5);
   if (keywordArray.length < 2) {
