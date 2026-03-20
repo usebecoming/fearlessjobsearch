@@ -1723,7 +1723,7 @@
       <!-- Anchor Links -->
       <div class="form-group">
         <label class="form-label">Reference Job Links <span style="color:#777777;font-weight:300">(optional, up to 3)</span></label>
-        <p style="font-size:0.82rem;color:#777;margin-bottom:8px">Paste links to jobs that represent your ideal role. We'll read the descriptions and use them to better score your resume's fit against search results.</p>
+        <p style="font-size:0.82rem;color:#777;margin-bottom:8px">Paste links to jobs you like. We'll extract the titles and search for more opportunities like them.</p>
         <input type="url" class="form-input" id="anchor1" placeholder="https://linkedin.com/jobs/..." style="margin-bottom:8px">
         <input type="url" class="form-input" id="anchor2" placeholder="Second job link (optional)" style="margin-bottom:8px">
         <input type="url" class="form-input" id="anchor3" placeholder="Third job link (optional)">
@@ -2852,13 +2852,42 @@ Return a JSON object with a "results" array. Each result:
       {
         // Job Target mode: use JSearch API for real listings, then Claude for scoring
         try {
+          // Fetch anchor links first to extract additional search titles
+          let anchorTitles = [];
+          if (state.anchors.length > 0) {
+            try {
+              showProgress(container, 'Reading your reference job links...', 6);
+              const fetchRes = await fetch('/api/fetch-job', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ urls: state.anchors })
+              });
+              if (fetchRes.ok) {
+                const fetchData = await fetchRes.json();
+                (fetchData.results || []).forEach(function(r) {
+                  if (r.title) {
+                    // Extract job title from page title (usually "Job Title - Company | Site")
+                    var t = r.title.split(/\s*[-|]\s*/)[0].trim();
+                    if (t.length > 5 && t.length < 80) anchorTitles.push(t);
+                  }
+                });
+                console.log('Anchor titles extracted:', anchorTitles);
+              }
+            } catch (e) {
+              console.log('Anchor fetch skipped:', e.message);
+            }
+          }
+
           showProgress(container, 'Searching real job listings...', 10);
+
+          // Combine user titles + anchor-derived titles
+          const searchTitles = [...state.titles, ...anchorTitles];
 
           const searchRes = await fetch('/api/search-jobs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              titles: state.titles,
+              titles: searchTitles,
               locations: state.locations,
               workTypes,
               resumeKeywords: resumeSummary ? resumeSummary.substring(0, 200) : ''
@@ -2879,29 +2908,6 @@ Return a JSON object with a "results" array. Each result:
             return;
           }
 
-          // Fetch anchor link content if provided
-          let anchorContext = '';
-          if (state.anchors.length > 0) {
-            try {
-              showProgress(container, 'Analyzing your reference job links...', 8);
-              const fetchRes = await fetch('/api/fetch-job', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ urls: state.anchors })
-              });
-              if (fetchRes.ok) {
-                const fetchData = await fetchRes.json();
-                const fetched = (fetchData.results || []).filter(r => r.text && r.text.length > 50);
-                if (fetched.length > 0) {
-                  anchorContext = '\n\nThe user provided these job listings as examples of what they are looking for. Use them to understand the role level, scope, industry, and responsibilities they want:\n\n' +
-                    fetched.map(r => '--- Reference: ' + (r.title || r.url) + ' ---\n' + r.text.substring(0, 800)).join('\n\n');
-                }
-              }
-            } catch (e) {
-              console.log('Anchor fetch skipped:', e.message);
-            }
-          }
-
           // Score with Claude only if resume is provided
           let scores = [];
           if (resumeSummary) {
@@ -2911,7 +2917,6 @@ Return a JSON object with a "results" array. Each result:
 
 Candidate resume:
 ${resumeSummary}
-${anchorContext}
 ${getFavoriteContext()}
 
 Jobs to score:
