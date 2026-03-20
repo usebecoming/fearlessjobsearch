@@ -2948,12 +2948,34 @@ Return a JSON array of objects with these exact fields:
       validateSearch();
     }
 
-    async function deleteSearchProfile() {
-      const select = document.getElementById('profileSelect');
-      const id = select.value;
-      if (!id || !supabase) return;
-      await supabase.from('search_profiles').delete().eq('id', id);
-      await loadSearchProfiles();
+    function deleteSearchProfile() {
+      var select = document.getElementById('profileSelect');
+      var id = select.value;
+      if (!id) return;
+
+      var opt = select.selectedOptions[0];
+      var name = opt ? opt.textContent : '';
+      if (!confirm('Delete saved search "' + name + '"?')) return;
+
+      // Delete from localStorage
+      var profiles = [];
+      try { profiles = JSON.parse(localStorage.getItem('fjs_search_profiles') || '[]'); } catch(e) {}
+      profiles = profiles.filter(function(p) { return p.id !== id; });
+      localStorage.setItem('fjs_search_profiles', JSON.stringify(profiles));
+
+      // Also delete from Supabase in background
+      if (supabase) {
+        supabase.from('search_profiles').delete().eq('id', id).catch(function() {});
+      }
+
+      loadSearchProfiles();
+
+      // Notification
+      var note = document.createElement('div');
+      note.style.cssText = 'position:fixed;top:80px;right:24px;background:#C94444;color:#fff;padding:12px 20px;border-radius:8px;font-family:IBM Plex Mono,monospace;font-size:0.88rem;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
+      note.textContent = 'Deleted: ' + name;
+      document.body.appendChild(note);
+      setTimeout(function() { note.remove(); }, 2000);
     }
 
     // ── Pipeline Helpers ──
