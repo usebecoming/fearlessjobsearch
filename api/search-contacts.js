@@ -357,14 +357,14 @@ async function apolloSearch(company, derived, dept, apiKey) {
   try {
     // Search for people at the company with relevant titles
     const titles = [...derived.hiringManager, ...derived.skipLevel, 'Recruiter', 'Talent Acquisition'];
-    const response = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+    const response = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-        'X-Api-Key': apiKey
+        'Cache-Control': 'no-cache'
       },
       body: JSON.stringify({
+        api_key: apiKey,
         q_organization_name: company,
         person_titles: titles.slice(0, 5),
         page: 1,
