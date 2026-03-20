@@ -106,22 +106,55 @@ export default async function handler(req, res) {
         allContacts.push(...apolloContacts);
       }
 
+      // Fix 2: Founder search for small companies (if <2 contacts)
+      let dedupedSoFar = dedupeContacts(allContacts);
+      if (dedupedSoFar.length < 2) {
+        console.log('Few contacts, searching for founder/CEO...');
+        const founderQuery = `site:linkedin.com/in "${company}" (Founder OR "Co-Founder" OR CEO OR President)`;
+        const founderResults = await braveSearch(founderQuery, braveKey);
+        console.log(`Founder search: ${founderResults.length} results`);
+        allContacts.push(...founderResults.map(r => ({ ...r, searchRole: 'Skip-Level', isFounder: true })));
+      }
+
       const finalContacts = dedupeContacts(allContacts);
+
+      // Enrich contacts: flag URL slugs that contain function keywords
+      finalContacts.forEach(c => {
+        const slug = (c.linkedin_url || '').toLowerCase();
+        if (/-hr|-people|-talent|-recruiting|-culture|-learning/.test(slug)) {
+          c.slugHasFunction = true;
+        }
+      });
+
       console.log(`Final contacts for ${company}: ${finalContacts.length}`);
 
       // Look up LinkedIn company slug for fallback links
       const companySlug = await getLinkedInCompanySlug(company, braveKey);
       const geoUrn = getGeoUrn(job.location);
 
+      // Fix 3: Detect professional services / law firm
+      const isProfServices = /law|legal|llp|llc|consulting|advisors|partners|group|associates/i.test(company);
+      let extraSlTitles = [];
+      if (isProfServices && derived.func === 'People') {
+        extraSlTitles = ['Chief Administrative Officer', 'Chief Talent Officer', 'Managing Partner', 'Administrative Partner', 'Director of Administration'];
+        console.log('Professional services detected, added alternative skip-level titles');
+      }
+
       results.push({
         job_id: job.job_id,
         company,
         job_title: jobTitle,
         location: job.location || '',
-        derived: { func: derived.func, hmTitles: derived.hmTitles, slTitles: derived.slTitles, recTerms: derived.recTerms },
-        raw_contacts: finalContacts.slice(0, 15),
+        derived: {
+          func: derived.func,
+          hmTitles: derived.hmTitles,
+          slTitles: [...derived.slTitles, ...extraSlTitles],
+          recTerms: derived.recTerms
+        },
+        raw_contacts: finalContacts.slice(0, 20),
         linkedin_slug: companySlug,
-        geo_urn: geoUrn
+        geo_urn: geoUrn,
+        is_professional_services: isProfServices
       });
     }
 

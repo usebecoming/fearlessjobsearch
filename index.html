@@ -2800,7 +2800,7 @@ Apply the SAME strict rules as job-targeted contact verification:
 - Never fabricate URLs. Keep exactly as provided.
 - Quality over quantity. 1-2 verified > 4-5 questionable.
 - Notes should focus on relationship building, not job applications.
-- SMALL COMPANY EXCEPTION: If strict rules reject all contacts, apply relaxed verification. Accept anyone where the company name appears in their snippet alongside a title. Accept founders/CEOs automatically. Set confidence to "medium".
+- SMALL COMPANY EXCEPTION: If strict rules reject all or most contacts, apply relaxed rules. Accept contacts where company name appears anywhere in snippet. Accept founders/CEOs/Presidents automatically. Accept slugs containing "-hr", "-people", "-talent". Aim for 30% acceptance rate minimum. Set confidence to "medium".
 
 Search results:
 ${JSON.stringify(braveResults.results, null, 2)}
@@ -3581,13 +3581,28 @@ High = snippet confirms employment + title matches function + company matches ex
 Medium = employment confirmed but title is adjacent, or company match needs interpretation.
 Never include = employment unconfirmed, or title function mismatch, or company mismatch, or vague title.
 
-SMALL COMPANY EXCEPTION:
-If strict verification rejects ALL contacts for a job, apply relaxed rules:
-- Accept any contact where the company name appears ANYWHERE in their snippet, even without explicit "currently works at" language
-- Accept founders, CEOs, and co-founders automatically. Their LinkedIn often doesn't mention the company explicitly but they are valid contacts.
-- For smaller companies, if a contact's snippet mentions the company name alongside a leadership title, accept at medium confidence
-- Set confidence to "medium" and note "small company, relaxed verification" in the reason field
-- This prevents returning zero contacts for small/startup companies
+SMALL COMPANY RELAXED VERIFICATION:
+Apply when strict verification returns 0-1 contacts for a job. Accept a contact if ANY of these are true:
+1. Their LinkedIn URL slug contains a function keyword: "-hr", "-people", "-talent", "-recruiting", "-culture", "-learning"
+2. Their snippet contains the company name AND any leadership or people keyword
+3. They are a Founder, CEO, Co-Founder, or President. Accept automatically, no snippet verification needed.
+4. Their name appears in the company's search results at all. Presence in results is itself a signal.
+5. The contact data includes "isFounder: true" or "slugHasFunction: true" flags. These are pre-verified signals.
+For contacts accepted under relaxed rules, set confidence to "medium" and note the reason.
+
+PROFESSIONAL SERVICES / LAW FIRM RULE:
+If the data includes "is_professional_services: true", accept these additional skip-level titles: Chief Administrative Officer, Chief Talent Officer, Managing Partner, Administrative Partner, Director of Administration.
+
+REJECTION RATE TARGET:
+Aim to verify and return at least 30% of contacts passed to you (roughly 1 in 3). If you are rejecting more than 70% for a single job, revisit your rejections.
+Prefer medium confidence over rejection when:
+- The company name appears in the snippet but employment tense is unclear
+- The title is adjacent to the expected function (e.g. "HR Operations" for a People role)
+- The URL slug contains function keywords
+Only reject when:
+- The function is clearly wrong (e.g. sales director for HR role)
+- The company name does not appear anywhere in the snippet
+- The title is completely vague with no function signal
 
 FINAL OUTPUT RULES:
 - Maximum 3 contacts per job (one per role type)
