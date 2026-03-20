@@ -2822,13 +2822,23 @@ Return a JSON object with a "results" array. Each result:
 }`;
           } else {
             stopProgress();
+            // Use slug/geoUrn from braveResults if available
+            var fallbackResults = braveResults && braveResults.results ? braveResults.results : state.companies.map(function(co) { return { company: co, linkedin_slug: '', geo_urn: null }; });
             contactContainer.innerHTML = `<div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:28px;text-align:center">
               <h3 style="font-size:1.1rem;margin-bottom:10px">No contacts found automatically</h3>
-              <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:16px">Search LinkedIn directly:</p>
+              <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:16px">Search LinkedIn directly with filters applied:</p>
               <div style="display:flex;flex-direction:column;gap:12px;max-width:500px;margin:0 auto">
-                ${state.companies.map(co => {
-                  const enc = encodeURIComponent(co);
-                  return '<div style="background:#F9F6F1;border-radius:10px;padding:14px 18px"><div style="font-weight:600;font-size:0.92rem;margin-bottom:8px">' + esc(co) + '</div><div style="display:flex;flex-wrap:wrap;gap:6px"><a href="https://www.linkedin.com/search/results/people/?keywords=' + enc + '+VP+Director+Head" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Leadership &#8599;</a><a href="https://www.linkedin.com/search/results/people/?keywords=' + enc + '+recruiter+talent" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters &#8599;</a></div></div>';
+                ${fallbackResults.map(function(r) {
+                  var slug = r.linkedin_slug || '';
+                  var geoUrn = r.geo_urn || '';
+                  var companyParam = slug ? '&currentCompany=%5B%22' + encodeURIComponent(slug) + '%22%5D' : '';
+                  var geoParam = geoUrn ? '&geoUrn=%5B%22' + geoUrn + '%22%5D' : '';
+                  return '<div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;text-align:left"><div style="font-weight:600;font-size:0.92rem;margin-bottom:8px">' + esc(r.company) + '</div><div style="display:flex;flex-wrap:wrap;gap:6px">' +
+                    '<a href="https://www.linkedin.com/search/results/people/?keywords=VP+Director+Head' + companyParam + geoParam + '&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Hiring Managers &#8599;</a>' +
+                    '<a href="https://www.linkedin.com/search/results/people/?keywords=recruiter+talent+acquisition' + companyParam + geoParam + '&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters &#8599;</a>' +
+                    '<a href="https://www.linkedin.com/search/results/people/?keywords=CEO+COO+President+Chief' + companyParam + geoParam + '&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives &#8599;</a>' +
+                    (slug ? '<a href="https://www.linkedin.com/company/' + esc(slug) + '/people/" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Full Team &#8599;</a>' : '') +
+                  '</div></div>';
                 }).join('')}
               </div>
               <div style="margin-top:20px"><button class="btn-secondary" onclick="goToStep(1)">Back to search</button></div>
@@ -3596,22 +3606,28 @@ Return a JSON object with a "results" array. Each result:
   ]
 }`;
         } else {
-          // Brave search returned nothing - tell user to search manually
+          // Brave search returned nothing - build proper LinkedIn fallback links
           stopProgress();
           container.innerHTML = `<div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:28px;text-align:center">
             <h3 style="font-size:1.1rem;margin-bottom:10px">No contacts found automatically</h3>
-            <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:16px;max-width:500px;margin-left:auto;margin-right:auto">We couldn't automatically verify contacts for these roles. This can happen with smaller companies or niche titles. Search LinkedIn directly:</p>
+            <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:16px;max-width:500px;margin-left:auto;margin-right:auto">We couldn't automatically verify contacts for these roles. Search LinkedIn directly with filters applied:</p>
             <div style="display:flex;flex-direction:column;gap:12px;max-width:500px;margin:0 auto">
-              ${selectedJobData.map(j => {
-                const company = encodeURIComponent(j.company);
-                return `<div style="background:#F9F6F1;border-radius:10px;padding:14px 18px">
-                  <div style="font-weight:600;font-size:0.92rem;margin-bottom:8px">${esc(j.title)} at ${esc(j.company)}</div>
-                  <div style="display:flex;flex-wrap:wrap;gap:6px">
-                    <a href="https://www.linkedin.com/search/results/people/?keywords=${company}+VP+Director+Head&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Hiring Managers &#8599;</a>
-                    <a href="https://www.linkedin.com/search/results/people/?keywords=${company}+recruiter+talent&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters &#8599;</a>
-                    <a href="https://www.linkedin.com/search/results/people/?keywords=${company}+CEO+COO+President&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives &#8599;</a>
-                  </div>
-                </div>`;
+              ${(braveResults.results || selectedJobData.map(j => ({company: j.company, job_title: j.title, linkedin_slug: '', geo_urn: null, derived: {}}))).map(r => {
+                const slug = r.linkedin_slug || '';
+                const geoUrn = r.geo_urn || '';
+                const companyParam = slug ? '&currentCompany=%5B%22' + encodeURIComponent(slug) + '%22%5D' : '';
+                const geoParam = geoUrn ? '&geoUrn=%5B%22' + geoUrn + '%22%5D' : '';
+                const dt = r.derived || {};
+                const hmKeywords = encodeURIComponent((dt.hmTitles || ['VP', 'Director', 'Head']).slice(0, 3).join(' '));
+                const slKeywords = encodeURIComponent((dt.slTitles || ['CEO', 'COO', 'President']).slice(0, 3).join(' '));
+                return '<div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;text-align:left">' +
+                  '<div style="font-weight:600;font-size:0.92rem;margin-bottom:8px">' + esc(r.job_title || r.title) + ' at ' + esc(r.company) + '</div>' +
+                  '<div style="display:flex;flex-wrap:wrap;gap:6px">' +
+                    '<a href="https://www.linkedin.com/search/results/people/?keywords=' + hmKeywords + companyParam + geoParam + '&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Hiring Managers &#8599;</a>' +
+                    '<a href="https://www.linkedin.com/search/results/people/?keywords=recruiter%20talent%20acquisition' + companyParam + geoParam + '&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters &#8599;</a>' +
+                    '<a href="https://www.linkedin.com/search/results/people/?keywords=' + slKeywords + companyParam + geoParam + '&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives &#8599;</a>' +
+                    (slug ? '<a href="https://www.linkedin.com/company/' + esc(slug) + '/people/" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Full Team &#8599;</a>' : '') +
+                  '</div></div>';
               }).join('')}
             </div>
             <div style="margin-top:20px"><button class="btn-secondary" onclick="goToStep(2)">← Back to opportunities</button></div>
@@ -3621,6 +3637,16 @@ Return a JSON object with a "results" array. Each result:
 
         const data = await callClaude(systemPrompt, userPrompt);
         stopProgress();
+        // Merge linkedin_slug and geo_urn from Brave into Claude's results
+        if (data.results && braveResults && braveResults.results) {
+          data.results.forEach(function(r) {
+            var braveMatch = braveResults.results.find(function(br) { return br.company === r.company || br.job_id === r.job_id; });
+            if (braveMatch) {
+              r.linkedin_slug = braveMatch.linkedin_slug;
+              r.geo_urn = braveMatch.geo_urn;
+            }
+          });
+        }
         state.contacts = data;
         renderContacts(data);
         logUsage('contact_search', { jobs: selectedJobData.length, contacts: (data.results || []).reduce(function(s,r){ return s + (r.contacts||[]).length; }, 0) });
@@ -3661,12 +3687,17 @@ Return a JSON object with a "results" array. Each result:
 
         // Show message if no contacts found for this job
         if (!group.contacts || group.contacts.length === 0) {
-          const co = encodeURIComponent(group.company || '');
+          const slug = group.linkedin_slug || '';
+          const geoUrn = group.geo_urn || '';
+          const companyParam = slug ? '&currentCompany=%5B%22' + encodeURIComponent(slug) + '%22%5D' : '';
+          const geoParam = geoUrn ? '&geoUrn=%5B%22' + geoUrn + '%22%5D' : '';
           html += `<div style="background:#F9F6F1;border:1px solid #E5E4E2;border-radius:10px;padding:16px 20px;margin-bottom:16px">
-            <p style="font-size:0.88rem;color:#555;font-weight:500;margin-bottom:10px">${!group.company || group.company === 'Unknown' ? 'No company name listed for this role. We need a company name to find contacts.' : 'No verified contacts found at ' + esc(group.company) + '. Try searching LinkedIn directly:'}</p>
+            <p style="font-size:0.88rem;color:#555;font-weight:500;margin-bottom:10px">${!group.company || group.company === 'Unknown' ? 'No company name listed for this role. We need a company name to find contacts.' : 'No verified contacts found at ' + esc(group.company) + '. Search LinkedIn directly with filters applied:'}</p>
             ${group.company && group.company !== 'Unknown' ? `<div style="display:flex;gap:8px;flex-wrap:wrap">
-              <a href="https://www.linkedin.com/search/results/people/?keywords=${co}+VP+Director+Head&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Search Leadership &#8599;</a>
-              <a href="https://www.linkedin.com/search/results/people/?keywords=${co}+recruiter+talent&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Search Recruiters &#8599;</a>
+              <a href="https://www.linkedin.com/search/results/people/?keywords=VP+Director+Head${companyParam}${geoParam}&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Hiring Managers &#8599;</a>
+              <a href="https://www.linkedin.com/search/results/people/?keywords=recruiter+talent+acquisition${companyParam}${geoParam}&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters &#8599;</a>
+              <a href="https://www.linkedin.com/search/results/people/?keywords=CEO+COO+President+Chief${companyParam}${geoParam}&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives &#8599;</a>
+              ${slug ? `<a href="https://www.linkedin.com/company/${esc(slug)}/people/" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Full Team &#8599;</a>` : ''}
             </div>` : ''}
           </div>`;
         }

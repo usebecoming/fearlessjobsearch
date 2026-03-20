@@ -109,13 +109,19 @@ export default async function handler(req, res) {
       const finalContacts = dedupeContacts(allContacts);
       console.log(`Final contacts for ${company}: ${finalContacts.length}`);
 
+      // Look up LinkedIn company slug for fallback links
+      const companySlug = await getLinkedInCompanySlug(company, braveKey);
+      const geoUrn = getGeoUrn(job.location);
+
       results.push({
         job_id: job.job_id,
         company,
         job_title: jobTitle,
         location: job.location || '',
-        derived: { func: derived.func, hmTitles: derived.hmTitles, slTitles: derived.slTitles },
-        raw_contacts: finalContacts.slice(0, 15)
+        derived: { func: derived.func, hmTitles: derived.hmTitles, slTitles: derived.slTitles, recTerms: derived.recTerms },
+        raw_contacts: finalContacts.slice(0, 15),
+        linkedin_slug: companySlug,
+        geo_urn: geoUrn
       });
     }
 
@@ -415,4 +421,58 @@ function dedupeContacts(contacts) {
     seen.add(key);
     return true;
   });
+}
+
+// ── LinkedIn company slug lookup ──
+async function getLinkedInCompanySlug(companyName, braveKey) {
+  try {
+    const query = `site:linkedin.com/company "${companyName}"`;
+    console.log('Company slug lookup:', query);
+    const params = new URLSearchParams({ q: query, count: '3', text_decorations: 'false', search_lang: 'en' });
+    const response = await fetch(
+      `https://api.search.brave.com/res/v1/web/search?${params.toString()}`,
+      { headers: { 'Accept': 'application/json', 'X-Subscription-Token': braveKey } }
+    );
+    if (!response.ok) return slugifyCompany(companyName);
+    const data = await response.json();
+    const results = (data.web && data.web.results) || [];
+    for (const r of results) {
+      const match = (r.url || '').match(/linkedin\.com\/company\/([^\/\?]+)/);
+      if (match) {
+        console.log('Found LinkedIn slug:', match[1]);
+        return match[1];
+      }
+    }
+  } catch (e) {
+    console.error('Slug lookup failed:', e.message);
+  }
+  return slugifyCompany(companyName);
+}
+
+function slugifyCompany(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+// ── LinkedIn geo URN map ──
+const LINKEDIN_GEO_URNS = {
+  'austin': '103743442', 'new york': '105080838', 'san francisco': '102277331',
+  'los angeles': '102448103', 'chicago': '103112676', 'seattle': '102885535',
+  'boston': '102380872', 'denver': '105763813', 'atlanta': '103996544',
+  'dallas': '103544739', 'houston': '106929867', 'miami': '102918819',
+  'washington': '103644278', 'washington dc': '103644278', 'portland': '101978430',
+  'san diego': '106091299', 'phoenix': '102712797', 'minneapolis': '105044203',
+  'nashville': '102033146', 'charlotte': '103068493', 'philadelphia': '102437668',
+  'salt lake city': '106051040', 'detroit': '102380645', 'san jose': '106204433',
+  'columbus': '101716677', 'indianapolis': '103017440', 'raleigh': '102459580',
+  'tampa': '101654608', 'orlando': '103363856', 'pittsburgh': '101413020',
+  'san antonio': '102463825', 'jacksonville': '102676224', 'sacramento': '100906991',
+  'las vegas': '102277788', 'kansas city': '103440085', 'richmond': '104378955',
+  'st louis': '103752558', 'milwaukee': '101871398', 'baltimore': '103338958',
+  'cleveland': '102009786', 'boise': '104076313',
+};
+
+function getGeoUrn(location) {
+  if (!location) return null;
+  const loc = location.toLowerCase().replace(/,.*$/, '').trim();
+  return LINKEDIN_GEO_URNS[loc] || null;
 }
