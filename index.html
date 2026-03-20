@@ -2961,7 +2961,7 @@ Return a JSON array of objects with these exact fields:
       var profiles = [];
       try { profiles = JSON.parse(localStorage.getItem('fjs_search_profiles') || '[]'); } catch(e) {}
       var before = profiles.length;
-      profiles = profiles.filter(function(p) { return String(p.id) !== String(id) && p.name !== name; });
+      profiles = profiles.filter(function(p) { return p.name !== name; });
       localStorage.setItem('fjs_search_profiles', JSON.stringify(profiles));
 
       // Also delete from Supabase in background
