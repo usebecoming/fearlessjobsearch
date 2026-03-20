@@ -1118,7 +1118,7 @@
 
       goToStep(2);
       const container = document.getElementById('jobsContainer');
-      container.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Searching for matching roles...</span></div>';
+      showProgress(container, 'Searching for matching roles...', 20);
       document.getElementById('selectionBar').style.display = 'none';
 
       const resumeSummary = state.resumeText.substring(0, 1200);
@@ -1149,10 +1149,12 @@ Return a JSON array of objects with these exact fields:
 
       try {
         const jobs = await callClaude(systemPrompt, userPrompt);
+        stopProgress();
         state.jobs = jobs;
         state.selectedJobs = [];
         renderJobs();
       } catch (err) {
+        stopProgress();
         container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runSearch()">Try again</button></div>`;
       }
     }
@@ -1483,7 +1485,8 @@ Return a JSON array of objects with these exact fields:
     async function runContacts() {
       goToStep(3);
       const container = document.getElementById('contactsContainer');
-      container.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Surfacing decision-makers...</span></div>';
+      const contactEstimate = Math.max(10, selectedJobData.length * 4);
+      showProgress(container, 'Surfacing decision-makers...', contactEstimate);
 
       const selectedJobData = state.jobs
         .filter(j => state.selectedJobs.includes(j.id))
@@ -1514,6 +1517,7 @@ Return a JSON object with a "results" array. Each result:
 
       try {
         const data = await callClaude(systemPrompt, userPrompt);
+        stopProgress();
         state.contacts = data;
         // Save to pipeline
         for (const sj of selectedJobData) {
@@ -1524,6 +1528,7 @@ Return a JSON object with a "results" array. Each result:
         }
         renderContacts(data);
       } catch (err) {
+        stopProgress();
         container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runContacts()">Try again</button></div>`;
       }
     }
@@ -1568,7 +1573,9 @@ Return a JSON object with a "results" array. Each result:
     async function runOutreach() {
       goToStep(4);
       const container = document.getElementById('outreachContainer');
-      container.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Generating personalized outreach sequences...</span></div>';
+      const totalContacts = targets.reduce((sum, t) => sum + t.contacts.length, 0);
+      const outreachEstimate = Math.max(15, totalContacts * 3);
+      showProgress(container, 'Generating personalized outreach sequences...', outreachEstimate);
 
       const resumeSummary = state.resumeText.substring(0, 1500);
       const targets = (state.contacts.results || []).map(g => ({
@@ -1614,6 +1621,7 @@ Return a JSON object with a "sequences" array. Each sequence:
 
       try {
         const data = await callClaude(systemPrompt, userPrompt);
+        stopProgress();
         state.sequences = data;
         // Update pipeline status
         for (const p of state.pipeline) {
@@ -1626,6 +1634,7 @@ Return a JSON object with a "sequences" array. Each sequence:
         }
         renderOutreach(data);
       } catch (err) {
+        stopProgress();
         container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runOutreach()">Try again</button></div>`;
       }
     }
@@ -1845,6 +1854,37 @@ Return a JSON object with a "sequences" array. Each sequence:
       a.download = 'fearless-contacts-' + new Date().toISOString().split('T')[0] + '.csv';
       a.click();
       URL.revokeObjectURL(url);
+    }
+
+    // ── Progress Timer ──
+    let progressInterval = null;
+
+    function showProgress(container, message, estimatedSec) {
+      let elapsed = 0;
+      container.innerHTML = `
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <span id="progressMsg">${message}</span>
+          <div style="margin-top:8px;width:240px;height:4px;background:#E5E4E2;border-radius:2px;overflow:hidden">
+            <div id="progressBar" style="width:0%;height:100%;background:#B8A88A;border-radius:2px;transition:width 1s linear"></div>
+          </div>
+          <span id="progressTime" style="font-size:0.75rem;color:#858585">Estimated ${estimatedSec}s remaining</span>
+        </div>`;
+
+      clearInterval(progressInterval);
+      progressInterval = setInterval(() => {
+        elapsed++;
+        const pct = Math.min((elapsed / estimatedSec) * 100, 95);
+        const remaining = Math.max(estimatedSec - elapsed, 1);
+        const bar = document.getElementById('progressBar');
+        const time = document.getElementById('progressTime');
+        if (bar) bar.style.width = pct + '%';
+        if (time) time.textContent = remaining <= 1 ? 'Almost done...' : `Estimated ${remaining}s remaining`;
+      }, 1000);
+    }
+
+    function stopProgress() {
+      clearInterval(progressInterval);
     }
 
     // ── Utils ──
