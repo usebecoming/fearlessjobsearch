@@ -66,23 +66,35 @@
     /* ── Nav ── */
     nav {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 18px 32px;
-      background: rgba(255,248,242,0.92);
-      backdrop-filter: blur(12px);
+      padding: 14px 28px;
+      background: #FFFFFF;
       border-bottom: 1px solid #E5E4E2;
       position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
     .nav-brand {
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; gap: 10px;
       font-family: 'Playfair Display', serif; font-weight: 800;
-      font-size: 1.15rem; color: #111111;
+      font-size: 1rem; color: #111111;
     }
     .nav-brand img {
-      width: 36px; height: 36px;
+      width: 32px; height: 32px;
       filter: drop-shadow(0 0 6px rgba(184,168,138,0.3));
     }
-    .nav-brand span { letter-spacing: 0.5px; }
-    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-brand span { letter-spacing: 0.3px; }
+    .nav-right { display: flex; align-items: center; gap: 6px; }
+    .nav-link {
+      background: none; border: none; color: #6E6E6E;
+      padding: 8px 12px; font-size: 0.8rem;
+      font-family: 'IBM Plex Mono', monospace; font-weight: 500;
+      transition: all 0.2s; cursor: pointer; border-radius: 6px;
+    }
+    .nav-link:hover { color: #111; background: rgba(0,0,0,0.03); }
+    .nav-link.accent { color: #B8A88A; }
+    .nav-link.accent:hover { color: #9A8B6E; background: rgba(184,168,138,0.06); }
+    .nav-divider {
+      width: 1px; height: 20px; background: #E5E4E2; margin: 0 4px;
+    }
     .nav-btn {
       background: transparent; color: #6E6E6E; border: 1px solid #E5E4E2;
       padding: 8px 18px; border-radius: 8px; font-size: 0.85rem;
@@ -1314,10 +1326,11 @@
       <span>FEARLESS JOB SEARCH</span>
     </div>
     <div class="nav-right">
-      <button class="nav-btn" onclick="goToStep(1)">Home</button>
-      <button class="nav-btn" onclick="openPipeline()">Pipeline</button>
-      <button class="nav-btn" style="border-color:#B8A88A;color:#B8A88A" onclick="openBookingModal()">Work With Ben</button>
-      <button class="nav-btn" id="navUpgradeBtn" style="border-color:#B8A88A;color:#B8A88A" onclick="openUpgradeModal()">Upgrade</button>
+      <button class="nav-link" onclick="goToStep(1)">Home</button>
+      <button class="nav-link" onclick="openPipeline()">Pipeline</button>
+      <button class="nav-link accent" onclick="openBookingModal()">Work With Ben</button>
+      <div class="nav-divider"></div>
+      <button class="nav-link accent" id="navUpgradeBtn" onclick="openUpgradeModal()">Upgrade</button>
       <span class="user-email" id="navUserEmail"></span>
       <button class="nav-signout" onclick="doSignOut()">Sign Out</button>
     </div>
