@@ -635,8 +635,10 @@
 
       <!-- Location -->
       <div class="form-group">
-        <label class="form-label">Location</label>
-        <input type="text" class="form-input" id="locationInput" placeholder="e.g. New York, NY · Chicago, IL">
+        <label class="form-label">Locations <span style="color:#858585;font-weight:300">(up to 5)</span></label>
+        <div class="tag-input-wrap" id="locationsWrap">
+          <input type="text" class="tag-field" id="locationField" placeholder="e.g. New York, NY, press Enter to add">
+        </div>
       </div>
 
       <!-- Work Type -->
@@ -886,7 +888,7 @@
     // ── State ──
     const state = {
       titles: [],
-      location: '',
+      locations: [],
       anchors: [],
       resumeText: '',
       jobs: [],
@@ -929,6 +931,42 @@
       state.titles.splice(i, 1);
       renderTags();
       validateSearch();
+    }
+
+    // ── Location tag input ──
+    const locationField = document.getElementById('locationField');
+    const locationsWrap = document.getElementById('locationsWrap');
+
+    locationField.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = locationField.value.trim();
+        if (val && !state.locations.includes(val) && state.locations.length < 5) {
+          state.locations.push(val);
+          renderLocationTags();
+          locationField.value = '';
+        }
+      }
+    });
+
+    function renderLocationTags() {
+      locationsWrap.querySelectorAll('.tag').forEach(t => t.remove());
+      state.locations.forEach((loc, i) => {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.innerHTML = `${esc(loc)}<button class="tag-remove" onclick="removeLocation(${i})">×</button>`;
+        locationsWrap.insertBefore(tag, locationField);
+      });
+      if (state.locations.length >= 5) {
+        locationField.style.display = 'none';
+      } else {
+        locationField.style.display = '';
+      }
+    }
+
+    function removeLocation(i) {
+      state.locations.splice(i, 1);
+      renderLocationTags();
     }
 
     // ── Resume file upload ──
@@ -1005,7 +1043,6 @@
 
     // ── Step 2: Search ──
     async function runSearch() {
-      state.location = document.getElementById('locationInput').value.trim();
       state.resumeText = document.getElementById('resumeText').value.trim();
       state.anchors = [
         document.getElementById('anchor1').value.trim(),
@@ -1033,7 +1070,7 @@
       const userPrompt = `Generate 8-10 realistic active job listings posted within the last 5 days. Direct employers only. No staffing agencies or third-party recruiters.
 
 Target titles: ${JSON.stringify(state.titles)}
-Location: ${state.location || 'Any'}
+Location: ${state.locations.length ? state.locations.join(', ') : 'Any'}
 Work type: ${workTypes.length ? workTypes.join(', ') : 'Any'}
 ${salaryStr ? 'Salary range: ' + salaryStr : ''}
 ${state.anchors.length ? 'Anchor job links for reference: ' + state.anchors.join(', ') : ''}
