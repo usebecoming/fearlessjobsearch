@@ -1978,24 +1978,22 @@
     });
 
     var isSigningOut = false;
-    async function doSignOut() {
+    function doSignOut() {
       isSigningOut = true;
-      // Sign out of Supabase first
-      try {
-        if (window._supabase) await window._supabase.auth.signOut();
-      } catch(e) {}
+      // Hide app immediately (don't wait for Supabase)
+      document.getElementById('landingPage').classList.remove('hidden');
+      document.getElementById('mainNav').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'none';
+      document.getElementById('appContent').style.display = 'none';
+      window.scrollTo({ top: 0 });
       // Clear state
       if (typeof state !== 'undefined') {
         state.userEmail = '';
         state.userId = '';
         state.hasPaid = false;
       }
-      // Hide app
-      document.getElementById('landingPage').classList.remove('hidden');
-      document.getElementById('mainNav').style.display = 'none';
-      document.getElementById('mainApp').style.display = 'none';
-      document.getElementById('appContent').style.display = 'none';
-      window.scrollTo({ top: 0 });
+      // Sign out of Supabase in background (don't block)
+      try { if (window._supabase) window._supabase.auth.signOut().catch(function(){}); } catch(e) {}
       setTimeout(function() { isSigningOut = false; }, 1000);
     }
 
