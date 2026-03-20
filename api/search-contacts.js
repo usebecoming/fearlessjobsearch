@@ -138,36 +138,85 @@ export default async function handler(req, res) {
 function deriveAll(jobTitle) {
   const func = deriveFunction(jobTitle);
   const level = deriveLevel(jobTitle);
-  const hmTitles = getHiringManagerTitles(func, level);
-  const slTitles = getSkipLevelTitles(func, level);
-  const recTerms = getRecruiterTerms(func);
+  let hmTitles, slTitles, recTerms;
+
+  // Special handling for People function with level-aware titles
+  if (func === 'People') {
+    const t = jobTitle.toLowerCase();
+    if (/director/i.test(t)) {
+      hmTitles = ['CHRO', 'CPO', 'Chief People Officer', 'Chief HR Officer', 'VP of People', 'VP of HR', 'VP People', 'Head of People', 'Head of HR'];
+      slTitles = ['CEO', 'President', 'COO'];
+    } else if (/vp|vice president/i.test(t)) {
+      hmTitles = ['CHRO', 'CPO', 'Chief People Officer', 'Chief HR Officer'];
+      slTitles = ['CEO', 'President', 'COO'];
+    } else if (/manager|lead|specialist|coordinator|facilitator|partner/i.test(t)) {
+      hmTitles = ['Director of HR', 'Director of People', 'VP of HR', 'VP of People', 'Head of HR', 'Head of People', 'Director of Talent'];
+      slTitles = ['CHRO', 'CPO', 'VP of People', 'VP of HR'];
+    } else {
+      hmTitles = ['VP of People', 'VP of HR', 'CHRO', 'CPO', 'Head of People'];
+      slTitles = ['CEO', 'COO', 'President'];
+    }
+    recTerms = ['HR recruiter', 'people recruiter', 'talent acquisition', 'recruiting partner', 'talent partner', 'HR business partner'];
+  } else {
+    hmTitles = getHiringManagerTitles(func, level);
+    slTitles = getSkipLevelTitles(func, level);
+    recTerms = getRecruiterTerms(func);
+  }
+
+  // Dedupe: remove any title that appears in both HM and SL (keep in HM only)
+  const hmSet = new Set(hmTitles.map(t => t.toLowerCase()));
+  slTitles = slTitles.filter(t => !hmSet.has(t.toLowerCase()));
+
+  console.log(`✅ Function detected: ${func} for "${jobTitle}"`);
   return { func, level, hmTitles, slTitles, recTerms };
 }
 
 function deriveFunction(jobTitle) {
-  const t = jobTitle.toLowerCase();
-  const map = [
-    [['marketing', 'brand', 'growth', 'demand gen', 'content marketing'], 'Marketing'],
-    [['product', 'product management'], 'Product'],
-    [['engineering', 'software', 'development', 'technical', 'technology', 'platform'], 'Engineering'],
-    [['sales', 'business development', 'account executive', 'account management'], 'Sales'],
-    [['finance', 'accounting', 'controller', 'treasury', 'fp&a'], 'Finance'],
-    [['operations', 'supply chain', 'logistics', 'procurement'], 'Operations'],
-    [['people', 'hr', 'human resources', 'talent', 'learning', 'organizational development', 'leadership development', 'talent development', 'training', 'talent acquisition', 'recruiting'], 'People'],
-    [['data', 'analytics', 'insights', 'intelligence', 'machine learning', 'ai'], 'Data'],
-    [['design', 'creative', 'ux', 'ui', 'user experience'], 'Design'],
-    [['legal', 'compliance', 'regulatory', 'general counsel'], 'Legal'],
-    [['strategy', 'planning', 'transformation', 'corporate development'], 'Strategy'],
-    [['revenue', 'commercial'], 'Revenue'],
-    [['customer', 'client', 'success', 'support', 'customer experience'], 'Customer Success'],
-    [['communications', 'pr', 'public relations', 'editorial', 'corporate communications'], 'Communications'],
-    [['partnerships', 'alliances', 'channels', 'business partnerships'], 'Partnerships'],
-    [['security', 'information security', 'infosec', 'cybersecurity'], 'Security'],
-  ];
-  for (const [keywords, func] of map) {
-    if (keywords.some(k => t.includes(k))) return func;
+  const text = jobTitle.toLowerCase();
+
+  // People/HR must be checked FIRST (before Engineering catches "development")
+  if (/hr|human resources|people ops|people operations|talent development|talent management|learning|l&d|organizational development|\bod\b|training|culture|workforce|hris|compensation|benefits|recruiting|recruiter|talent acquisition|performance|engagement/i.test(text)) {
+    return 'People';
   }
-  return 'Operations';
+  if (/engineering|software|developer|devops|infrastructure|platform|backend|frontend|fullstack|data engineer|ml engineer|site reliability/i.test(text)) {
+    return 'Engineering';
+  }
+  if (/product management|product manager|product strategy|product lead|product director|product vp/i.test(text)) {
+    return 'Product';
+  }
+  if (/marketing|brand|demand gen|growth|content|seo|campaigns|communications|pr |public relations/i.test(text)) {
+    return 'Marketing';
+  }
+  if (/sales|revenue|account executive|business development|bd |partnerships|channel/i.test(text)) {
+    return 'Sales';
+  }
+  if (/finance|accounting|fp&a|financial planning|controller|treasury|audit/i.test(text)) {
+    return 'Finance';
+  }
+  if (/design|ux|user experience|ui |creative|visual/i.test(text)) {
+    return 'Design';
+  }
+  if (/legal|compliance|counsel|risk|regulatory/i.test(text)) {
+    return 'Legal';
+  }
+  if (/operations|supply chain|logistics|facilities|biz ops/i.test(text)) {
+    return 'Operations';
+  }
+  if (/data science|analytics|business intelligence|bi |insights|data analyst/i.test(text)) {
+    return 'Data';
+  }
+  if (/security|infosec|cybersecurity|information security/i.test(text)) {
+    return 'Security';
+  }
+  if (/customer|client|success|support|customer experience/i.test(text)) {
+    return 'Customer Success';
+  }
+  if (/strategy|planning|transformation|corporate development/i.test(text)) {
+    return 'Strategy';
+  }
+
+  console.warn(`⚠️ Could not detect function for: "${jobTitle}" — defaulting to General`);
+  return 'General';
 }
 
 function deriveLevel(jobTitle) {
@@ -199,6 +248,9 @@ function getHiringManagerTitles(func, level) {
     'ceo': ['Chairman', 'Board Member'],
   };
 
+  if (func === 'General') {
+    return ['CEO', 'COO', 'President', 'Managing Director'];
+  }
   return levelMap[level] || [`VP of ${func}`, `Director ${func}`, `Head of ${func}`];
 }
 
@@ -217,6 +269,9 @@ function getSkipLevelTitles(func, level) {
     'ceo': ['Chairman', 'Board'],
   };
 
+  if (func === 'General') {
+    return ['CEO', 'President', 'Chairman', 'Board Member'];
+  }
   return levelMap[level] || ['CEO', 'President', 'COO'];
 }
 

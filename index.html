@@ -2800,6 +2800,7 @@ Apply the SAME strict rules as job-targeted contact verification:
 - Never fabricate URLs. Keep exactly as provided.
 - Quality over quantity. 1-2 verified > 4-5 questionable.
 - Notes should focus on relationship building, not job applications.
+- SMALL COMPANY EXCEPTION: If strict rules reject all contacts, apply relaxed verification. Accept anyone where the company name appears in their snippet alongside a title. Accept founders/CEOs automatically. Set confidence to "medium".
 
 Search results:
 ${JSON.stringify(braveResults.results, null, 2)}
@@ -3579,6 +3580,14 @@ CONFIDENCE SCORING:
 High = snippet confirms employment + title matches function + company matches exactly.
 Medium = employment confirmed but title is adjacent, or company match needs interpretation.
 Never include = employment unconfirmed, or title function mismatch, or company mismatch, or vague title.
+
+SMALL COMPANY EXCEPTION:
+If strict verification rejects ALL contacts for a job, apply relaxed rules:
+- Accept any contact where the company name appears ANYWHERE in their snippet, even without explicit "currently works at" language
+- Accept founders, CEOs, and co-founders automatically. Their LinkedIn often doesn't mention the company explicitly but they are valid contacts.
+- For smaller companies, if a contact's snippet mentions the company name alongside a leadership title, accept at medium confidence
+- Set confidence to "medium" and note "small company, relaxed verification" in the reason field
+- This prevents returning zero contacts for small/startup companies
 
 FINAL OUTPUT RULES:
 - Maximum 3 contacts per job (one per role type)
