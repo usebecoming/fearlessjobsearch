@@ -1259,7 +1259,7 @@
         </div>
         <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
           <input type="text" class="form-input" id="profileName" placeholder="Name this search" style="width:200px;font-size:0.82rem;padding:8px 12px">
-          <button class="btn-secondary btn-small" onclick="saveSearchProfile()">Save Current Search</button>
+          <button class="btn-secondary btn-small" id="saveSearchBtn" onclick="saveSearchProfile()">Save Current Search</button>
         </div>
       </div>
 
@@ -2019,7 +2019,7 @@ Return a JSON array of objects with these exact fields:
 
     // Free preview: show 5 jobs, lock the rest
     const FREE_JOB_LIMIT = 5;
-    const ADMIN_EMAILS = ['ben@liveforyourselfconsulting.com'];
+    const ADMIN_EMAILS = ['ben@liveforyourselfconsulting.com', 'ritterbenjamin@gmail.com'];
     function isFreeTier() {
       if (ADMIN_EMAILS.includes(state.userEmail)) return false;
       return !state.hasPaid;
@@ -2173,49 +2173,67 @@ Return a JSON array of objects with these exact fields:
 
     async function saveSearchProfile() {
       const nameInput = document.getElementById('profileName');
+      const saveBtn = document.getElementById('saveSearchBtn');
       const name = nameInput.value.trim();
+
       if (!name) {
         nameInput.style.borderColor = '#C94444';
         nameInput.placeholder = 'Enter a name first';
         setTimeout(() => { nameInput.style.borderColor = ''; nameInput.placeholder = 'Name this search'; }, 2000);
         return;
       }
+
       if (!supabase) {
         alert('Could not save. Please refresh and try again.');
         return;
       }
-      const { data: { user } } = await supabase.auth.getUser();
+
+      let user;
+      try {
+        const resp = await supabase.auth.getUser();
+        user = resp.data.user;
+      } catch (e) {
+        console.error('Auth error:', e);
+      }
+
       if (!user) {
         alert('Please sign in to save searches.');
         return;
       }
 
       const workTypes = [...document.querySelectorAll('.work-type-option input:checked')].map(cb => cb.value);
-      const saveBtn = document.querySelector('[onclick="saveSearchProfile()"]');
-      const origText = saveBtn.textContent;
       saveBtn.textContent = 'Saving...';
       saveBtn.disabled = true;
 
-      const { data, error } = await supabase.from('search_profiles').insert({
+      const insertData = {
         user_id: user.id,
         name,
         titles: state.titles,
         locations: state.locations,
         work_types: workTypes,
-        salary_min: document.getElementById('salaryMin').value,
-        salary_max: document.getElementById('salaryMax').value,
+        salary_min: document.getElementById('salaryMin').value || '',
+        salary_max: document.getElementById('salaryMax').value || '',
         anchors: [
           document.getElementById('anchor1').value.trim(),
           document.getElementById('anchor2').value.trim(),
           document.getElementById('anchor3').value.trim()
         ].filter(Boolean)
-      }).select();
+      };
+
+      console.log('Saving search profile:', insertData);
+
+      const { data, error } = await supabase
+        .from('search_profiles')
+        .insert(insertData)
+        .select();
+
+      console.log('Save result:', { data, error });
 
       if (error) {
         console.error('Save search error:', error);
         saveBtn.textContent = 'Error. Try again.';
         saveBtn.style.color = '#C94444';
-        setTimeout(() => { saveBtn.textContent = origText; saveBtn.style.color = ''; saveBtn.disabled = false; }, 2000);
+        setTimeout(() => { saveBtn.textContent = 'Save Current Search'; saveBtn.style.color = ''; saveBtn.disabled = false; }, 2000);
         return;
       }
 
@@ -2223,7 +2241,9 @@ Return a JSON array of objects with these exact fields:
       saveBtn.textContent = 'Saved!';
       saveBtn.style.color = '#3A8A5C';
       saveBtn.style.borderColor = '#3A8A5C';
-      setTimeout(() => { saveBtn.textContent = origText; saveBtn.style.color = ''; saveBtn.style.borderColor = ''; saveBtn.disabled = false; }, 2000);
+      setTimeout(() => { saveBtn.textContent = 'Save Current Search'; saveBtn.style.color = ''; saveBtn.style.borderColor = ''; saveBtn.disabled = false; }, 2000);
+      // Refresh the dropdown
+      await loadSearchProfiles();
       await loadSearchProfiles();
     }
 
