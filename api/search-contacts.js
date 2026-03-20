@@ -768,8 +768,8 @@ function preQualifyContact(url, snippet, companyName, pageTitle) {
   const hasPastTense = pastSignals.some(s => snippetLower.includes(s));
 
   // Also check page_title for former indicators
-  const pageTitle = (arguments[3] || '').toLowerCase();
-  const titleHasFormer = /\bformer\b|\bex-|\bretired\b|\bemeritus\b/i.test(snippetLower + ' ' + pageTitle);
+  const pageTitleLower = (pageTitle || '').toLowerCase();
+  const titleHasFormer = /\bformer\b|\bex-|\bretired\b|\bemeritus\b/i.test(snippetLower + ' ' + pageTitleLower);
 
   // Decision
   if ((hasPastTense || titleHasFormer) && !hasCurrentSignal) {
