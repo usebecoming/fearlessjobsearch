@@ -34,7 +34,14 @@ export default async function handler(req, res) {
         continue;
       }
 
-      console.log(`\n=== CONTACTS FOR: ${jobTitle} at ${company} ===`);
+      // Clean garbled company names (e.g. "SMITH & NEPHEW SNATS INC" -> "SMITH & NEPHEW")
+      const cleanedCompany = cleanCompanyName(company);
+      if (cleanedCompany !== company) {
+        console.log(`🧹 Cleaned company: "${company}" → "${cleanedCompany}"`);
+      }
+      const searchCompany = cleanedCompany;
+
+      console.log(`\n=== CONTACTS FOR: ${jobTitle} at ${searchCompany} ===`);
 
       // Step 1: Derive function, titles, hierarchy
       const derived = deriveAll(jobTitle);
@@ -43,7 +50,7 @@ export default async function handler(req, res) {
       console.log('Skip-Level titles:', derived.slTitles);
       console.log('Recruiter terms:', derived.recTerms);
 
-      const companyNames = getCompanyVariations(company);
+      const companyNames = getCompanyVariations(searchCompany);
       const allContacts = [];
 
       // Helper: search with false positive filtering for short name fallbacks
@@ -138,7 +145,7 @@ export default async function handler(req, res) {
       let autoRejected = 0;
 
       for (const contact of finalContacts) {
-        const result = preQualifyContact(contact.linkedin_url, contact.snippet, company, contact.page_title);
+        const result = preQualifyContact(contact.linkedin_url, contact.snippet, searchCompany, contact.page_title);
         if (result.accepted === true) {
           contact.preQualified = true;
           contact.confidence = result.confidence;
@@ -259,6 +266,13 @@ Return JSON array only — accepted contacts only:
                 console.log(`  ${icon} ${c.name} | ${c.role || c.role_type} | ${c.title} | ${c.confidence}`);
               });
               console.log(`\n  📊 Kept: ${verifiedContacts.length} of ${contactsPassedIn} (${Math.round(verifiedContacts.length/contactsPassedIn*100)}% acceptance)`);
+              // Log contacts dropped by Claude
+              const returnedUrls = new Set(verifiedContacts.map(c => (c.linkedin || c.linkedin_url || '').toLowerCase()));
+              toPassToClaude.forEach(c => {
+                if (!returnedUrls.has((c.linkedin_url || '').toLowerCase())) {
+                  console.log(`  ⚠️ Dropped by Claude: ${c.name} (${c.linkedin_url})`);
+                }
+              });
             }
           } else {
             console.log(`❌ Claude API error: ${claudeRes.status}`);
@@ -420,7 +434,7 @@ function deriveFunction(jobTitle) {
   const text = jobTitle.toLowerCase();
 
   // People/HR must be checked FIRST (before Engineering catches "development")
-  if (/hr|human resources|human capital|people ops|people operations|talent development|talent management|learning|l&d|organizational development|\bod\b|training|culture|workforce|hris|compensation|benefits|recruiting|recruiter|talent acquisition|performance|engagement|workforce planning|people analytics|diversity|inclusion|\bdei\b|employee relations|labor relations|total rewards|people strategy/i.test(text)) {
+  if (/\bpeople\b|people leader|hr|human resources|human capital|people ops|people operations|talent development|talent management|learning|l&d|organizational development|\bod\b|training|culture|workforce|hris|compensation|benefits|recruiting|recruiter|talent acquisition|performance|engagement|workforce planning|people analytics|diversity|inclusion|\bdei\b|employee relations|labor relations|total rewards|people strategy/i.test(text)) {
     return 'People';
   }
   if (/engineering|software|developer|devops|infrastructure|platform|backend|frontend|fullstack|data engineer|ml engineer|site reliability/i.test(text)) {
@@ -740,7 +754,11 @@ const KNOWN_FALSE_POSITIVES = new Set([
 const COMMON_NAME_WORDS = new Set([
   'austin', 'clifton', 'houston', 'dallas', 'phoenix', 'jordan', 'hunter', 'taylor',
   'morgan', 'parker', 'lincoln', 'grant', 'hayes', 'reed', 'scott', 'young', 'white',
-  'black', 'brown', 'green', 'gray', 'mason', 'logan', 'carter', 'cooper', 'riley'
+  'black', 'brown', 'green', 'gray', 'mason', 'logan', 'carter', 'cooper', 'riley',
+  'smith', 'johnson', 'anderson', 'miller', 'wilson', 'moore', 'jackson', 'martin',
+  'lee', 'thompson', 'garcia', 'martinez', 'robinson', 'clark', 'rodriguez', 'lewis',
+  'walker', 'hall', 'allen', 'king', 'wright', 'hill', 'baker', 'nelson', 'mitchell',
+  'campbell', 'roberts', 'turner'
 ]);
 
 function preQualifyContact(url, snippet, companyName, pageTitle) {
@@ -749,9 +767,17 @@ function preQualifyContact(url, snippet, companyName, pageTitle) {
   const companyLower = companyName.toLowerCase();
 
   // Check known false positives
-  const slugClean = slug.replace(/.*linkedin\.com\/in\//, '').replace(/\/$/, '');
+  const slugClean = slug.replace(/.*linkedin\.com\/in\//, '').replace(/[\?#].*$/, '').replace(/\/+$/, '');
   if (KNOWN_FALSE_POSITIVES.has(slugClean)) {
+    console.log(`  🚫 Known false positive BLOCKED: ${slugClean}`);
     return { accepted: false, reason: 'known false positive profile' };
+  }
+  // Also check partial slug match (e.g. chris-plonsky matches chris-plonsky-9700165)
+  for (const fp of KNOWN_FALSE_POSITIVES) {
+    if (slugClean.startsWith(fp) || fp.startsWith(slugClean)) {
+      console.log(`  🚫 Known false positive BLOCKED (partial): ${slugClean} matches ${fp}`);
+      return { accepted: false, reason: 'known false positive profile (partial match)' };
+    }
   }
 
   // Check city/name false positives
@@ -841,6 +867,16 @@ function inferTitleFromSlug(slug) {
   if (s.includes('-legal')) return 'Legal Professional';
   if (s.includes('-operations')) return 'Operations Professional';
   return '';
+}
+
+// Clean garbled company names
+function cleanCompanyName(name) {
+  if (!name) return name;
+  // Remove internal subsidiary codes: "SMITH & NEPHEW SNATS INC" -> "SMITH & NEPHEW"
+  const subMatch = name.match(/^(.+?)\s+[A-Z]{2,}\s+(?:INC|LLC|CORP|LTD|CO)\.?$/i);
+  if (subMatch) return subMatch[1].trim();
+  // Remove common suffixes
+  return name.replace(/\s+(INC|LLC|CORP|LTD|CO|INCORPORATED|LIMITED)\.?$/i, '').trim();
 }
 
 // Company-name-as-title check
