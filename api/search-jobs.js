@@ -119,7 +119,14 @@ export default async function handler(req, res) {
 
     // Run ALL queries in parallel
     const allResults = await Promise.all(
-      searchQueries.map(sq => jsearchOne(sq.query, sq.extra))
+      searchQueries.map(sq => jsearchOne(sq.query, sq.extra).then(r => {
+        if (r.length === 0) {
+          // Retry once with longer timeout if first attempt got nothing
+          console.log(`  🔄 Retrying: ${sq.query.substring(0,50)}`);
+          return jsearchOne(sq.query, sq.extra);
+        }
+        return r;
+      }))
     );
 
     // Dedupe by job ID
@@ -145,54 +152,114 @@ export default async function handler(req, res) {
     });
     const afterDedup = dedupedJobs.length;
 
-    // Filter irrelevant jobs
+    // ── Comprehensive job filtering ──
+
+    const suspiciousCompanies = new Set([
+      // MLM / Pyramid
+      'focus on life biz','primerica','herbalife','amway','cutco','vector marketing',
+      'symmetry financial','php agency','world financial group','wfg','northwestern mutual',
+      'new york life','mass mutual','massmutual','aflac','globe life','american income life',
+      'ail','family first life','ffl','equity national life','transamerica','paclife',
+      'pacific life','monat','market america','optavia','isagenix','rodan and fields',
+      'rodan + fields','lularoe','young living','doterra','scentsy','tupperware',
+      'pampered chef','avon','mary kay',
+      // Suspected MLM / misleading
+      'alphabe insight','alphabe insight inc','elevation global','elevation global inc',
+      'next level talent','mvp vc','dukin','interplay learning','cydcor','devilcorp',
+      'smart circle','credico','ds max','granton marketing','innovage',
+      'the acquisition group','apex management group','peak performance',
+      'peak performance group','synergy management','atlas marketing','atlas management',
+      'impact marketing','impact leadership','prime marketing','premier marketing',
+      'pyramid consulting',
+      // Poor employers
+      'crossover','crossover for work','trilogy education','2u inc','2u',
+      // Garbled names
+      'org_subtype','global_services','operations_bu',
+      // Workforce programs (not corporate)
+      'year up','year up united','job corps','goodwill industries','workforce solutions',
+      'careerstaff',
+      // Tutoring / childcare
+      'mathnasium','kumon','sylvan learning','huntington learning','learning tree',
+      'the learning experience','bright horizons','kindercare','primrose schools',
+      // Staffing (backup to agency filter)
+      'insight global','experis','manpower','manpowergroup','adecco','randstad',
+      'kelly services','robert half','spherion','aerotek','staffmark','staffing solutions',
+      'medasource','vivian health','mercury group staffing','sigma inc','next level talent llc'
+    ]);
+
+    const suspiciousPatterns = [
+      /\b(peak|prime|apex|summit|pinnacle|elite|premier|impact|synergy|momentum|velocity|leverage)\s+(management|marketing|solutions|group|consulting|partners)\b/i,
+      /\bleadership\s+(solutions|group|partners|consulting)\s+inc\b/i,
+      /org_subtype/i, /^bu\d{3}/i, /_bu\d{3}/i,
+      /[A-Z]{2,}_[A-Z]{2,}/
+    ];
+
+    const mlmTitlePatterns = [
+      /independent.*consultant/i, /performance.based/i, /unlimited.*earning/i,
+      /be your own boss/i, /entrepreneurial.*opportunity/i, /commission only/i,
+      /uncapped.*commission/i, /financial.*freedom/i, /own your.*schedule/i,
+      /\bMLM\b/i, /network marketing/i, /direct sales/i, /independent distributor/i,
+      /independent representative/i, /brand ambassador.*commission/i
+    ];
+
     const irrelevantKeywords = [
-      'labor & delivery', 'labor and delivery', 'l&d rn', 'registered nurse', 'nursing',
-      'patient care', 'antepartum', 'obstetric', 'maternal', 'postpartum', 'nicu',
-      'flight nurse', 'med surg', 'icu', 'er nurse', 'travel nurse', 'rn ',
-      'sdr', 'bdr', 'sales development rep', 'teach english', 'esl teacher',
-      'water safety', 'lifeguard', 'math tutor', 'mathnasium', 'kumon',
-      'daycare', 'day care', 'childcare', 'preschool', 'kindergarten',
-      'elementary school', 'middle school', 'high school',
-      'year up', 'job corps', 'workforce development program',
-      'training and documentation specialist', 'documentation specialist',
-      'unlimited earning', 'be your own boss', 'entrepreneurial opportunity',
-      'commission only', 'uncapped commission'
+      'labor & delivery','labor and delivery','l&d rn','registered nurse','nursing',
+      'patient care','antepartum','obstetric','maternal','postpartum','nicu',
+      'flight nurse','med surg','icu','er nurse','travel nurse','rn ',
+      'sdr','bdr','sales development rep','teach english','esl teacher',
+      'water safety','lifeguard','daycare','day care','childcare','preschool',
+      'kindergarten','elementary school','middle school','high school',
+      'workforce development program','documentation specialist'
     ];
 
     const irrelevantPatterns = [
-      /independent.*performance.based/i,
-      /performance.based.*opportunity/i,
-      /^development director/i,
-      /^director of development/i,
-      /\bsvp of development\b/i,
-      /\bvp of development\b/i,
-      /\bsoftware development.*engineer/i,
-      /\bservice delivery engineer\b/i,
-      /\bvalue engineering\b/i,
-      /\bsales development\b/i,
-      /development.*construction/i,
-      /construction.*development/i,
+      /^development director/i, /^director of development/i,
+      /\bsvp of development\b/i, /\bvp of development\b/i,
+      /\bsoftware development.*engineer/i, /\bservice delivery engineer\b/i,
+      /\bvalue engineering\b/i, /\bsales development\b/i,
+      /development.*construction/i, /construction.*development/i,
       /\breal estate.*development\b/i
     ];
 
-    const suspiciousCompanies = new Set([
-      'focus on life biz', 'primerica', 'herbalife', 'amway', 'cutco',
-      'vector marketing', 'symmetry financial', 'php agency',
-      'world financial group', 'wfg', 'northwestern mutual'
-    ]);
-
     let irrelevantRemoved = 0;
     let fundraisingRemoved = 0;
+    let agenciesRemoved = 0;
+
+    const agencyKeywords = ['staffing','recruiting','talent agency','manpower','adecco',
+      'randstad','robert half','hays','kforce','kelly services','allegis','insight global',
+      'korn ferry','heidrick','aerotek','tek systems','teksystems','beacon hill',
+      'apex group','modis','volt','spherion','express employment','nesco','addison group',
+      'brooksource','procom','collabera','cybercoders','dice','jobspring','placement',
+      'search group','executive search','talent solutions','recruiting group'];
+
     const relevantJobs = dedupedJobs.filter(job => {
       const title = (job.job_title || '').toLowerCase();
       const desc = (job.job_description || '').substring(0, 300).toLowerCase();
       const combined = title + ' ' + desc;
-      const company = (job.employer_name || '').toLowerCase();
+      const company = (job.employer_name || '').toLowerCase().trim();
 
-      // Suspicious company
+      // Agency filter (remove, not just flag)
+      if (agencyKeywords.some(kw => company.includes(kw))) {
+        console.log(`  ❌ Agency: ${job.job_title} at ${job.employer_name}`);
+        agenciesRemoved++;
+        return false;
+      }
+
+      // Suspicious company (exact match)
       if (suspiciousCompanies.has(company)) {
-        console.log(`  ❌ Suspicious company: ${job.employer_name}`);
+        console.log(`  ❌ Blocklisted: ${job.employer_name}`);
+        irrelevantRemoved++;
+        return false;
+      }
+      // Suspicious company (pattern match)
+      if (suspiciousPatterns.some(p => p.test(job.employer_name || ''))) {
+        console.log(`  ❌ Suspicious pattern: ${job.employer_name}`);
+        irrelevantRemoved++;
+        return false;
+      }
+      // MLM title patterns
+      if (mlmTitlePatterns.some(p => p.test(job.job_title || ''))) {
+        console.log(`  ❌ MLM title: ${job.job_title}`);
         irrelevantRemoved++;
         return false;
       }
@@ -234,7 +301,7 @@ export default async function handler(req, res) {
       'svp': [/\bmanager\b/i, /\bspecialist\b/i, /\bcoordinator\b/i, /\bassociate\b/i, /\bassistant\b/i, /\bfacilitator\b/i, /\binstructor\b/i, /\btrainer\b/i, /\banalyst\b/i],
       'vp': [/\bspecialist\b/i, /\bcoordinator\b/i, /\bassociate\b/i, /\bassistant\b/i, /\bfacilitator\b/i, /\binstructor\b/i, /\btrainer\b/i, /\banalyst\b/i, /\bjunior\b/i],
       'director': [/\bspecialist\b/i, /\bcoordinator\b/i, /\bassociate\b/i, /\bassistant\b/i, /\bfacilitator\b/i, /\binstructor\b/i, /\btrainer\b/i, /\bjunior\b/i, /\bentry level\b/i],
-      'senior': [/\bcoordinator\b/i, /\bassistant\b/i, /\bjunior\b/i, /\bentry level\b/i, /\binstructor\b/i, /\bfacilitator\b/i],
+      'senior': [/\bcoordinator\b/i, /\bassistant\b/i, /\bjunior\b/i, /\bentry level\b/i, /\binstructor\b/i, /\bfacilitator\b/i, /\bspecialist\b/i, /\bassociate\b/i, /\btrainer\b/i, /\bin training\b/i, /\bapprentice\b/i, /\bintern\b/i, /\brepresentative\b/i, /\bteacher\b/i, /\btutor\b/i],
       'manager': [/\bjunior\b/i, /\bentry level\b/i, /\bassistant\b/i],
     };
     const patternsToFilter = filterBelowSeniority[resumeSeniority] || [];
@@ -254,18 +321,12 @@ export default async function handler(req, res) {
     const jobs = seniorityFiltered.slice(0, 30);
 
     // Flag staffing agencies
-    const agencyKeywords = ['staffing', 'recruiting', 'talent agency', 'manpower', 'adecco', 'randstad', 'robert half', 'hays', 'kforce', 'kelly services', 'allegis', 'insight global', 'korn ferry', 'heidrick', 'aerotek', 'tek systems', 'teksystems', 'beacon hill', 'apex group', 'modis', 'volt', 'spherion', 'express employment', 'nesco', 'addison group', 'brooksource', 'procom', 'collabera', 'cybercoders', 'dice', 'jobspring', 'placement', 'search group', 'executive search', 'talent solutions', 'recruiting group'];
-
-    let agencyCount = 0;
     const filtered = jobs.map((job, i) => {
-      const employer = (job.employer_name || '').toLowerCase();
-      const isAgency = agencyKeywords.some(kw => employer.includes(kw));
-      if (isAgency) agencyCount++;
       return {
         id: job.job_id || `jsearch-${i}`,
         title: job.job_title || 'Untitled',
         company: job.employer_name || 'Unknown',
-        isAgency,
+        isAgency: false,
         location: job.job_city && job.job_state
           ? `${job.job_city}, ${job.job_state}`
           : (job.job_is_remote ? 'Remote' : 'Location not specified'),
@@ -286,11 +347,11 @@ export default async function handler(req, res) {
     console.log(`\n📊 JOB PIPELINE SUMMARY:`);
     console.log(`  Total from JSearch: ${totalFromJSearch}`);
     console.log(`  After deduplication: ${afterDedup}`);
-    console.log(`  Irrelevant removed: ${irrelevantRemoved}`);
-    console.log(`  Fundraising dev removed: ${fundraisingRemoved}`);
+    console.log(`  Agencies removed: ${agenciesRemoved}`);
+    console.log(`  Irrelevant/blocklisted removed: ${irrelevantRemoved}`);
+    console.log(`  Fundraising removed: ${fundraisingRemoved}`);
     console.log(`  Resume seniority: ${resumeSeniority}`);
-    console.log(`  Too junior removed: ${seniorityRemoved}`);
-    console.log(`  Staffing agencies flagged: ${agencyCount}`);
+    console.log(`  Below seniority removed: ${seniorityRemoved}`);
     console.log(`  Passed to Claude for scoring: ${filtered.length}`);
     filtered.forEach((job, i) => {
       console.log(`  ${i+1}. ${job.title} at ${job.company}${job.isAgency ? ' [AGENCY]' : ''} — ${job.location}`);
