@@ -356,7 +356,7 @@ export default async function handler(req, res) {
     }
 
     // Cap at 30 for Claude scoring
-    const jobs = finalFiltered.slice(0, 30);
+    const jobs = finalFiltered.slice(0, 20);
 
     // Flag staffing agencies
     const filtered = jobs.map((job, i) => {
@@ -395,7 +395,7 @@ export default async function handler(req, res) {
       console.log(`  ${i+1}. ${job.title} at ${job.company}${job.isAgency ? ' [AGENCY]' : ''} — ${job.location}`);
     });
 
-    return res.status(200).json({ jobs: filtered.slice(0, 30) });
+    return res.status(200).json({ jobs: filtered.slice(0, 20) });
   } catch (err) {
     console.error('Search error:', err);
     return res.status(500).json({ error: 'Something went wrong searching for jobs. Please try again.' });

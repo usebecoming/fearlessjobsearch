@@ -3508,62 +3508,19 @@ Return a JSON array with one object per job:
             }
           }
           logUsage('job_search', { mode: 'job_target', titles: state.titles, locations: state.locations, results: scoredJobs.length });
-          // Increment search count
-          try {
-            const s = supabase ? await supabase.auth.getSession() : null;
-            if (s?.data?.session?.user?.id) {
-              getAuthHeaders().then(function(h) { fetch('/api/increment-usage', { method: 'POST', headers: h, body: JSON.stringify({}) }).catch(function(){}); });
+          // Increment search count — use cached auth headers, never call getSession directly
+          getAuthHeaders().then(function(h) {
+            if (h['Authorization']) {
+              fetch('/api/increment-usage', { method: 'POST', headers: h, body: JSON.stringify({}) }).catch(function(){});
             }
-          } catch(e) {}
+          }).catch(function(){});
           return;
         } catch (err) {
-          console.error('JSearch error, falling back to Claude:', err);
-          // Fall back to Claude-generated jobs if JSearch fails
-          userPrompt = `Generate 10 realistic active job listings posted within the last 5 days. Direct employers only. No staffing agencies or third-party recruiters.
-
-Target titles: ${JSON.stringify(state.titles)}
-Location: ${state.locations.length ? state.locations.join(', ') : 'Any'}
-Work type: ${workTypes.length ? workTypes.join(', ') : 'Any'}
-${salaryStr ? 'Salary range: ' + salaryStr : ''}
-${resumeSummary ? 'Candidate resume summary (score fit against this):\n' + resumeSummary : 'No resume provided. Assign fitScore of 50 to all.'}
-${getFavoriteContext()}`;
+          console.error('Search error:', err);
+          stopProgress();
+          container.innerHTML = '<div class="error-box">Search failed: ' + esc(err.message) + '<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="goToStep(1)">Try Again</button></div>';
+          return;
         }
-      }
-
-      userPrompt += `
-
-Return a JSON array of objects with these exact fields:
-- id (string, unique)
-- title (string)
-- company (string, real or realistic company)
-- location (string)
-- type (string: "Full-time", "Contract", etc.)
-- industry (string)
-- posted (string: "1 day ago", "3 days ago", etc.)
-- fitScore (number 0-100)
-- fitReason (string, one sentence)
-- salary (string or null)
-- highlights (array of 2-3 strings)
-- source (string: "LinkedIn", "Indeed", or "Glassdoor")
-- url (string: a realistic job listing URL on the source platform)`;
-
-      try {
-        const jobs = await callClaude(systemPrompt, userPrompt);
-        stopProgress();
-        state.jobs = jobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0));
-        state.selectedJobs = [];
-        renderJobs();
-        logUsage('job_search', { mode: state.searchMode, titles: state.titles, companies: state.companies, results: jobs.length });
-        // Increment search count
-        try {
-          const s = supabase ? await supabase.auth.getSession() : null;
-          if (s?.data?.session?.user?.id) {
-            getAuthHeaders().then(function(h) { fetch('/api/increment-usage', { method: 'POST', headers: h, body: JSON.stringify({}) }).catch(function(){}); });
-          }
-        } catch(e) {}
-      } catch (err) {
-        stopProgress();
-        container.innerHTML = `<div class="error-box">Something went wrong: ${esc(err.message)}<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="runSearch()">Try again</button></div>`;
       }
     }
 
