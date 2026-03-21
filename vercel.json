@@ -8,6 +8,18 @@
     },
     "api/chat.js": {
       "maxDuration": 60
+    },
+    "api/create-checkout.js": {
+      "maxDuration": 30
+    },
+    "api/stripe-webhook.js": {
+      "maxDuration": 30
+    },
+    "api/billing-portal.js": {
+      "maxDuration": 30
+    },
+    "api/check-usage.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [

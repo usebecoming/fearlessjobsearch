@@ -1582,6 +1582,9 @@
             <span class="label">Searches this month</span>
             <span class="value" id="accountSearches">0</span>
           </div>
+          <div class="account-dropdown-item" id="manageBillingRow" style="display:none">
+            <a href="#" onclick="event.preventDefault();manageBilling()" style="color:#B8A88A;font-size:0.82rem">Manage Billing</a>
+          </div>
           <div class="account-dropdown-item" style="border-top:1px solid #F0EFED;padding-top:12px;margin-top:4px">
             <a href="mailto:support@lfyconsulting.com" style="color:#B8A88A;font-size:0.82rem">Contact Support</a>
           </div>
@@ -2065,6 +2068,28 @@
       }
     }
 
+    // ── Manage Billing (Stripe Portal) ──
+    async function manageBilling() {
+      try {
+        const sess = supabase ? await supabase.auth.getSession() : null;
+        const userId = sess?.data?.session?.user?.id;
+        if (!userId) { openAuthModal('login'); return; }
+        const res = await fetch('/api/billing-portal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: userId, returnUrl: window.location.href })
+        });
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert(data.error || 'Could not open billing portal.');
+        }
+      } catch {
+        alert('Could not connect to billing. Please try again.');
+      }
+    }
+
     // Check for pending plan after signup
     function checkPendingPlan() {
       const plan = sessionStorage.getItem('fjs_pending_plan');
@@ -2275,6 +2300,7 @@
             state.hasPaid = true;
             document.getElementById('navUpgradeBtn').style.display = 'none';
             document.getElementById('upgradeBanner').style.display = 'none';
+            document.getElementById('manageBillingRow').style.display = '';
           }
         }
       }).catch(function() {});
@@ -2748,36 +2774,44 @@
       }
     }
 
-    // ── Step 2: Search ──
-    async function runSearch() {
-      // Check usage limits before searching (with 3s timeout so it doesn't block)
+    // ── Universal gate checker ──
+    async function checkGate(action) {
+      if (ADMIN_EMAILS.includes(state.userEmail)) return true;
       try {
-        const userEmail = state.userEmail;
-        if (userEmail && !ADMIN_EMAILS.includes(userEmail)) {
-          const controller = new AbortController();
-          const timeout = setTimeout(function() { controller.abort(); }, 3000);
-          const sess = supabase ? await supabase.auth.getSession() : null;
-          const userId = sess?.data?.session?.user?.id;
-          if (userId) {
-            const usageRes = await fetch('/api/check-usage', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ user_id: userId, email: userEmail }),
-              signal: controller.signal
-            });
-            clearTimeout(timeout);
-            if (usageRes.ok) {
-              const usage = await usageRes.json();
-              if (!usage.allowed) {
-                openUpgradeModal();
-                return;
-              }
-            }
+        const sess = supabase ? await supabase.auth.getSession() : null;
+        const userId = sess?.data?.session?.user?.id;
+        if (!userId) return true; // not logged in — let auth modal handle it
+        const controller = new AbortController();
+        const timeout = setTimeout(function() { controller.abort(); }, 3000);
+        const res = await fetch('/api/check-usage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, email: state.userEmail, action: action }),
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.allowed) {
+            openUpgradeModal();
+            return false;
           }
         }
-      } catch (e) {
-        console.log('Usage check skipped:', e.message);
+        return true;
+      } catch (err) {
+        console.error('Gate check error:', err);
+        return true; // fail open
       }
+    }
+
+    // ── Step 2: Search ──
+    async function runSearch() {
+      // Check usage limits before searching
+      const searchAction = state.searchMode === 'companies' ? 'company_target' : 'search_jobs';
+      const allowed = await checkGate(searchAction);
+      if (!allowed) return;
+
+      // Usage check handled by checkGate above
 
       // Only read from textarea if no file was uploaded
       const textareaVal = document.getElementById('resumeText').value.trim();
@@ -3516,8 +3550,8 @@ Return a JSON array of objects with these exact fields:
 
     // ── Step 3: Contacts ──
     async function runContacts() {
-      if (isFreeTier()) {
-        openUpgradeModal();
+      const contactAllowed = await checkGate('find_contacts');
+      if (!contactAllowed) {
         return;
       }
       goToStep(3);
