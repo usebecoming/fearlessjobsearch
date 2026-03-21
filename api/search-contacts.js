@@ -24,6 +24,8 @@ export default async function handler(req, res) {
     // Company aliases for short names
     const companyAliases = {
       'ey': 'Ernst Young', 'ernst & young': 'Ernst Young',
+      'smith & nephew': 'Smith Nephew', 'smith and nephew': 'Smith Nephew',
+      'smith & nephew snats inc': 'Smith Nephew',
       'pwc': 'PricewaterhouseCoopers', 'kpmg': 'KPMG Advisory',
       'bcg': 'Boston Consulting Group', 'mckinsey': 'McKinsey Company',
       'ibm': 'IBM Corporation', 'ge': 'General Electric',
@@ -817,12 +819,16 @@ function preQualifyContact(url, snippet, companyName, pageTitle) {
     }
   }
 
-  // Check city/name false positives
+  // Check city/name false positives - only when snippet has NO company signal at all
   const companyWords = companyLower.split(/\s+/).filter(w => w.length > 3);
-  const fpWords = companyWords.filter(w => COMMON_NAME_WORDS.has(w));
-  for (const fpWord of fpWords) {
-    if (slug.includes(fpWord) && !snippetLower.includes(companyLower.substring(0, 10))) {
-      return { accepted: false, reason: `city/name false positive: "${fpWord}" in slug` };
+  const hasAnyCompanyWord = companyWords.some(w => snippetLower.includes(w));
+  if (!hasAnyCompanyWord) {
+    // Snippet has zero company words - check for name false positives
+    const fpWords = companyWords.filter(w => COMMON_NAME_WORDS.has(w));
+    for (const fpWord of fpWords) {
+      if (slug.includes(fpWord)) {
+        return { accepted: false, reason: `city/name false positive: "${fpWord}" in slug, no company in snippet` };
+      }
     }
   }
 
@@ -909,11 +915,18 @@ function inferTitleFromSlug(slug) {
 // Clean garbled company names
 function cleanCompanyName(name) {
   if (!name) return name;
+  let cleaned = name;
   // Remove internal subsidiary codes: "SMITH & NEPHEW SNATS INC" -> "SMITH & NEPHEW"
-  const subMatch = name.match(/^(.+?)\s+[A-Z]{2,}\s+(?:INC|LLC|CORP|LTD|CO)\.?$/i);
-  if (subMatch) return subMatch[1].trim();
+  const subMatch = cleaned.match(/^(.+?)\s+[A-Z]{2,}\s+(?:INC|LLC|CORP|LTD|CO)\.?$/i);
+  if (subMatch) cleaned = subMatch[1].trim();
+  // Remove all-caps internal codes
+  cleaned = cleaned.replace(/\s+[A-Z]{3,}(?:\s+[A-Z]{3,})*\s+(?:INC|LLC|CORP|LTD|CO)\.?$/i, '').trim();
   // Remove common suffixes
-  return name.replace(/\s+(INC|LLC|CORP|LTD|CO|INCORPORATED|LIMITED)\.?$/i, '').trim();
+  cleaned = cleaned.replace(/\s+(INC|LLC|CORP|LTD|CO|INCORPORATED|LIMITED)\.?$/i, '').trim();
+  // Strip trailing punctuation (commas, periods, semicolons)
+  cleaned = cleaned.replace(/[,;.]+$/, '').trim();
+  if (cleaned !== name) console.log(`🧹 Cleaned: "${name}" → "${cleaned}"`);
+  return cleaned || name;
 }
 
 // Company-name-as-title check

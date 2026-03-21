@@ -166,7 +166,10 @@ export default async function handler(req, res) {
       'tupperware','pampered chef','avon','mary kay','alphabe insight','alphabe insight inc',
       'elevation global','elevation global inc','cydcor','smart circle','credico','ds max',
       'granton marketing','innovage','org_subtype','global_services','operations_bu',
-      'pyramid consulting'
+      'pyramid consulting',
+      'living the dream','living the dream austin','ltda',
+      'life is good coaching','dream life','your best life','limitless life',
+      'unleash your potential','the success principles','power of you','the coaching institute'
     ]);
 
     const conditionalBlocklist = {
@@ -183,7 +186,10 @@ export default async function handler(req, res) {
     const suspiciousPatterns = [
       /\b(peak|prime|apex|summit|pinnacle|elite|premier|impact|synergy|momentum|velocity|leverage)\s+(management|marketing|solutions|group|consulting|partners)\b/i,
       /\bleadership\s+(solutions|group|partners|consulting)\s+inc\b/i,
-      /org_subtype/i, /^bu\d{3}/i, /_bu\d{3}/i, /[A-Z]{2,}_[A-Z]{2,}/
+      /org_subtype/i, /^bu\d{3}/i, /_bu\d{3}/i, /[A-Z]{2,}_[A-Z]{2,}/,
+      /^living the \w+$/i, /^dream\s+(life|career|big)/i,
+      /^your\s+(best|dream|ideal)\s+life/i,
+      /^(unleash|unlock|ignite|inspire)\s+your/i
     ];
 
     const mlmTitlePatterns = [
