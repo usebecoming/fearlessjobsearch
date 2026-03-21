@@ -1,4 +1,5 @@
 import { rateLimit } from './_rateLimit.js';
+import { PLANS } from './_plans.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -18,16 +19,18 @@ export default async function handler(req, res) {
   try {
     const { plan, email, userId } = req.body;
 
-    const prices = {
-      starter: process.env.STRIPE_PRICE_STARTER,
-      pro: process.env.STRIPE_PRICE_PRO,
-      unlimited_monthly: process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
-      unlimited_yearly: process.env.STRIPE_PRICE_UNLIMITED_YEARLY
-    };
+    // Use _plans.js as source of truth, env vars as override
+    const planDef = PLANS[plan];
+    const priceId = planDef?.stripe_price_id
+      || {
+        starter: process.env.STRIPE_PRICE_STARTER,
+        pro: process.env.STRIPE_PRICE_PRO,
+        unlimited_monthly: process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
+        unlimited_yearly: process.env.STRIPE_PRICE_UNLIMITED_YEARLY
+      }[plan];
 
-    const priceId = prices[plan];
     if (!priceId) {
-      return res.status(400).json({ error: 'Invalid plan' });
+      return res.status(400).json({ error: `Invalid plan: ${plan}` });
     }
 
     const origin = req.headers.origin || 'https://fearlessjobsearch.com';
