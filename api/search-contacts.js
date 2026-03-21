@@ -21,21 +21,43 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No jobs provided' });
     }
 
-    const results = [];
+    // Company aliases for short names
+    const companyAliases = {
+      'ey': 'Ernst Young', 'ernst & young': 'Ernst Young',
+      'pwc': 'PricewaterhouseCoopers', 'kpmg': 'KPMG Advisory',
+      'bcg': 'Boston Consulting Group', 'mckinsey': 'McKinsey Company',
+      'ibm': 'IBM Corporation', 'ge': 'General Electric',
+      'hp': 'Hewlett Packard', 'at&t': 'ATT', 'p&g': 'Procter Gamble',
+      'jnj': 'Johnson Johnson'
+    };
 
-    for (const job of jobs) {
+    // Process all jobs in PARALLEL
+    console.log(`\n🚀 Processing ${jobs.length} jobs in parallel...`);
+
+    const JOB_TIMEOUT_MS = 45000;
+    const jobPromises = jobs.map(async (job) => {
       const company = job.company;
       const jobTitle = job.title;
 
       // Skip if no company
       if (!company || company === 'Unknown' || company.length < 2) {
         console.log(`Skipping: no valid company name for "${jobTitle}"`);
-        results.push({ job_id: job.job_id, company, job_title: jobTitle, location: job.location || '', derived: {}, raw_contacts: [] });
-        continue;
+        return { job_id: job.job_id, company, job_title: jobTitle, location: job.location || '', derived: {}, contacts: [] };
       }
 
-      // Clean garbled company names (e.g. "SMITH & NEPHEW SNATS INC" -> "SMITH & NEPHEW")
-      const cleanedCompany = cleanCompanyName(company);
+      // Clean + resolve aliases
+      let cleanedCompany = cleanCompanyName(company);
+      const alias = companyAliases[cleanedCompany.toLowerCase().trim()];
+      if (alias) {
+        console.log(`🔤 Company alias: "${cleanedCompany}" → "${alias}"`);
+        cleanedCompany = alias;
+      }
+      // Skip very short names that can't be searched safely
+      if (cleanedCompany.length <= 3 && !alias) {
+        console.log(`⚠️ Company name too short: "${cleanedCompany}" — using LinkedIn fallback`);
+        const slug = await getLinkedInCompanySlug(company, braveKey);
+        return { job_id: job.job_id, company, job_title: jobTitle, location: job.location || '', derived: {}, contacts: [], linkedin_slug: slug, geo_urn: getGeoUrn(job.location) };
+      }
       if (cleanedCompany !== company) {
         console.log(`🧹 Cleaned company: "${company}" → "${cleanedCompany}"`);
       }
@@ -85,24 +107,22 @@ export default async function handler(req, res) {
         }
       }
 
-      // Step 2: Run Brave searches
-
-      // Search 1: Hiring managers
+      // Step 2: Run Brave searches IN PARALLEL
       const hmQuery = derived.hmTitles.map(t => `"${t}"`).join(' OR ');
-      await searchAndFilter(co => `site:linkedin.com/in "${co}" (${hmQuery})`, 'Hiring Manager');
+      const recQuery = derived.recTerms.map(t => `"${t}"`).join(' OR ');
+      const slQuery = derived.slTitles.map(t => `"${t}"`).join(' OR ');
+      const primaryCo = companyNames[0];
 
-      // Fallback: broader HM search if few results
+      await Promise.all([
+        searchAndFilter(co => `site:linkedin.com/in "${co}" (${hmQuery})`, 'Hiring Manager'),
+        searchAndFilter(co => `site:linkedin.com/in "${co}" (${recQuery})`, 'Recruiter / TA'),
+        searchAndFilter(co => `site:linkedin.com/in "${co}" (${slQuery})`, 'Skip-Level')
+      ]);
+
+      // Fallback: broader HM if few results
       if (allContacts.filter(c => c.searchRole === 'Hiring Manager').length < 3) {
         await searchAndFilter(co => `site:linkedin.com/in "${co}" (${getDeptSearchTerms(derived.func)}) (VP OR SVP OR "Head of" OR Director OR Chief)`, 'Hiring Manager');
       }
-
-      // Search 2: Recruiters
-      const recQuery = derived.recTerms.map(t => `"${t}"`).join(' OR ');
-      await searchAndFilter(co => `site:linkedin.com/in "${co}" (${recQuery})`, 'Recruiter / TA');
-
-      // Search 3: Skip-level
-      const slQuery = derived.slTitles.map(t => `"${t}"`).join(' OR ');
-      await searchAndFilter(co => `site:linkedin.com/in "${co}" (${slQuery})`, 'Skip-Level');
 
       const deduped = dedupeContacts(allContacts);
       console.log(`Total deduped for ${company}: ${deduped.length}`);
@@ -189,8 +209,12 @@ export default async function handler(req, res) {
         }
       }
 
-      // Combine pre-qualified + claude-decide for Claude
-      const toPassToClaude = [...preQualified, ...claudeDecide];
+      // Combine pre-qualified first, then claude-decide, cap at 10
+      const allForClaude = [...preQualified, ...claudeDecide];
+      const toPassToClaude = allForClaude.slice(0, 10);
+      if (allForClaude.length > 10) {
+        console.log(`📊 Capped: ${allForClaude.length} → ${toPassToClaude.length} contacts for Claude`);
+      }
       console.log(`Passing ${toPassToClaude.length} contacts to Claude`);
 
       // Look up LinkedIn company slug for fallback links
@@ -343,7 +367,7 @@ Return JSON array only — accepted contacts only:
         });
       }
 
-      results.push({
+      return {
         job_id: job.job_id,
         company,
         job_title: jobTitle,
@@ -353,8 +377,21 @@ Return JSON array only — accepted contacts only:
         linkedin_slug: companySlug,
         geo_urn: geoUrn,
         is_professional_services: isProfServices
-      });
-    }
+      };
+    });
+
+    // Run all jobs in parallel with per-job timeout
+    const results = await Promise.all(
+      jobPromises.map(p => Promise.race([
+        p,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Job timeout')), JOB_TIMEOUT_MS))
+      ]).catch(err => {
+        console.error(`❌ Job failed: ${err.message}`);
+        return { job_id: '', company: '', job_title: '', contacts: [], error: err.message };
+      }))
+    );
+
+    console.log(`\n✅ All ${results.length} jobs completed`);
 
     // ── CROSS-JOB DEDUPLICATION ──
     // Fix 1: Cross-COMPANY dedup (same company = keep, different company = remove)
