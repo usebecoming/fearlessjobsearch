@@ -1665,7 +1665,9 @@
       <div id="companiesGroup" style="display:none">
         <div class="form-group">
           <label class="form-label">What role are you targeting?</label>
-          <input type="text" class="form-input" id="companyTargetTitle" placeholder="e.g. Director of Learning and Development" style="width:100%;font-size:0.88rem;padding:10px 14px" oninput="validateSearch()">
+          <div class="tag-input-wrap" id="companyTitlesWrap">
+            <input type="text" class="tag-field" id="companyTitlesField" placeholder="e.g. Director of L&D, press Enter to add">
+          </div>
           <p style="font-size:0.82rem;color:#999;margin-top:6px">Used to find the right hiring managers and recruiters at each company.</p>
         </div>
         <div class="form-group">
@@ -2410,6 +2412,40 @@
       validateSearch();
     }
 
+    // ── Company Target Titles Tag Input ──
+    state.companyTargetTitles = [];
+    const companyTitlesField = document.getElementById('companyTitlesField');
+    const companyTitlesWrap = document.getElementById('companyTitlesWrap');
+
+    companyTitlesField.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = companyTitlesField.value.trim();
+        if (val && !state.companyTargetTitles.includes(val)) {
+          state.companyTargetTitles.push(val);
+          renderCompanyTargetTitleTags();
+          companyTitlesField.value = '';
+        }
+        validateSearch();
+      }
+    });
+
+    function renderCompanyTargetTitleTags() {
+      companyTitlesWrap.querySelectorAll('.tag').forEach(t => t.remove());
+      state.companyTargetTitles.forEach((title, i) => {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.innerHTML = `${esc(title)}<button class="tag-remove" onclick="removeCompanyTargetTitle(${i})">&#215;</button>`;
+        companyTitlesWrap.insertBefore(tag, companyTitlesField);
+      });
+    }
+
+    function removeCompanyTargetTitle(i) {
+      state.companyTargetTitles.splice(i, 1);
+      renderCompanyTargetTitleTags();
+      validateSearch();
+    }
+
     // ── Booking Modal ──
     function openBookingModal() {
       document.getElementById('bookingModal').classList.add('active');
@@ -2620,8 +2656,7 @@
     function validateSearch() {
       const btn = document.getElementById('searchBtn');
       if (state.searchMode === 'companies') {
-        const companyTitle = (document.getElementById('companyTargetTitle')?.value || '').trim();
-        btn.disabled = state.companies.length === 0 || !companyTitle;
+        btn.disabled = state.companies.length === 0 || state.companyTargetTitles.length === 0;
       } else {
         btn.disabled = state.titles.length === 0;
       }
@@ -2773,14 +2808,13 @@
 
       // Company Target: skip job listings, go straight to contacts
       if (state.searchMode === 'companies') {
-        // Get explicitly entered title — required by validation
-        const companyTargetTitle = (document.getElementById('companyTargetTitle')?.value || '').trim();
-        if (!companyTargetTitle) return; // shouldn't happen — button is disabled
+        // Get explicitly entered titles — required by validation
+        if (state.companyTargetTitles.length === 0) return;
 
-        // Build company-mode job data — one per company, all using the explicit title
+        // Build company-mode job data — one per company, using the first target title
         const companyJobData = state.companies.map((co) => ({
           job_id: 'company_' + co.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          title: companyTargetTitle,
+          title: state.companyTargetTitles[0],
           company: co,
           type: 'company',
           industry: '',
