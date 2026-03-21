@@ -158,10 +158,12 @@ export default async function handler(req, res) {
     const totalFromJSearch = allJobs.length;
     console.log(`Total from JSearch: ${totalFromJSearch}`);
 
-    // Dedupe by company+title combo
+    // Dedupe by normalized company+title combo
     const seenCompanyTitle = new Set();
     const dedupedJobs = allJobs.filter(job => {
-      const key = ((job.employer_name || '') + '|' + (job.job_title || '')).toLowerCase();
+      const company = (job.employer_name || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+      const title = (job.job_title || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+      const key = `${company}||${title}`;
       if (seenCompanyTitle.has(key)) return false;
       seenCompanyTitle.add(key);
       return true;
@@ -355,8 +357,17 @@ export default async function handler(req, res) {
       }
     }
 
-    // Cap at 30 for Claude scoring
-    const jobs = finalFiltered.slice(0, 20);
+    // Relevance filter — remove titles unrelated to search function
+    let relevanceRemoved = 0;
+    const relevanceFiltered = finalFiltered.filter(job => {
+      if (isTitleRelevant(job.job_title || '', titles)) return true;
+      console.log(`  ❌ Not relevant to ${searchFunc}: ${job.job_title} at ${job.employer_name}`);
+      relevanceRemoved++;
+      return false;
+    });
+
+    // Cap at 20 for Claude scoring
+    const jobs = relevanceFiltered.slice(0, 20);
 
     // Flag staffing agencies
     const filtered = jobs.map((job, i) => {
@@ -390,6 +401,7 @@ export default async function handler(req, res) {
     console.log(`  Fundraising removed: ${fundraisingRemoved}`);
     console.log(`  Resume seniority: ${resumeSeniority}`);
     console.log(`  Below seniority removed: ${seniorityRemoved}`);
+    console.log(`  Relevance filter removed: ${relevanceRemoved}`);
     console.log(`  Passed to Claude for scoring: ${filtered.length}`);
     filtered.forEach((job, i) => {
       console.log(`  ${i+1}. ${job.title} at ${job.company}${job.isAgency ? ' [AGENCY]' : ''} — ${job.location}`);
@@ -400,6 +412,38 @@ export default async function handler(req, res) {
     console.error('Search error:', err);
     return res.status(500).json({ error: 'Something went wrong searching for jobs. Please try again.' });
   }
+}
+
+function isTitleRelevant(jobTitle, searchTitles) {
+  const normalized = jobTitle.toLowerCase();
+
+  const termSets = {
+    hr: ['hr', 'human resources', 'people', 'talent', 'workforce', 'organizational', 'culture', 'recruiting', 'recruitment', 'hrbp', 'hris', 'learning', 'training', 'l&d', 'development'],
+    finance: ['finance', 'financial', 'cfo', 'accounting', 'treasury', 'controller', 'fp&a'],
+    tech: ['engineering', 'technology', 'software', 'cto', 'product', 'data', 'infrastructure', 'developer'],
+    marketing: ['marketing', 'cmo', 'brand', 'growth', 'demand', 'content', 'communications'],
+    sales: ['sales', 'revenue', 'cro', 'account', 'business development', 'partnerships'],
+    ops: ['operations', 'coo', 'supply chain', 'logistics', 'procurement'],
+    legal: ['legal', 'counsel', 'compliance', 'risk', 'regulatory']
+  };
+
+  // Find which term set matches the search titles
+  let matchedTerms = null;
+  for (const [, terms] of Object.entries(termSets)) {
+    if (searchTitles.some(t => terms.some(kw => t.toLowerCase().includes(kw)))) {
+      matchedTerms = terms;
+      break;
+    }
+  }
+
+  if (!matchedTerms) return true; // unknown function — don't filter
+
+  // Job title must contain a function keyword OR be senior leadership
+  const seniorGeneralist = ['ceo', 'president', 'chief of staff', 'managing director', 'general manager', 'vp ', 'vice president', 'svp', 'evp', 'director', 'chro', 'cpo', 'head of'];
+  const isSenior = seniorGeneralist.some(t => normalized.includes(t));
+  const hasFunction = matchedTerms.some(kw => normalized.includes(kw));
+
+  return hasFunction || isSenior;
 }
 
 function formatPostedDate(dateStr) {
