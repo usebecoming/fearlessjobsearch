@@ -3107,10 +3107,10 @@
       // Fallback: load from Supabase if state not populated yet
       if (!supabase || !state.userId) return new Set();
       try {
-        var result = await supabase.from('pipeline').select('title,company').eq('user_id', state.userId);
+        var result = await supabase.from('pipeline_jobs').select('job_title,company').eq('user_id', state.userId);
         if (!result.data) return new Set();
         var keys2 = new Set();
-        result.data.forEach(function(p) { keys2.add(buildPipelineKey(p.title, p.company)); });
+        result.data.forEach(function(p) { keys2.add(buildPipelineKey(p.job_title, p.company)); });
         console.log('📋 Pipeline loaded from DB: ' + keys2.size + ' jobs');
         return keys2;
       } catch (err) {
@@ -3486,7 +3486,13 @@ Return a JSON array with one object per job:
           stopProgress();
           var sortedJobs = scoredJobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0)).slice(0, 10);
           // Filter out jobs already in pipeline
-          var pipelineResult = await filterOutPipelineJobs(sortedJobs);
+          var pipelineResult;
+          try {
+            pipelineResult = await filterOutPipelineJobs(sortedJobs);
+          } catch (pipeErr) {
+            console.error('Pipeline filter error:', pipeErr);
+            pipelineResult = { filtered: sortedJobs, removedCount: 0 };
+          }
           state.jobs = pipelineResult.filtered;
           state.allJobs = sortedJobs; // keep unfiltered for "show all"
           console.log('\n🏆 TOP SCORED JOBS:');
