@@ -3100,15 +3100,24 @@
       // Use already-loaded pipeline from state
       if (state.pipeline && state.pipeline.length > 0) {
         var keys = new Set();
-        state.pipeline.forEach(function(p) { keys.add(buildPipelineKey(p.title, p.company)); });
+        state.pipeline.forEach(function(p) { keys.add(buildPipelineKey(p.job_title || p.title, p.company)); });
         console.log('📋 Pipeline has ' + keys.size + ' existing jobs');
         return keys;
       }
-      // Fallback: load from Supabase if state not populated yet
-      if (!supabase || !state.userId) return new Set();
+      // Fallback: load from Supabase with timeout
+      if (!supabase || !state.userId) {
+        console.log('📋 No pipeline — no supabase or userId');
+        return new Set();
+      }
       try {
-        var result = await supabase.from('pipeline_jobs').select('job_title,company').eq('user_id', state.userId);
-        if (!result.data) return new Set();
+        var result = await Promise.race([
+          supabase.from('pipeline_jobs').select('job_title,company').eq('user_id', state.userId),
+          new Promise(function(resolve) { setTimeout(function() { resolve({ data: null, error: 'timeout' }); }, 5000); })
+        ]);
+        if (!result.data) {
+          console.log('📋 Pipeline query returned no data');
+          return new Set();
+        }
         var keys2 = new Set();
         result.data.forEach(function(p) { keys2.add(buildPipelineKey(p.job_title, p.company)); });
         console.log('📋 Pipeline loaded from DB: ' + keys2.size + ' jobs');
