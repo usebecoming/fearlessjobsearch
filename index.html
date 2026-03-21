@@ -3656,6 +3656,9 @@ Return a JSON array of objects with these exact fields:
         const slug = group.linkedin_slug || '';
         const hasContacts = group.contacts && group.contacts.length > 0;
         const coQuoted = encodeURIComponent('"' + group.company + '"');
+        // Add location to keyword search to scope results geographically
+        const locCity = (group.location || '').replace(/,.*$/, '').trim();
+        const locParam = locCity ? '+' + encodeURIComponent('"' + locCity + '"') : '';
         const liBase = 'https://www.linkedin.com/search/results/people/?keywords=';
         const liOrigin = '&origin=GLOBAL_SEARCH_HEADER';
 
@@ -3663,12 +3666,12 @@ Return a JSON array of objects with these exact fields:
           html += `<div style="background:#F9F6F1;border:1px solid #E5E4E2;border-radius:10px;padding:14px 18px;margin-top:${hasContacts ? '12' : '0'}px;margin-bottom:16px">
             <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:8px">${hasContacts ? 'Find more people at ' + esc(group.company) + ':' : 'Start a conversation at ' + esc(group.company) + ' — search LinkedIn directly:'}</p>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <a href="${liBase}${coQuoted}+${encodeURIComponent('"VP" OR "CHRO" OR "CPO" OR "Director" OR "Head of"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">HR Leaders at ${esc(group.company)} &#8599;</a>
-              <a href="${liBase}${coQuoted}+${encodeURIComponent('"recruiter" OR "talent acquisition" OR "recruiting"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters at ${esc(group.company)} &#8599;</a>
-              <a href="${liBase}${coQuoted}+${encodeURIComponent('"CEO" OR "COO" OR "President" OR "Chief"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives at ${esc(group.company)} &#8599;</a>
+              <a href="${liBase}${coQuoted}${locParam}+${encodeURIComponent('"VP" OR "CHRO" OR "CPO" OR "Director" OR "Head of"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">HR Leaders at ${esc(group.company)} &#8599;</a>
+              <a href="${liBase}${coQuoted}${locParam}+${encodeURIComponent('"recruiter" OR "talent acquisition" OR "recruiting"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters at ${esc(group.company)} &#8599;</a>
+              <a href="${liBase}${coQuoted}${locParam}+${encodeURIComponent('"CEO" OR "COO" OR "President" OR "Chief"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives at ${esc(group.company)} &#8599;</a>
               ${slug ? `<a href="https://www.linkedin.com/company/${esc(slug)}/people/" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">All ${esc(group.company)} employees &#8599;</a>` : ''}
             </div>
-            <p style="font-size:0.78rem;color:#999;margin-top:8px;margin-bottom:0">Links search LinkedIn by keyword — results show people who list ${esc(group.company)} in their profile. Login required.</p>
+            <p style="font-size:0.78rem;color:#999;margin-top:8px;margin-bottom:0">Links search LinkedIn by keyword${locCity ? ' in ' + esc(locCity) : ''}. Login required.</p>
           </div>`;
         }
 
