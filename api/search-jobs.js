@@ -276,16 +276,9 @@ export default async function handler(req, res) {
         irrelevantRemoved++;
         return false;
       }
-      // Fundraising
+      // Fundraising description check
       if (fundraisingSignals.some(s => desc.includes(s))) {
         console.log(`  ❌ Fundraising: ${job.job_title} at ${job.employer_name}`);
-        fundraisingRemoved++;
-        return false;
-      }
-      // Fundraising description check
-      const fundraisingSignals = ['fundrais', 'donor', 'philanthrop', 'annual fund', 'major gifts', 'capital campaign', 'endowment', 'gift officer', 'nonprofit development'];
-      if (fundraisingSignals.some(s => desc.includes(s))) {
-        console.log(`  ❌ Fundraising (desc): ${job.job_title} at ${job.employer_name}`);
         fundraisingRemoved++;
         return false;
       }
