@@ -3142,19 +3142,40 @@
 
     // ── Universal gate checker ──
     // Get auth headers for API calls — passes JWT for server-side verification
+    var _cachedToken = null;
+    var _cachedTokenExpiry = 0;
+
     async function getAuthHeaders() {
       var headers = { 'Content-Type': 'application/json' };
       if (!supabase) return headers;
+
+      // Use cached token if still valid (with 60s buffer before expiry)
+      var now = Date.now();
+      if (_cachedToken && _cachedTokenExpiry > now + 60000) {
+        headers['Authorization'] = 'Bearer ' + _cachedToken;
+        return headers;
+      }
+
       try {
-        // Timeout after 3s — if session is stuck, proceed without auth
+        // 8s timeout — enough for token refresh, catches truly stuck sessions
         var sess = await Promise.race([
           supabase.auth.getSession(),
-          new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Session timeout')); }, 3000); })
+          new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Session timeout')); }, 8000); })
         ]);
         var token = sess?.data?.session?.access_token;
-        if (token) headers['Authorization'] = 'Bearer ' + token;
+        var expiresAt = sess?.data?.session?.expires_at;
+        if (token) {
+          headers['Authorization'] = 'Bearer ' + token;
+          _cachedToken = token;
+          _cachedTokenExpiry = expiresAt ? expiresAt * 1000 : now + 3600000;
+        }
       } catch (err) {
         console.warn('⚠️ Auth session timeout — proceeding without token');
+        // If we have an old cached token, use it as fallback
+        if (_cachedToken) {
+          console.warn('⚠️ Using cached token as fallback');
+          headers['Authorization'] = 'Bearer ' + _cachedToken;
+        }
       }
       return headers;
     }
