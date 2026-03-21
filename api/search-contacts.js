@@ -767,20 +767,25 @@ function getCompanyVariations(company) {
 }
 
 function getShortName(companyName) {
-  if (!companyName || companyName.length <= 6) return null;
-  if (/^[A-Z]{2,6}$/.test(companyName)) return null;
-  const noShort = new Set(['help at home','life is good','living the dream','next level','new horizons',
-    'bright future','first choice','united states','american express','national grid']);
-  if (noShort.has(companyName.toLowerCase())) return null;
+  if (!companyName || companyName.length <= 8) return null;
+  if (/^[A-Z]{2,6}$/.test(companyName.trim())) return null;
+  const tooGeneric = new Set([
+    'the','a','an','new','old','big','great','global','national','american','united','first',
+    'best','top','advanced','premier','elite','pro','max','super','smart','bright','clear',
+    'clean','fast','quick','help','care','life','living','next','future','digital','virtual',
+    'cyber','cloud','data','tech','business','enterprise','corporate','professional','general',
+    'universal','total','complete','full','open','free','easy','simple','modern','dynamic',
+    'strategic','integrated','innovative','creative','north','south','east','west','central',
+    'prime','apex','peak','summit','pinnacle'
+  ]);
   const words = companyName.split(/\s+/);
-  const generic = new Set(['the','a','an','new','old','big','great','global','national','american',
-    'united','first','best','top','advanced','premier','elite','help','care','life','living',
-    'next','future','digital','virtual','business','enterprise','corporate','professional']);
-  const first = words[0];
-  if (generic.has(first.toLowerCase())) {
-    return (words.length > 1 && words[1].length > 3) ? words[1] : null;
+  const first = words[0].toLowerCase().replace(/[^a-z]/g, '');
+  if (first.length >= 4 && !tooGeneric.has(first)) return words[0];
+  if (words.length > 1) {
+    const second = words[1].toLowerCase().replace(/[^a-z]/g, '');
+    if (second.length >= 4 && !tooGeneric.has(second)) return words[1];
   }
-  return first.length >= 4 ? first : null;
+  return null;
 }
 
 // ── Apollo fallback ──
@@ -956,23 +961,53 @@ function inferTitleFromSlug(slug) {
 }
 
 // Clean garbled company names
-function cleanCompanyName(name) {
-  if (!name) return name;
-  let cleaned = name.trim();
-  // Remove internal subsidiary codes
-  cleaned = cleaned.replace(/\s+[A-Z]{3,}(?:\s+[A-Z]{3,})*\s+(?:INC|LLC|CORP|LTD|CO)\.?$/i, '').trim();
-  // Remove standard suffixes
-  cleaned = cleaned.replace(/[,\s]+(INC|LLC|CORP|LTD|CO|INCORPORATED|LIMITED|COMPANY|COMPANIES|GROUP|HOLDINGS|HOLDING|INTERNATIONAL|GLOBAL|WORLDWIDE|ENTERPRISES|ENTERPRISE|SOLUTIONS|SERVICES|CONSULTING|ADVISORS|ADVISORY|PARTNERS|PARTNERSHIP|ASSOCIATES|PLC|NV|SA|AG|GMBH|BV|SRL|SAS)\.?$/i, '').trim();
-  // Remove division indicators
-  cleaned = cleaned.replace(/\s*[-–—]\s*(US|USA|EMEA|APAC|LATAM|NA|EU|UK|AMER)\s*$/i, '').trim();
-  // Remove trailing punctuation
-  cleaned = cleaned.replace(/[,;.:]+$/, '').trim();
-  // Remove parenthetical additions
+// Test cases:
+// "SMITH & NEPHEW SNATS INC" → "Smith and Nephew"
+// "CohnReznick Advisory LLC" → "CohnReznick"
+// "Hanger, Inc." → "Hanger"
+// "Dell Technologies EMEA" → "Dell"
+// "AbbVie Inc." → "AbbVie"
+// "Allergan Aesthetics (AbbVie)" → "Allergan Aesthetics"
+// "Housing Authority of the City of Austin" → unchanged
+// "Boston Consulting Group" → "Boston Consulting Group" (brand)
+// "General Electric" → "General Electric" (brand)
+function cleanCompanyName(rawName) {
+  if (!rawName) return rawName;
+  let cleaned = rawName.trim();
+  // 1. Parenthetical
   cleaned = cleaned.replace(/\s*\([^)]+\)\s*$/, '').trim();
-  // Normalize whitespace
+  // 2. Internal codes (SNATS, GBS etc between name and suffix)
+  cleaned = cleaned.replace(/\s+\b([A-Z]{2,8})\b\s+(?=(?:INC|LLC|CORP|LTD|CO|PLC)\.?\s*$)/gi, (m, code) => {
+    if (!/[AEIOU]/i.test(code) || /^(AND|THE|FOR|GBS|EBO|SNO|SNA)$/i.test(code)) return ' ';
+    return m;
+  }).trim();
+  // 3. Legal suffixes
+  cleaned = cleaned.replace(/[,\s]+(INC\.?|LLC\.?|CORP\.?|LTD\.?|CO\.?|PLC\.?|INCORPORATED|LIMITED|CORPORATION)(\s+|$)/gi, ' ').trim();
+  // 4. Generic trailing words
+  const generic = ['advisory','advisors','consulting','consultants','solutions','services',
+    'holdings','holding','enterprises','enterprise','partners','partnership','associates',
+    'division','companies','industries','industry','technologies','technology','systems',
+    'management','resources','networks','network'];
+  const words = cleaned.split(/\s+/);
+  if (words.length > 1) {
+    const last = words[words.length - 1].toLowerCase().replace(/[^a-z]/g, '');
+    if (generic.includes(last) && words.slice(0, -1).join(' ').length >= 2) {
+      cleaned = words.slice(0, -1).join(' ').trim();
+    }
+  }
+  // 5. Regional suffixes
+  cleaned = cleaned.replace(/\s+[-–—]?\s*(US|USA|EMEA|APAC|LATAM|NA|EU|UK|AMER|NORAM|ANZ)\s*$/i, '').trim();
+  cleaned = cleaned.replace(/\s+(North America|South America|Latin America|Europe|Asia Pacific|Middle East|Africa|Global)\s*$/i, '').trim();
+  // 6. Division indicators
+  cleaned = cleaned.replace(/\s+(Division|Segment|Business Unit|Department|Region|Office)\s*$/i, '').trim();
+  // 7. Punctuation
+  cleaned = cleaned.replace(/[,;:.]+$/, '').trim();
+  // 8. Whitespace
   cleaned = cleaned.replace(/\s+/g, ' ').trim();
-  if (cleaned !== name) console.log(`🧹 Cleaned: "${name}" → "${cleaned}"`);
-  return cleaned || name;
+  // 9. Validate
+  if (cleaned.length < 2) { console.log(`⚠️ Cleaning too aggressive for "${rawName}"`); return rawName; }
+  if (cleaned !== rawName) console.log(`🧹 Cleaned: "${rawName}" → "${cleaned}"`);
+  return cleaned;
 }
 
 // Company-name-as-title check
