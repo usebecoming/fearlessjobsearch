@@ -3164,10 +3164,24 @@
         ]);
         var token = sess?.data?.session?.access_token;
         var expiresAt = sess?.data?.session?.expires_at;
+
+        // If no token, try refreshing the session once before giving up
+        if (!token) {
+          console.warn('⚠️ No token in session — attempting refresh...');
+          var refreshed = await Promise.race([
+            supabase.auth.refreshSession(),
+            new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Refresh timeout')); }, 8000); })
+          ]);
+          token = refreshed?.data?.session?.access_token;
+          expiresAt = refreshed?.data?.session?.expires_at;
+        }
+
         if (token) {
           headers['Authorization'] = 'Bearer ' + token;
           _cachedToken = token;
           _cachedTokenExpiry = expiresAt ? expiresAt * 1000 : now + 3600000;
+        } else {
+          console.warn('⚠️ No auth token available after refresh attempt');
         }
       } catch (err) {
         console.warn('⚠️ Auth session timeout — proceeding without token');
