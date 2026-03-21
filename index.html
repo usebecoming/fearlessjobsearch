@@ -2520,7 +2520,17 @@
     if (supabase) {
       supabase.auth.onAuthStateChange(async (event, session) => {
         if (isSigningOut) return;
-        if (event === 'SIGNED_OUT') return;
+        if (event === 'SIGNED_OUT') {
+          _cachedToken = null;
+          _cachedTokenExpiry = 0;
+          return;
+        }
+        if (session?.access_token) {
+          // Cache token immediately from auth state change — no getSession() needed
+          _cachedToken = session.access_token;
+          _cachedTokenExpiry = session.expires_at ? session.expires_at * 1000 : Date.now() + 3600000;
+          console.log('🔑 Token cached from auth state change');
+        }
         if (session?.user) {
           showApp(session.user);
           await loadUserData();
