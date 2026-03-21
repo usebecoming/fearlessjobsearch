@@ -20,10 +20,10 @@ export default async function handler(req, res) {
     const { plan, email, userId, priceId: directPriceId } = req.body;
 
     // Coaching product price IDs — one-time payments, not subscriptions
-    const COACHING_PRICE_IDS = [
-      'price_1TDFhJK3APtatfMmjK9kHib4',  // Resume
+    const coachingPriceIds = new Set([
+      'price_1TDFhJK3APtatfMmjK9kHib4',  // Resume Review & Rewrite
       'price_1TDFi0K3APtatfMmtU7ZLSsk'   // Resume + LinkedIn
-    ];
+    ]);
 
     // Resolve price ID
     let priceId = directPriceId;
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     }
 
     // Server determines mode from price ID — no client trust needed
-    const checkoutMode = COACHING_PRICE_IDS.includes(priceId) ? 'payment' : 'subscription';
+    const checkoutMode = coachingPriceIds.has(priceId) ? 'payment' : 'subscription';
 
     const origin = req.headers.origin || 'https://fearlessjobsearch.com';
 

@@ -1,7 +1,10 @@
 import { PRICE_TO_PLAN } from './_plans.js';
 
 // Coaching session price IDs - skip plan update for these
-const COACHING_PRICE_IDS = [];
+const COACHING_PRICE_IDS = new Set([
+  'price_1TDFhJK3APtatfMmjK9kHib4',  // Resume Review & Rewrite
+  'price_1TDFi0K3APtatfMmtU7ZLSsk'   // Resume + LinkedIn
+]);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -44,7 +47,7 @@ export default async function handler(req, res) {
           const liData = await liResponse.json();
           const priceId = liData.data?.[0]?.price?.id;
 
-          if (COACHING_PRICE_IDS.includes(priceId)) {
+          if (COACHING_PRICE_IDS.has(priceId)) {
             console.log('✅ Coaching session purchase — no plan update');
             return res.status(200).json({ received: true, type: 'coaching' });
           }
