@@ -3143,10 +3143,19 @@
     // ── Universal gate checker ──
     // Get auth headers for API calls — passes JWT for server-side verification
     async function getAuthHeaders() {
-      var sess = supabase ? await supabase.auth.getSession() : null;
-      var token = sess?.data?.session?.access_token;
       var headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = 'Bearer ' + token;
+      if (!supabase) return headers;
+      try {
+        // Timeout after 3s — if session is stuck, proceed without auth
+        var sess = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Session timeout')); }, 3000); })
+        ]);
+        var token = sess?.data?.session?.access_token;
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+      } catch (err) {
+        console.warn('⚠️ Auth session timeout — proceeding without token');
+      }
       return headers;
     }
 
