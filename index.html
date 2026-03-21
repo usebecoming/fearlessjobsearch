@@ -1813,7 +1813,7 @@
 
     <!-- ── Step 3: Decision-Makers ── -->
     <div class="section" id="section-3">
-      <div class="back-row"><button class="btn-back" onclick="goToStep(2)">← Back to jobs</button><button class="btn-back" onclick="resetToInitialState()" style="margin-left:8px;color:#B8A88A">New Search</button></div>
+      <div class="back-row"><button class="btn-back" id="contacts-back-btn" onclick="goToStep(2)">← Back to jobs</button><button class="btn-back" onclick="resetToInitialState()" style="margin-left:8px;color:#B8A88A">New Search</button></div>
       <h2 class="section-title">Decision-Makers</h2>
       <p class="section-sub">Real people at each company, found via LinkedIn. Verified to currently work there.</p>
 
@@ -2869,6 +2869,19 @@
         if (i === n) { dot.classList.add('active'); label.classList.add('active'); }
         if (i <= 3) {
           document.getElementById(`line-${i}`).className = 'step-line' + (i < n ? ' completed' : '');
+        }
+      }
+      // Update back button on contacts page based on search mode
+      if (n === 3) {
+        var backBtn = document.getElementById('contacts-back-btn');
+        if (backBtn) {
+          if (state.searchMode === 'companies') {
+            backBtn.textContent = '\u2190 Back to search';
+            backBtn.onclick = function() { goToStep(1); };
+          } else {
+            backBtn.textContent = '\u2190 Back to jobs';
+            backBtn.onclick = function() { goToStep(2); };
+          }
         }
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
