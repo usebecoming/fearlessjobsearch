@@ -3471,6 +3471,7 @@ Return a JSON array with one object per job:
           }
 
           // Merge scores into real jobs
+          console.log('📊 Scores returned:', scores?.length, 'Real jobs:', realJobs?.length);
           const scoredJobs = realJobs.map(job => {
             if (!resumeSummary) {
               return { ...job, fitScore: -1, fitReason: 'No resume uploaded. Add your resume for fit scoring.' };
@@ -3483,8 +3484,10 @@ Return a JSON array with one object per job:
             };
           });
 
+          console.log('📊 Scored jobs:', scoredJobs.length);
           stopProgress();
           var sortedJobs = scoredJobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0)).slice(0, 10);
+          console.log('📊 Sorted/sliced to:', sortedJobs.length);
           // Filter out jobs already in pipeline
           var pipelineResult;
           try {
@@ -3493,9 +3496,10 @@ Return a JSON array with one object per job:
             console.error('Pipeline filter error:', pipeErr);
             pipelineResult = { filtered: sortedJobs, removedCount: 0 };
           }
+          console.log('📊 Pipeline filter result:', pipelineResult.filtered?.length, 'removed:', pipelineResult.removedCount);
           state.jobs = pipelineResult.filtered;
           state.allJobs = sortedJobs; // keep unfiltered for "show all"
-          console.log('\n🏆 TOP SCORED JOBS:');
+          console.log('🏆 TOP SCORED JOBS (' + state.jobs.length + '):');
           state.jobs.forEach(function(job, i) {
             var badge = job.fitScore >= 87 ? 'Strong Match' : job.fitScore >= 70 ? 'Good Match' : job.fitScore === -1 ? 'No Resume' : 'Stretch';
             console.log('  ' + (i+1) + '. ' + job.title + ' at ' + job.company + ' — Score: ' + job.fitScore + ' — ' + badge);
