@@ -2624,6 +2624,8 @@
       }
     });
 
+    titlesField.addEventListener('input', () => validateSearch());
+
     function renderTags() {
       titlesWrap.querySelectorAll('.tag').forEach(t => t.remove());
       state.titles.forEach((title, i) => {
@@ -2695,6 +2697,8 @@
       }
     });
 
+    companiesField.addEventListener('input', () => validateSearch());
+
     function renderCompanyTags() {
       companiesWrap.querySelectorAll('.tag').forEach(t => t.remove());
       state.companies.forEach((company, i) => {
@@ -2738,6 +2742,8 @@
         validateSearch();
       }
     });
+
+    companyTitlesField.addEventListener('input', () => validateSearch());
 
     function renderCompanyTargetTitleTags() {
       companyTitlesWrap.querySelectorAll('.tag').forEach(t => t.remove());
@@ -2981,9 +2987,12 @@
     function validateSearch() {
       const btn = document.getElementById('searchBtn');
       if (state.searchMode === 'companies') {
-        btn.disabled = state.companies.length === 0 || state.companyTargetTitles.length === 0;
+        const hasCompanies = state.companies.length > 0 || document.getElementById('companiesField')?.value.trim();
+        const hasTitles = state.companyTargetTitles.length > 0 || document.getElementById('companyTitlesField')?.value.trim();
+        btn.disabled = !hasCompanies || !hasTitles;
       } else {
-        btn.disabled = state.titles.length === 0;
+        const hasTitles = state.titles.length > 0 || document.getElementById('titlesField')?.value.trim();
+        btn.disabled = !hasTitles;
       }
     }
 
