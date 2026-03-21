@@ -1422,12 +1422,12 @@
         <div class="pricing-card" style="border-color:#E5E4E2">
           <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#777777;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Starter</div>
           <div class="pricing-amount">$29<span>/mo</span></div>
-          <div class="pricing-annual">1 search per month</div>
+          <div class="pricing-annual">Perfect for focused job searches</div>
           <ul class="pricing-features">
-            <li>10 AI-matched roles per search</li>
-            <li>Up to 60 decision-maker contacts</li>
-            <li>240 personalized outreach messages</li>
-            <li>Emails + LinkedIn profiles included</li>
+            <li>10 qualified, AI-matched roles</li>
+            <li>60 verified decision-maker contacts</li>
+            <li>Personalized outreach sequences</li>
+            <li>LinkedIn profiles for every contact</li>
             <li>Pipeline tracking</li>
           </ul>
           <button class="btn-secondary" style="width:100%;justify-content:center;padding:14px" onclick="startCheckout('starter')">Get Started</button>
@@ -1437,15 +1437,15 @@
         <div class="pricing-card">
           <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Pro</div>
           <div class="pricing-amount">$59<span>/mo</span></div>
-          <div class="pricing-annual">4 searches per month</div>
+          <div class="pricing-annual">For active job seekers</div>
           <ul class="pricing-features">
-            <li>40 AI-matched roles per month</li>
-            <li>Up to 240 decision-maker contacts</li>
-            <li>960 personalized outreach messages</li>
-            <li>AI learns what roles you prefer</li>
-            <li>Saved search profiles</li>
-            <li>CSV export for automation tools</li>
+            <li>40 qualified roles per month</li>
+            <li>240 verified decision-maker contacts</li>
+            <li>Personalized outreach sequences</li>
+            <li>Target companies directly</li>
             <li>Resume-powered fit scoring</li>
+            <li>Saved search profiles</li>
+            <li>CSV export</li>
           </ul>
           <button class="btn-primary" style="width:100%;justify-content:center;padding:14px" onclick="startCheckout('pro')">Start Pro</button>
         </div>
@@ -1458,13 +1458,12 @@
             <br><a href="#" onclick="event.preventDefault();startCheckout('unlimited_yearly')" style="font-size:0.85rem">Choose annual</a>
           </div>
           <ul class="pricing-features">
-            <li>Unlimited job searches</li>
+            <li>Unlimited qualified roles</li>
             <li>Unlimited decision-maker contacts</li>
-            <li>Unlimited personalized outreach</li>
-            <li>AI learns and improves every search</li>
-            <li>Saved search profiles</li>
-            <li>CSV export for automation tools</li>
+            <li>Unlimited outreach sequences</li>
+            <li>Target companies directly</li>
             <li>Resume-powered fit scoring</li>
+            <li>Everything in Pro</li>
             <li>Priority support</li>
           </ul>
           <button class="btn-primary" style="width:100%;justify-content:center;padding:14px;background:#111111" onclick="startCheckout('unlimited_monthly')">Go Unlimited</button>
@@ -1877,19 +1876,20 @@
 
   <!-- ── Upgrade Modal ── -->
   <div class="modal-overlay" id="upgradeModal">
-    <div class="modal" style="max-width:720px">
-      <div class="modal-header">
-        <h2 style="font-size:1.3rem">Upgrade Your Plan</h2>
-        <button class="modal-close" onclick="closeUpgradeModal()">✕</button>
+    <div class="modal" style="max-width:820px;padding:0;overflow:hidden">
+      <div style="background:linear-gradient(135deg,#111 0%,#2a2520 100%);padding:32px 36px 24px;position:relative">
+        <button class="modal-close" onclick="closeUpgradeModal()" style="color:#fff;opacity:0.6;position:absolute;top:16px;right:20px;font-size:1.3rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center">&#10005;</button>
+        <h2 style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:800;color:#fff;margin-bottom:6px">Unlock Your Full Potential</h2>
+        <p style="font-size:0.92rem;color:rgba(255,255,255,0.7);font-weight:500">AI-matched roles, verified contacts, and personalized outreach — all in minutes.</p>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+      <div style="padding:28px 36px 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px">
         <div style="border:1px solid #E5E4E2;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
           <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#777777;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Starter</div>
           <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$29<span style="font-size:1rem;color:#777777;font-weight:400">/mo</span></div>
           <ul style="list-style:none;margin:16px 0;font-size:0.88rem;color:#555;font-weight:500">
-            <li style="padding:4px 0">1 search/month</li>
-            <li style="padding:4px 0">60 decision-maker contacts</li>
-            <li style="padding:4px 0">240 personalized outreach messages</li>
+            <li style="padding:4px 0">10 qualified, AI-matched roles</li>
+            <li style="padding:4px 0">60 verified contacts</li>
+            <li style="padding:4px 0">Personalized outreach sequences</li>
           </ul>
           <button class="btn-secondary" style="width:100%;justify-content:center;padding:12px" onclick="startCheckout('starter')">Select</button>
         </div>
@@ -1897,9 +1897,9 @@
           <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Pro</div>
           <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$59<span style="font-size:1rem;color:#777777;font-weight:400">/mo</span></div>
           <ul style="list-style:none;margin:16px 0;font-size:0.88rem;color:#555;font-weight:500">
-            <li style="padding:4px 0">4 searches/month</li>
-            <li style="padding:4px 0">240 decision-maker contacts</li>
-            <li style="padding:4px 0">960 personalized outreach messages</li>
+            <li style="padding:4px 0">40 qualified roles per month</li>
+            <li style="padding:4px 0">240 verified contacts</li>
+            <li style="padding:4px 0">Target companies directly</li>
           </ul>
           <button class="btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="startCheckout('pro')">Select</button>
         </div>
@@ -1907,9 +1907,9 @@
           <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Unlimited</div>
           <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$99<span style="font-size:1rem;color:#777777;font-weight:400">/mo</span></div>
           <ul style="list-style:none;margin:16px 0;font-size:0.88rem;color:#555;font-weight:500">
-            <li style="padding:4px 0">Unlimited searches</li>
-            <li style="padding:4px 0">Unlimited contacts</li>
-            <li style="padding:4px 0">Unlimited messages</li>
+            <li style="padding:4px 0">Unlimited roles and contacts</li>
+            <li style="padding:4px 0">Unlimited outreach sequences</li>
+            <li style="padding:4px 0">Everything in Pro</li>
           </ul>
           <button class="btn-primary" style="width:100%;justify-content:center;padding:10px;background:#111" onclick="startCheckout('unlimited_monthly')">Select</button>
           <div style="text-align:center;margin-top:8px"><a href="#" onclick="event.preventDefault();startCheckout('unlimited_yearly')" style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem">$599/year (save $589)</a></div>
@@ -1979,8 +1979,15 @@
   <script>
     // ── Check checkout success ──
     if (window.location.search.includes('checkout=success')) {
-      // Remove query param
       window.history.replaceState({}, '', window.location.pathname);
+      // Show success toast after a brief delay (let page load first)
+      setTimeout(function() {
+        var toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:14px 28px;border-radius:10px;font-size:0.92rem;font-weight:500;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2)';
+        toast.textContent = 'Welcome! Your account has been upgraded.';
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.remove(); }, 4000);
+      }, 500);
     }
 
     // ── Sign Out (defined early so it always works) ──
@@ -2176,8 +2183,26 @@
     async function handleDeleteAccount() {
       if (!confirm('Are you sure you want to delete your account? This cannot be undone. All your data will be permanently removed.')) return;
       if (!confirm('This is permanent. Your pipeline, saved searches, and all data will be deleted. Continue?')) return;
-      // Send email to support
-      alert('To delete your account, please email support@lfyconsulting.com with the subject "Delete my account" from your registered email address. We will process your request within 30 days.');
+      try {
+        var sess = supabase ? await supabase.auth.getSession() : null;
+        var userId = sess?.data?.session?.user?.id;
+        if (!userId) { alert('Please sign in first.'); return; }
+        // Delete user data from all tables
+        await Promise.all([
+          supabase.from('pipeline').delete().eq('user_id', userId),
+          supabase.from('search_profiles').delete().eq('user_id', userId),
+          supabase.from('usage_log').delete().eq('user_id', userId),
+          supabase.from('favorites').delete().eq('user_id', userId),
+          supabase.from('profiles').delete().eq('id', userId)
+        ]);
+        // Sign out
+        await supabase.auth.signOut();
+        alert('Your account and all data have been deleted.');
+        window.location.reload();
+      } catch (err) {
+        console.error('Delete account error:', err);
+        alert('Something went wrong. Please email support@lfyconsulting.com for help.');
+      }
     }
 
     // Detect private/incognito browsing
