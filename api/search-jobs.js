@@ -85,6 +85,9 @@ export default async function handler(req, res) {
           console.log(`  JSearch "${query.substring(0,50)}": ${results.length}`);
           return results;
         }
+        // Log the actual error so we can diagnose it
+        const errorBody = await response.text().catch(() => '(unreadable)');
+        console.log(`  ❌ JSearch HTTP ${response.status} for "${query.substring(0,40)}": ${errorBody.substring(0,200)}`);
         return [];
       } catch (e) {
         console.log(`  ⚠️ JSearch timeout/error for "${query.substring(0,40)}": ${e.message}`);
@@ -127,19 +130,22 @@ export default async function handler(req, res) {
       }
     }
 
-    console.log(`🔍 Running ${searchQueries.length} JSearch queries in parallel...`);
+    console.log(`🔍 Running ${searchQueries.length} JSearch queries in batches of 4...`);
 
-    // Run ALL queries in parallel
-    const allResults = await Promise.all(
-      searchQueries.map(sq => jsearchOne(sq.query, sq.extra).then(r => {
-        if (r.length === 0) {
-          // Retry once with longer timeout if first attempt got nothing
-          console.log(`  🔄 Retrying: ${sq.query.substring(0,50)}`);
-          return jsearchOne(sq.query, sq.extra);
-        }
-        return r;
-      }))
-    );
+    const BATCH_SIZE = 4;
+    const BATCH_DELAY_MS = 250;
+    const allResults = [];
+
+    for (let i = 0; i < searchQueries.length; i += BATCH_SIZE) {
+      const batch = searchQueries.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(sq => jsearchOne(sq.query, sq.extra))
+      );
+      allResults.push(...batchResults);
+      if (i + BATCH_SIZE < searchQueries.length) {
+        await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
+      }
+    }
 
     // Dedupe by job ID
     const seenJobIds = new Set();
