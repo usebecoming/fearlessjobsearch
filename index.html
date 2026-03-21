@@ -1916,7 +1916,7 @@
 
   <!-- ── Upgrade Modal ── -->
   <div class="modal-overlay" id="upgradeModal">
-    <div class="modal" style="max-width:820px;padding:0;overflow:hidden">
+    <div class="modal" style="max-width:820px;padding:0;overflow-y:auto">
       <div style="background:linear-gradient(135deg,#111 0%,#2a2520 100%);padding:32px 36px 24px;position:relative">
         <button class="modal-close" onclick="closeUpgradeModal()" style="color:#fff;opacity:0.6;position:absolute;top:16px;right:20px;font-size:1.3rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center">&#10005;</button>
         <h2 style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:800;color:#fff;margin-bottom:6px">Unlock Your Full Potential</h2>
@@ -2172,28 +2172,25 @@
 
     // ── Stripe Checkout ──
     async function startCheckout(plan) {
-      // Check if user is logged in first
-      const { data: { session: _sess } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
-      const user = _sess?.user;
-      if (!user) {
+      if (!state.userId || !state.userEmail) {
+        closeUpgradeModal();
         openAuthModal('signup');
         sessionStorage.setItem('fjs_pending_plan', plan);
         return;
       }
-
       try {
-        const res = await fetch('/api/create-checkout', {
+        var res = await fetch('/api/create-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plan, email: user.email, userId: user.id })
+          body: JSON.stringify({ plan: plan, email: state.userEmail, userId: state.userId })
         });
-        const data = await res.json();
+        var data = await res.json();
         if (data.url) {
           window.location.href = data.url;
         } else {
           alert(data.error || 'Could not start checkout. Please try again.');
         }
-      } catch {
+      } catch(e) {
         alert('Could not connect to payment system. Please try again.');
       }
     }
