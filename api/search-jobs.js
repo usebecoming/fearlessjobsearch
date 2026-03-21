@@ -96,7 +96,6 @@ export default async function handler(req, res) {
     }
 
     // Build all search queries
-    const seniority = getSeniority(titles[0] || '');
     const searchQueries = [];
     for (const title of expandedTitles) {
       for (const loc of locationQueries) {
@@ -105,7 +104,6 @@ export default async function handler(req, res) {
         const query = title + (locationStr ? ` in ${locationStr}` : '');
         const extra = {};
         if ((isRemote && !locationStr) || isRemoteQuery) extra.remote_jobs_only = 'true';
-        if (seniority) extra.job_requirements = seniority;
         searchQueries.push({ query, extra });
       }
     }
@@ -132,8 +130,8 @@ export default async function handler(req, res) {
 
     console.log(`🔍 Running ${searchQueries.length} JSearch queries in batches of 4...`);
 
-    const BATCH_SIZE = 4;
-    const BATCH_DELAY_MS = 250;
+    const BATCH_SIZE = 3;
+    const BATCH_DELAY_MS = 1000;
     const allResults = [];
 
     for (let i = 0; i < searchQueries.length; i += BATCH_SIZE) {
@@ -763,15 +761,10 @@ function detectSearchSeniority(titles) {
   return 'any';
 }
 
-function getSeniority(title) {
-  const t = title.toLowerCase();
-  if (/\b(coordinator|specialist|associate|assistant)\b/.test(t)) return 'entry_level,mid_level';
-  if (/\b(manager|lead|senior)\b/.test(t) && !/\b(director|vp|vice president)\b/.test(t)) return 'mid_level,senior_level';
-  if (/\b(director|head of)\b/.test(t)) return 'senior_level,director';
-  if (/\b(vp|vice president|svp|evp)\b/.test(t)) return 'vp';
-  if (/\b(chief|cmo|cto|cfo|coo|cpo|cro|chro|ceo|president)\b/.test(t)) return 'executive';
-  return '';
-}
+// getSeniority removed — JSearch job_requirements param only accepts
+// under_3_years_experience, more_than_3_years_experience, no_experience, no_degree
+// Our custom values (vp, executive, etc.) caused 400 errors on every query.
+// Seniority filtering is handled post-JSearch by detectSeniorityFromResume instead.
 
 // ── 5. Resume keyword extraction ──
 // Comprehensive skill regex
