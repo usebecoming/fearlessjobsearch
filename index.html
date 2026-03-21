@@ -1688,11 +1688,12 @@
           <input type="text" class="tag-field" id="locationField" placeholder="Start typing a city..." autocomplete="off">
         </div>
         <div class="location-suggestions" id="locationSuggestions"></div>
-        <p style="font-size:0.82rem;color:#999;margin-top:6px">Add "Remote" to significantly expand your results. Most senior roles have remote or hybrid options.</p>
+        <p style="font-size:0.82rem;color:#999;margin-top:6px" id="locationHintJobs">Add "Remote" to significantly expand your results. Most senior roles have remote or hybrid options.</p>
+        <p style="font-size:0.82rem;color:#999;margin-top:6px;display:none" id="locationHintCompany">Where do you want your target contacts to be located? Add cities or countries.</p>
       </div>
 
-      <!-- Work Type -->
-      <div class="form-group">
+      <!-- Work Type (job mode only) -->
+      <div class="form-group" id="workTypeGroup">
         <label class="form-label">Work Type</label>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <label class="work-type-option"><input type="checkbox" value="Remote" checked> Remote</label>
@@ -2393,6 +2394,9 @@
         document.getElementById('companiesGroup').style.display = 'none';
         document.getElementById('jobModeInstructions').style.display = '';
         document.getElementById('companyModeInstructions').style.display = 'none';
+        document.getElementById('workTypeGroup').style.display = '';
+        document.getElementById('locationHintJobs').style.display = '';
+        document.getElementById('locationHintCompany').style.display = 'none';
         document.getElementById('searchBtn').textContent = 'Find Opportunities';
       } else {
         document.querySelectorAll('.search-mode-btn')[1].classList.add('active');
@@ -2400,6 +2404,9 @@
         document.getElementById('companiesGroup').style.display = '';
         document.getElementById('jobModeInstructions').style.display = 'none';
         document.getElementById('companyModeInstructions').style.display = '';
+        document.getElementById('workTypeGroup').style.display = 'none';
+        document.getElementById('locationHintJobs').style.display = 'none';
+        document.getElementById('locationHintCompany').style.display = '';
         document.getElementById('searchBtn').textContent = 'Find Decision-Makers';
       }
       validateSearch();
