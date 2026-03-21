@@ -64,7 +64,8 @@ export default async function handler(req, res) {
         'line_items[0][quantity]': '1',
         ...(email ? { 'customer_email': email } : {}),
         'metadata[supabase_user_id]': userId || '',
-        'metadata[plan]': plan || 'coaching'
+        'metadata[plan]': plan || 'coaching',
+        'allow_promotion_codes': 'true'
       }).toString()
     });
 
