@@ -492,6 +492,7 @@
       background: #FFFFFF;
     }
     .file-upload-area:hover { border-color: #B8A88A; background: rgba(184,168,138,0.03); }
+    .file-upload-area.drag-over { border-color: #9A8B6E; background: #F7F5F2; }
     .file-upload-area.has-file { border-color: #3A8A5C; background: rgba(58,138,92,0.03); }
     .file-upload-area p { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; color: #777777; }
     .file-upload-area .file-name { color: #3A8A5C; font-weight: 500; margin-top: 6px; }
@@ -2611,6 +2612,16 @@
       }
     });
 
+    titlesField.addEventListener('blur', () => {
+      const val = titlesField.value.trim();
+      if (val && !state.titles.includes(val)) {
+        state.titles.push(val);
+        renderTags();
+        titlesField.value = '';
+        validateSearch();
+      }
+    });
+
     function renderTags() {
       titlesWrap.querySelectorAll('.tag').forEach(t => t.remove());
       state.titles.forEach((title, i) => {
@@ -2672,6 +2683,16 @@
       }
     });
 
+    companiesField.addEventListener('blur', () => {
+      const val = companiesField.value.trim();
+      if (val && !state.companies.includes(val)) {
+        state.companies.push(val);
+        renderCompanyTags();
+        companiesField.value = '';
+        validateSearch();
+      }
+    });
+
     function renderCompanyTags() {
       companiesWrap.querySelectorAll('.tag').forEach(t => t.remove());
       state.companies.forEach((company, i) => {
@@ -2702,6 +2723,16 @@
           renderCompanyTargetTitleTags();
           companyTitlesField.value = '';
         }
+        validateSearch();
+      }
+    });
+
+    companyTitlesField.addEventListener('blur', () => {
+      const val = companyTitlesField.value.trim();
+      if (val && !state.companyTargetTitles.includes(val)) {
+        state.companyTargetTitles.push(val);
+        renderCompanyTargetTitleTags();
+        companyTitlesField.value = '';
         validateSearch();
       }
     });
@@ -2832,6 +2863,22 @@
     const fileUploadArea = document.getElementById('fileUploadArea');
 
     resumeFile.addEventListener('change', e => handleResumeFile(e.target.files[0]));
+
+    fileUploadArea.addEventListener('dragover', e => {
+      e.preventDefault();
+      fileUploadArea.classList.add('drag-over');
+    });
+
+    fileUploadArea.addEventListener('dragleave', e => {
+      fileUploadArea.classList.remove('drag-over');
+    });
+
+    fileUploadArea.addEventListener('drop', e => {
+      e.preventDefault();
+      fileUploadArea.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) handleResumeFile(file);
+    });
 
     async function handleResumeFile(file) {
       if (!file) return;
@@ -3121,6 +3168,21 @@
 
     // ── Step 2: Search ──
     async function runSearch() {
+      // Auto-commit any uncommitted tag input before running
+      const uncommittedTitle = document.getElementById('titlesField')?.value.trim();
+      if (uncommittedTitle && !state.titles.includes(uncommittedTitle)) {
+        state.titles.push(uncommittedTitle);
+        renderTags();
+        document.getElementById('titlesField').value = '';
+      }
+      const uncommittedCompany = document.getElementById('companiesField')?.value.trim();
+      if (uncommittedCompany && !state.companies.includes(uncommittedCompany)) {
+        state.companies.push(uncommittedCompany);
+        renderCompanyTags();
+        document.getElementById('companiesField').value = '';
+      }
+      validateSearch();
+
       // Check usage limits before searching
       const searchAction = state.searchMode === 'companies' ? 'company_target' : 'search_jobs';
       const allowed = await checkGate(searchAction);
