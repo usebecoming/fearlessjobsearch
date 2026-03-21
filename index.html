@@ -2202,27 +2202,22 @@
     async function startCoachingCheckout(priceId) {
       console.log('🛒 Step 1: Coaching checkout started, priceId:', priceId);
       try {
-        console.log('🛒 Step 2: Getting session...');
-        const { data: { session: _sess } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
-        const user = _sess?.user;
-        console.log('🛒 Step 3: User:', user?.email, 'ID:', user?.id);
-        if (!user) {
+        // Use state directly — don't call getSession which can hang
+        if (!state.userId || !state.userEmail) {
+          console.log('🛒 Not logged in — opening auth');
           closeBookingModal();
           openAuthModal('signup');
           return;
         }
-        console.log('🛒 Step 4: Getting auth headers...');
-        var headers = await getAuthHeaders();
-        headers['Content-Type'] = 'application/json';
-        console.log('🛒 Step 5: Auth header present:', !!headers['Authorization']);
-        var payload = { priceId: priceId, email: user.email, userId: user.id };
-        console.log('🛒 Step 6: Calling /api/create-checkout with:', JSON.stringify(payload));
+        console.log('🛒 Step 2: User from state:', state.userEmail);
+        var payload = { priceId: priceId, email: state.userEmail, userId: state.userId };
+        console.log('🛒 Step 3: Calling /api/create-checkout...');
         const stripeRes = await fetch('/api/create-checkout', {
           method: 'POST',
-          headers: headers,
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        console.log('🛒 Step 7: Response status:', stripeRes.status);
+        console.log('🛒 Step 4: Response status:', stripeRes.status);
         const data = await stripeRes.json();
         console.log('🛒 Step 8: Response data:', JSON.stringify(data));
         if (data.url) {
