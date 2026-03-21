@@ -152,46 +152,38 @@ export default async function handler(req, res) {
     });
     const afterDedup = dedupedJobs.length;
 
-    // ── Comprehensive job filtering ──
+    // ── Detect search function from titles ──
+    const searchFunc = detectSearchFunction(expandedTitles);
+    console.log(`📊 Search function: ${searchFunc}`);
 
-    const suspiciousCompanies = new Set([
-      // MLM / Pyramid
-      'focus on life biz','primerica','herbalife','amway','cutco','vector marketing',
-      'symmetry financial','php agency','world financial group','wfg','northwestern mutual',
-      'new york life','mass mutual','massmutual','aflac','globe life','american income life',
-      'ail','family first life','ffl','equity national life','transamerica','paclife',
-      'pacific life','monat','market america','optavia','isagenix','rodan and fields',
-      'rodan + fields','lularoe','young living','doterra','scentsy','tupperware',
-      'pampered chef','avon','mary kay',
-      // Suspected MLM / misleading
-      'alphabe insight','alphabe insight inc','elevation global','elevation global inc',
-      'next level talent','mvp vc','dukin','interplay learning','cydcor','devilcorp',
-      'smart circle','credico','ds max','granton marketing','innovage',
-      'the acquisition group','apex management group','peak performance',
-      'peak performance group','synergy management','atlas marketing','atlas management',
-      'impact marketing','impact leadership','prime marketing','premier marketing',
-      'pyramid consulting',
-      // Poor employers
-      'crossover','crossover for work','trilogy education','2u inc','2u',
-      // Garbled names
-      'org_subtype','global_services','operations_bu',
-      // Workforce programs (not corporate)
-      'year up','year up united','job corps','goodwill industries','workforce solutions',
-      'careerstaff',
-      // Tutoring / childcare
-      'mathnasium','kumon','sylvan learning','huntington learning','learning tree',
-      'the learning experience','bright horizons','kindercare','primrose schools',
-      // Staffing (backup to agency filter)
-      'insight global','experis','manpower','manpowergroup','adecco','randstad',
-      'kelly services','robert half','spherion','aerotek','staffmark','staffing solutions',
-      'medasource','vivian health','mercury group staffing','sigma inc','next level talent llc'
+    // ── Context-aware job filtering ──
+
+    const universalBlocklist = new Set([
+      'primerica','herbalife','amway','cutco','vector marketing','symmetry financial',
+      'php agency','world financial group','wfg','american income life','ail',
+      'family first life','ffl','monat','market america','optavia','isagenix',
+      'rodan and fields','rodan + fields','lularoe','young living','doterra','scentsy',
+      'tupperware','pampered chef','avon','mary kay','alphabe insight','alphabe insight inc',
+      'elevation global','elevation global inc','cydcor','smart circle','credico','ds max',
+      'granton marketing','innovage','org_subtype','global_services','operations_bu',
+      'pyramid consulting'
     ]);
+
+    const conditionalBlocklist = {
+      'People': new Set(['focus on life biz','dukin','mvp vc','next level talent','next level talent llc',
+        'interplay learning','year up','year up united','job corps','goodwill industries','workforce solutions',
+        'mathnasium','kumon','sylvan learning','huntington learning','the learning experience',
+        'bright horizons','kindercare','primrose schools','crossover','crossover for work']),
+      'Marketing': new Set(['focus on life biz','dukin','mvp vc','digital media solutions','fluent inc']),
+      'Engineering': new Set(['year up','year up united','job corps','general assembly','trilogy education','2u','2u inc','coding dojo','hack reactor','fullstack academy']),
+      'Sales': new Set(['focus on life biz','dukin','northwestern mutual','new york life','mass mutual','massmutual','aflac','globe life','transamerica','american income life']),
+      'Finance': new Set(['focus on life biz','primerica'])
+    };
 
     const suspiciousPatterns = [
       /\b(peak|prime|apex|summit|pinnacle|elite|premier|impact|synergy|momentum|velocity|leverage)\s+(management|marketing|solutions|group|consulting|partners)\b/i,
       /\bleadership\s+(solutions|group|partners|consulting)\s+inc\b/i,
-      /org_subtype/i, /^bu\d{3}/i, /_bu\d{3}/i,
-      /[A-Z]{2,}_[A-Z]{2,}/
+      /org_subtype/i, /^bu\d{3}/i, /_bu\d{3}/i, /[A-Z]{2,}_[A-Z]{2,}/
     ];
 
     const mlmTitlePatterns = [
@@ -202,28 +194,22 @@ export default async function handler(req, res) {
       /independent representative/i, /brand ambassador.*commission/i
     ];
 
-    const irrelevantKeywords = [
-      'labor & delivery','labor and delivery','l&d rn','registered nurse','nursing',
-      'patient care','antepartum','obstetric','maternal','postpartum','nicu',
-      'flight nurse','med surg','icu','er nurse','travel nurse','rn ',
-      'sdr','bdr','sales development rep','teach english','esl teacher',
-      'water safety','lifeguard','daycare','day care','childcare','preschool',
-      'kindergarten','elementary school','middle school','high school',
-      'workforce development program','documentation specialist'
-    ];
+    // Function-specific irrelevant patterns
+    const funcIrrelevant = {
+      'People': [/\bl&d rn\b/i, /labor.*delivery/i, /registered nurse/i, /\brn,?\b/i, /nursing/i,
+        /patient care/i, /obstetric/i, /maternal/i, /postpartum/i, /nicu/i,
+        /\bsdr\b/i, /\bbdr\b/i, /sales development rep/i,
+        /development.*construction/i, /construction.*development/i,
+        /\bdaycare\b/i, /\bday care\b/i, /\bchildcare\b/i,
+        /\bsoftware.*engineer/i, /\bdata engineer/i, /\bvalue engineering\b/i],
+      'Marketing': [/software.*engineer/i, /data engineer/i, /registered nurse/i],
+      'Engineering': [/marketing manager/i, /brand manager/i, /registered nurse/i],
+      'Sales': [/registered nurse/i, /software engineer/i, /data engineer/i]
+    };
 
-    const irrelevantPatterns = [
-      /^development director/i, /^director of development/i,
-      /\bsvp of development\b/i, /\bvp of development\b/i,
-      /\bsoftware development.*engineer/i, /\bservice delivery engineer\b/i,
-      /\bvalue engineering\b/i, /\bsales development\b/i,
-      /development.*construction/i, /construction.*development/i,
-      /\breal estate.*development\b/i
-    ];
-
-    let irrelevantRemoved = 0;
-    let fundraisingRemoved = 0;
-    let agenciesRemoved = 0;
+    const universalIrrelevant = [/teach english overseas/i, /\besl teacher\b/i, /org_subtype/i,
+      /\bteacher\b/i, /\btutor\b/i, /\blifeguard\b/i, /\bwater safety\b/i,
+      /^development director/i, /^director of development/i, /\breal estate.*development\b/i];
 
     const agencyKeywords = ['staffing','recruiting','talent agency','manpower','adecco',
       'randstad','robert half','hays','kforce','kelly services','allegis','insight global',
@@ -232,47 +218,68 @@ export default async function handler(req, res) {
       'brooksource','procom','collabera','cybercoders','dice','jobspring','placement',
       'search group','executive search','talent solutions','recruiting group'];
 
+    const fundraisingSignals = ['fundrais','donor','philanthrop','annual fund','major gifts',
+      'capital campaign','endowment','gift officer','nonprofit development'];
+
+    let irrelevantRemoved = 0;
+    let fundraisingRemoved = 0;
+    let agenciesRemoved = 0;
+
+    const allJobsBeforeSeniority = []; // save for potential loosening later
+
     const relevantJobs = dedupedJobs.filter(job => {
       const title = (job.job_title || '').toLowerCase();
       const desc = (job.job_description || '').substring(0, 300).toLowerCase();
-      const combined = title + ' ' + desc;
       const company = (job.employer_name || '').toLowerCase().trim();
 
-      // Agency filter (remove, not just flag)
+      // Agency removal
       if (agencyKeywords.some(kw => company.includes(kw))) {
         console.log(`  ❌ Agency: ${job.job_title} at ${job.employer_name}`);
         agenciesRemoved++;
         return false;
       }
-
-      // Suspicious company (exact match)
-      if (suspiciousCompanies.has(company)) {
+      // Universal blocklist
+      if (universalBlocklist.has(company)) {
         console.log(`  ❌ Blocklisted: ${job.employer_name}`);
         irrelevantRemoved++;
         return false;
       }
-      // Suspicious company (pattern match)
-      if (suspiciousPatterns.some(p => p.test(job.employer_name || ''))) {
-        console.log(`  ❌ Suspicious pattern: ${job.employer_name}`);
+      // Conditional blocklist
+      const funcBlock = conditionalBlocklist[searchFunc];
+      if (funcBlock && funcBlock.has(company)) {
+        console.log(`  ❌ ${searchFunc} blocklist: ${job.employer_name}`);
         irrelevantRemoved++;
         return false;
       }
-      // MLM title patterns
+      // Suspicious patterns
+      if (suspiciousPatterns.some(p => p.test(job.employer_name || ''))) {
+        console.log(`  ❌ Suspicious: ${job.employer_name}`);
+        irrelevantRemoved++;
+        return false;
+      }
+      // MLM titles
       if (mlmTitlePatterns.some(p => p.test(job.job_title || ''))) {
         console.log(`  ❌ MLM title: ${job.job_title}`);
         irrelevantRemoved++;
         return false;
       }
-      // Keyword match
-      if (irrelevantKeywords.some(kw => combined.includes(kw))) {
-        console.log(`  ❌ Irrelevant: ${job.job_title} at ${job.employer_name}`);
+      // Universal irrelevant
+      if (universalIrrelevant.some(p => p.test(title))) {
+        console.log(`  ❌ Irrelevant: ${job.job_title}`);
         irrelevantRemoved++;
         return false;
       }
-      // Pattern match
-      if (irrelevantPatterns.some(p => p.test(title))) {
-        console.log(`  ❌ Irrelevant pattern: ${job.job_title} at ${job.employer_name}`);
+      // Function-specific irrelevant
+      const fPatterns = funcIrrelevant[searchFunc] || [];
+      if (fPatterns.some(p => p.test(title))) {
+        console.log(`  ❌ Wrong for ${searchFunc}: ${job.job_title}`);
         irrelevantRemoved++;
+        return false;
+      }
+      // Fundraising
+      if (fundraisingSignals.some(s => desc.includes(s))) {
+        console.log(`  ❌ Fundraising: ${job.job_title} at ${job.employer_name}`);
+        fundraisingRemoved++;
         return false;
       }
       // Fundraising description check
@@ -317,8 +324,24 @@ export default async function handler(req, res) {
         })
       : relevantJobs;
 
+    // Loosen seniority if too few results
+    let finalFiltered = seniorityFiltered;
+    if (seniorityFiltered.length < 10 && seniorityRemoved > 0) {
+      console.log(`⚠️ Only ${seniorityFiltered.length} jobs — loosening seniority to add manager/lead roles`);
+      const managerLevel = relevantJobs.filter(job => {
+        const t = (job.job_title || '').toLowerCase();
+        return (/\bmanager\b/i.test(t) || /\blead\b/i.test(t)) && !seniorityFiltered.some(sf => sf.job_id === job.job_id);
+      });
+      const needed = Math.min(10 - seniorityFiltered.length, managerLevel.length);
+      if (needed > 0) {
+        const toAdd = managerLevel.slice(0, needed);
+        toAdd.forEach(j => { j.seniorityCaveat = true; console.log(`  + Adding: ${j.job_title} at ${j.employer_name}`); });
+        finalFiltered = [...seniorityFiltered, ...toAdd];
+      }
+    }
+
     // Cap at 30 for Claude scoring
-    const jobs = seniorityFiltered.slice(0, 30);
+    const jobs = finalFiltered.slice(0, 30);
 
     // Flag staffing agencies
     const filtered = jobs.map((job, i) => {
@@ -548,6 +571,20 @@ function isFundraisingDevelopment(job) {
   if (ldKeywords.some(kw => title.includes(kw) || desc.includes(kw))) return false;
   const fundraisingKeywords = ['nonprofit', 'non-profit', 'foundation', 'association', 'fundrais', 'donor', 'philanthrop', 'major gifts', 'annual fund'];
   return fundraisingKeywords.some(kw => desc.includes(kw));
+}
+
+function detectSearchFunction(titles) {
+  const text = titles.join(' ').toLowerCase();
+  if (/(learning|training|talent|people|hr|organizational|workforce|l&d|coaching|leadership development|human capital)/i.test(text)) return 'People';
+  if (/(marketing|brand|growth|demand|content|communications|seo)/i.test(text)) return 'Marketing';
+  if (/(engineering|software|developer|technical|data science|devops|platform)/i.test(text)) return 'Engineering';
+  if (/(product|ux|user experience)/i.test(text)) return 'Product';
+  if (/(sales|revenue|business development|account management)/i.test(text)) return 'Sales';
+  if (/(finance|accounting|fp&a|treasury)/i.test(text)) return 'Finance';
+  if (/(operations|supply chain|logistics|strategy.*operations)/i.test(text)) return 'Operations';
+  if (/(legal|compliance|counsel|regulatory)/i.test(text)) return 'Legal';
+  if (/(data|analytics|business intelligence)/i.test(text)) return 'Data';
+  return 'General';
 }
 
 function detectSearchSeniority(titles) {
