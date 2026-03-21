@@ -2596,7 +2596,9 @@
     function showResumeLoaded(fileName, text) {
       document.getElementById('resumeUploadState').style.display = 'none';
       document.getElementById('resumeLoadedState').style.display = 'block';
-      document.getElementById('resumeFileName').textContent = fileName || 'Resume loaded';
+      var charCount = (text || '').length;
+      var charInfo = charCount < 500 ? ' (short - may affect matching)' : '';
+      document.getElementById('resumeFileName').textContent = (fileName || 'Resume loaded') + ' - ' + charCount.toLocaleString() + ' chars' + charInfo;
       document.getElementById('resumePreview').textContent = text;
     }
 
@@ -2762,7 +2764,7 @@
       showProgress(container, 'Finding opportunities that match your leadership profile...', 20);
       document.getElementById('selectionBar').style.display = 'none';
 
-      const resumeSummary = sanitizeInput(state.resumeText, 1200);
+      const resumeSummary = sanitizeInput(state.resumeText, 5000);
       const systemPrompt = 'You are a job search assistant for senior leaders. Respond ONLY with a JSON array. No markdown, no explanation, no extra text.';
 
       // Company Target: skip job listings, go straight to contacts
@@ -2928,7 +2930,7 @@ Return a JSON object with a "results" array. Each result:
               titles: searchTitles,
               locations: state.locations,
               workTypes,
-              resumeKeywords: resumeSummary ? resumeSummary.substring(0, 200) : ''
+              resumeKeywords: resumeSummary ? resumeSummary.substring(0, 5000) : ''
             })
           });
 
@@ -3742,7 +3744,7 @@ Return a JSON array of objects with these exact fields:
       goToStep(4);
       const container = document.getElementById('outreachContainer');
 
-      const resumeSummary = sanitizeInput(state.resumeText, 1500);
+      const resumeSummary = sanitizeInput(state.resumeText, 5000);
       const targets = (state.contacts.results || []).map(g => {
         const job = state.jobs.find(j => j.id === g.job_id);
         return {

@@ -867,13 +867,19 @@ function preQualifyContact(url, snippet, companyName, pageTitle) {
     }
   }
 
-  // Check city/name false positives - only when snippet has NO company signal at all
+  // Check city/name false positives - universal safe approach
+  // Only filter if: snippet has no company words AND the matching word
+  // is NOT a key part of the company name (Smith in Smith & Nephew)
   const companyWords = companyLower.split(/\s+/).filter(w => w.length > 3);
   const hasAnyCompanyWord = companyWords.some(w => snippetLower.includes(w));
   if (!hasAnyCompanyWord) {
-    // Snippet has zero company words - check for name false positives
     const fpWords = companyWords.filter(w => COMMON_NAME_WORDS.has(w));
+    // Skip FP filter if the common name IS a core part of the company name
+    // (e.g. "Smith" in "Smith & Nephew" - people named Smith might work there)
+    const coreCompanyWord = companyWords[0]; // first word is the brand
     for (const fpWord of fpWords) {
+      // Skip if this word is the first/core word of the company name
+      if (fpWord === coreCompanyWord) continue;
       if (slug.includes(fpWord)) {
         return { accepted: false, reason: `city/name false positive: "${fpWord}" in slug, no company in snippet` };
       }
@@ -983,15 +989,15 @@ function cleanCompanyName(rawName) {
   }).trim();
   // 3. Legal suffixes
   cleaned = cleaned.replace(/[,\s]+(INC\.?|LLC\.?|CORP\.?|LTD\.?|CO\.?|PLC\.?|INCORPORATED|LIMITED|CORPORATION)(\s+|$)/gi, ' ').trim();
-  // 4. Generic trailing words
+  // 4. Generic trailing words - only strip from 3+ word names to protect brand names
+  // Removed: technologies, technology, systems, group, company (part of brand names)
   const generic = ['advisory','advisors','consulting','consultants','solutions','services',
     'holdings','holding','enterprises','enterprise','partners','partnership','associates',
-    'division','companies','industries','industry','technologies','technology','systems',
-    'management','resources','networks','network'];
+    'division','industries','industry','management','resources','networks','network'];
   const words = cleaned.split(/\s+/);
-  if (words.length > 1) {
+  if (words.length >= 3) {
     const last = words[words.length - 1].toLowerCase().replace(/[^a-z]/g, '');
-    if (generic.includes(last) && words.slice(0, -1).join(' ').length >= 2) {
+    if (generic.includes(last) && words.slice(0, -1).join(' ').length >= 3) {
       cleaned = words.slice(0, -1).join(' ').trim();
     }
   }
