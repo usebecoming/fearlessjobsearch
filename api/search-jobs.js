@@ -1,4 +1,5 @@
 import { rateLimit } from './_rateLimit.js';
+import { verifyUser } from './_auth.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -8,6 +9,12 @@ export default async function handler(req, res) {
   const rl = rateLimit(req, { maxRequests: 5, windowMs: 60000 });
   if (!rl.allowed) {
     return res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' });
+  }
+
+  // Verify authenticated user from JWT
+  const auth = await verifyUser(req);
+  if (auth.error) {
+    return res.status(401).json({ error: auth.error });
   }
 
   const rapidApiKey = process.env.RAPIDAPI_KEY;
@@ -104,7 +111,6 @@ export default async function handler(req, res) {
     const rawResumeText = req.body.resumeKeywords || '';
     if (rawResumeText) {
       console.log(`📄 Resume received: ${rawResumeText.length} chars`);
-      console.log(`📄 Resume preview: "${rawResumeText.slice(0, 150).replace(/\n/g, ' ')}..."`);
     } else {
       console.log(`📄 No resume uploaded — using default seniority and skipping keyword search`);
     }

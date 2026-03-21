@@ -1,5 +1,6 @@
 import { rateLimit } from './_rateLimit.js';
 import { PLANS } from './_plans.js';
+import { verifyUser } from './_auth.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -11,13 +12,22 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many requests. Please wait and try again.' });
   }
 
+  // Verify authenticated user from JWT
+  const auth = await verifyUser(req);
+  if (auth.error) {
+    return res.status(401).json({ error: auth.error });
+  }
+
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) {
     return res.status(500).json({ error: 'Stripe not configured' });
   }
 
   try {
-    const { plan, email, userId, priceId: directPriceId } = req.body;
+    const { plan, priceId: directPriceId } = req.body;
+    // Use verified userId and email from JWT — never trust req.body
+    const userId = auth.userId;
+    const email = auth.email;
 
     // Coaching product price IDs — one-time payments, not subscriptions
     const coachingPriceIds = new Set([

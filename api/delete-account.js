@@ -33,7 +33,7 @@ export default async function handler(req, res) {
 
     // Step 1 — Get profile for Stripe cancellation
     const profileRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=stripe_customer_id,subscription_id,plan`,
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=stripe_customer_id,subscription_id,plan,email`,
       {
         headers: {
           'apikey': supabaseServiceKey,
@@ -45,8 +45,8 @@ export default async function handler(req, res) {
     const profile = profiles?.[0];
     console.log(`📋 Profile found: ${!!profile}, plan: ${profile?.plan}, sub: ${profile?.subscription_id}`);
 
-    // Block admin deletion
-    if (profile && isAdmin(profile.email)) {
+    // Block admin deletion — check both profile email and verified JWT email
+    if (isAdmin(auth.email) || (profile && isAdmin(profile.email))) {
       return res.status(403).json({ error: 'Admin accounts cannot be self-deleted' });
     }
 

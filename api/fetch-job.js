@@ -1,4 +1,11 @@
 import { rateLimit } from './_rateLimit.js';
+import { verifyUser } from './_auth.js';
+
+const ALLOWED_DOMAINS = [
+  'linkedin.com', 'indeed.com', 'glassdoor.com', 'ziprecruiter.com',
+  'lever.co', 'greenhouse.io', 'workday.com', 'icims.com',
+  'myworkdayjobs.com', 'jobs.lever.co'
+];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -10,10 +17,30 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many requests' });
   }
 
+  // Verify authenticated user from JWT
+  const auth = await verifyUser(req);
+  if (auth.error) {
+    return res.status(401).json({ error: auth.error });
+  }
+
   try {
     const { urls } = req.body;
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       return res.status(400).json({ error: 'No URLs provided' });
+    }
+
+    // SSRF protection: only allow known job board domains
+    for (const targetUrl of urls) {
+      try {
+        const parsedUrl = new URL(targetUrl);
+        const hostname = parsedUrl.hostname.replace(/^www\./, '');
+        const isAllowed = ALLOWED_DOMAINS.some(d => hostname === d || hostname.endsWith('.' + d));
+        if (!isAllowed) {
+          return res.status(400).json({ error: 'URL not allowed' });
+        }
+      } catch (e) {
+        return res.status(400).json({ error: 'Invalid URL provided' });
+      }
     }
 
     const rapidApiKey = process.env.RAPIDAPI_KEY;
