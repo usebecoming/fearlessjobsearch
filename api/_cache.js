@@ -60,9 +60,15 @@ export async function getContactCache(companyName, jobFunction) {
     const now = new Date().toISOString();
 
     const res = await supabaseQuery(
-      `contact_cache?company_key=eq.${encodeURIComponent(key)}&expires_at=gt.${now}&select=contacts,fallback_links,company_slug,hit_count,created_at`,
+      `contact_cache?select=contacts,fallback_links,company_slug,hit_count,created_at&company_key=eq.${encodeURIComponent(key)}&expires_at=gt.${encodeURIComponent(now)}`,
       { prefer: 'return=representation' }
     );
+
+    if (res && !res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.error(`💾 Contact cache READ error (${res.status}): ${errText}`);
+      return null;
+    }
 
     if (!res || !res.ok) return null;
     const rows = await res.json();
@@ -107,26 +113,39 @@ export async function setContactCache(
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + CONTACT_TTL_HOURS);
 
-    await supabaseQuery(
-      `contact_cache?on_conflict=company_key`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          company_key: key,
-          company_raw: companyName,
-          job_function: jobFunction,
-          contacts: contacts,
-          fallback_links: fallbackLinks,
-          company_slug: companySlug,
-          brave_query_count: braveQueryCount,
-          expires_at: expiresAt.toISOString(),
-          hit_count: 0
-        }),
-        prefer: 'resolution=merge-duplicates,return=minimal'
-      }
-    );
+    const payload = {
+      company_key: key,
+      company_raw: companyName,
+      job_function: jobFunction || 'People',
+      contacts: contacts,
+      fallback_links: fallbackLinks || null,
+      company_slug: companySlug || null,
+      brave_query_count: braveQueryCount,
+      expires_at: expiresAt.toISOString(),
+      hit_count: 0
+    };
+    console.log(`💾 Contact cache WRITING: ${key}, payload size: ${JSON.stringify(payload).length} bytes`);
 
-    console.log(`💾 Contact cache SET: ${key} (${contacts.length} contacts, ${braveQueryCount} Brave queries saved next time)`);
+    const sb = getSupabase();
+    if (!sb) { console.error('💾 No Supabase config'); return; }
+
+    const writeRes = await fetch(`${sb.url}/rest/v1/contact_cache`, {
+      method: 'POST',
+      headers: {
+        'apikey': sb.key,
+        'Authorization': `Bearer ${sb.key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (writeRes && !writeRes.ok) {
+      const errText = await writeRes.text().catch(() => 'unknown');
+      console.error(`💾 Contact cache WRITE FAILED (${writeRes.status}): ${errText}`);
+    } else {
+      console.log(`💾 Contact cache SET: ${key} (${contacts.length} contacts, ${braveQueryCount} Brave queries saved next time)`);
+    }
   } catch (err) {
     console.error(`Contact cache write error: ${err.message}`);
   }
@@ -172,8 +191,7 @@ export async function setOutreachCache(userId, linkedinUrl, company, messages) {
           messages: messages,
           expires_at: expiresAt.toISOString()
         }),
-        prefer: 'resolution=merge-duplicates,return=minimal',
-        headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
+        prefer: 'resolution=merge-duplicates,return=minimal'
       }
     );
 
