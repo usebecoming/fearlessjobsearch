@@ -2200,26 +2200,32 @@
 
     // ── Coaching Checkout (one-time payment) ──
     async function startCoachingCheckout(priceId) {
+      console.log('🛒 Coaching checkout:', priceId);
       const { data: { session: _sess } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
       const user = _sess?.user;
       if (!user) {
+        // Close booking modal so auth modal is visible
+        closeBookingModal();
         openAuthModal('signup');
         return;
       }
       try {
-        const origin = window.location.origin || 'https://fearlessjobsearch.com';
-        const stripeKey = await fetch('/api/create-checkout', {
+        var headers = await getAuthHeaders();
+        headers['Content-Type'] = 'application/json';
+        const stripeRes = await fetch('/api/create-checkout', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ priceId: priceId, email: user.email, userId: user.id, mode: 'payment' })
+          headers: headers,
+          body: JSON.stringify({ priceId: priceId, email: user.email, userId: user.id })
         });
-        const data = await stripeKey.json();
+        const data = await stripeRes.json();
+        console.log('🛒 Checkout response:', data);
         if (data.url) {
           window.location.href = data.url;
         } else {
           alert(data.error || 'Could not start checkout. Please try again.');
         }
-      } catch {
+      } catch(e) {
+        console.error('🛒 Checkout error:', e);
         alert('Could not connect to payment system. Please try again.');
       }
     }
