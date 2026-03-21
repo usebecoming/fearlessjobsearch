@@ -2200,33 +2200,41 @@
 
     // ── Coaching Checkout (one-time payment) ──
     async function startCoachingCheckout(priceId) {
-      console.log('🛒 Coaching checkout:', priceId);
-      const { data: { session: _sess } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
-      const user = _sess?.user;
-      if (!user) {
-        // Close booking modal so auth modal is visible
-        closeBookingModal();
-        openAuthModal('signup');
-        return;
-      }
+      console.log('🛒 Step 1: Coaching checkout started, priceId:', priceId);
       try {
+        console.log('🛒 Step 2: Getting session...');
+        const { data: { session: _sess } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+        const user = _sess?.user;
+        console.log('🛒 Step 3: User:', user?.email, 'ID:', user?.id);
+        if (!user) {
+          closeBookingModal();
+          openAuthModal('signup');
+          return;
+        }
+        console.log('🛒 Step 4: Getting auth headers...');
         var headers = await getAuthHeaders();
         headers['Content-Type'] = 'application/json';
+        console.log('🛒 Step 5: Auth header present:', !!headers['Authorization']);
+        var payload = { priceId: priceId, email: user.email, userId: user.id };
+        console.log('🛒 Step 6: Calling /api/create-checkout with:', JSON.stringify(payload));
         const stripeRes = await fetch('/api/create-checkout', {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({ priceId: priceId, email: user.email, userId: user.id })
+          body: JSON.stringify(payload)
         });
+        console.log('🛒 Step 7: Response status:', stripeRes.status);
         const data = await stripeRes.json();
-        console.log('🛒 Checkout response:', data);
+        console.log('🛒 Step 8: Response data:', JSON.stringify(data));
         if (data.url) {
+          console.log('🛒 Step 9: Redirecting to Stripe...');
           window.location.href = data.url;
         } else {
+          console.error('🛒 No URL returned:', data);
           alert(data.error || 'Could not start checkout. Please try again.');
         }
       } catch(e) {
-        console.error('🛒 Checkout error:', e);
-        alert('Could not connect to payment system. Please try again.');
+        console.error('🛒 Exception at some step:', e.message, e);
+        alert('Checkout error: ' + e.message);
       }
     }
 
