@@ -21,16 +21,47 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No jobs provided' });
     }
 
-    // Company aliases for short names
+    // Comprehensive company aliases
     const companyAliases = {
-      'ey': 'Ernst Young', 'ernst & young': 'Ernst Young',
-      'smith & nephew': 'Smith Nephew', 'smith and nephew': 'Smith Nephew',
-      'smith & nephew snats inc': 'Smith Nephew',
-      'pwc': 'PricewaterhouseCoopers', 'kpmg': 'KPMG Advisory',
-      'bcg': 'Boston Consulting Group', 'mckinsey': 'McKinsey Company',
-      'ibm': 'IBM Corporation', 'ge': 'General Electric',
-      'hp': 'Hewlett Packard', 'at&t': 'ATT', 'p&g': 'Procter Gamble',
-      'jnj': 'Johnson Johnson'
+      // Big 4 / Consulting
+      'ey':'Ernst Young','ernst & young':'Ernst Young','ernst and young':'Ernst Young',
+      'pwc':'PricewaterhouseCoopers','kpmg':'KPMG','bcg':'Boston Consulting Group',
+      'mckinsey':'McKinsey Company','mckinsey & company':'McKinsey Company',
+      'bain':'Bain Company','bain & company':'Bain Company',
+      'booz allen':'Booz Allen Hamilton','booz':'Booz Allen Hamilton',
+      'a.t. kearney':'Kearney','at kearney':'Kearney',
+      // Tech
+      'ibm':'IBM','ge':'General Electric','hp':'Hewlett Packard','hpe':'Hewlett Packard Enterprise',
+      'at&t':'ATT','att':'ATT','p&g':'Procter Gamble','procter & gamble':'Procter Gamble',
+      'j&j':'Johnson Johnson','jnj':'Johnson Johnson','johnson & johnson':'Johnson Johnson',
+      'msft':'Microsoft','meta':'Meta Platforms','fb':'Meta','aws':'Amazon Web Services',
+      'sfdc':'Salesforce','crm':'Salesforce','dell emc':'Dell EMC',
+      // Finance
+      'jp morgan':'JPMorgan','j.p. morgan':'JPMorgan','jpmorgan chase':'JPMorgan Chase',
+      'bofa':'Bank of America','b of a':'Bank of America','boa':'Bank of America',
+      'gs':'Goldman Sachs','goldman':'Goldman Sachs','morgan stanley':'Morgan Stanley',
+      'citi':'Citibank','ubs':'UBS','hsbc':'HSBC','bny mellon':'BNY Mellon',
+      // Medical
+      'smith & nephew':'Smith Nephew','smith and nephew':'Smith Nephew',
+      'smith & nephew snats inc':'Smith Nephew','bd':'Becton Dickinson',
+      'b. braun':'B Braun','b braun':'B Braun','hca':'HCA Healthcare',
+      'cvs':'CVS Health','unh':'UnitedHealth Group',
+      // Defense
+      'rtx':'RTX Corporation','raytheon':'Raytheon','l3harris':'L3Harris Technologies',
+      'lm':'Lockheed Martin','lockheed':'Lockheed Martin','ng':'Northrop Grumman',
+      'gd':'General Dynamics','bae':'BAE Systems','saic':'SAIC','caci':'CACI International',
+      // Retail
+      'wmt':'Walmart','tgt':'Target','hd':'Home Depot','the home depot':'Home Depot',
+      "lowe's":'Lowes',"mcdonald's":'McDonalds','mcdonalds':'McDonalds',
+      // Energy
+      'exxonmobil':'ExxonMobil','xom':'ExxonMobil','cvx':'Chevron','bp':'BP',
+      // Telecom
+      'tmobile':'T-Mobile','t-mobile':'T-Mobile','vz':'Verizon',
+      'disney':'Walt Disney','the walt disney company':'Walt Disney',
+      // HR/Staffing
+      'adp':'ADP','wtw':'Willis Towers Watson','korn ferry':'Korn Ferry',
+      // Numbers
+      '3m':'3M Company','3m company':'3M Company'
     };
 
     // Process all jobs in PARALLEL
@@ -718,26 +749,38 @@ function extractNameFromUrl(url) {
 function getCompanyVariations(company) {
   const variations = [company];
   const known = {
-    'RTX': ['Raytheon', 'RTX Corporation'],
-    'Meta': ['Facebook', 'Meta Platforms'],
+    'RTX': ['Raytheon', 'RTX Corporation'], 'Meta': ['Facebook', 'Meta Platforms'],
     'Alphabet': ['Google'], 'Google': ['Alphabet'],
     'Amazon': ['AWS', 'Amazon Web Services'], 'AWS': ['Amazon'],
-    'Microsoft': ['MSFT'],
-    'JPMorgan': ['JP Morgan', 'JPMorgan Chase', 'Chase'],
-    'Goldman Sachs': ['Goldman'],
-    'McKinsey': ['McKinsey & Company'],
-    'BCG': ['Boston Consulting Group'],
-    'Salesforce': ['Salesforce.com'],
-    'CrowdStrike': ['Crowdstrike'],
+    'JPMorgan': ['JP Morgan', 'JPMorgan Chase'], 'Goldman Sachs': ['Goldman'],
+    'Salesforce': ['Salesforce.com'], 'CrowdStrike': ['Crowdstrike'],
     'Palo Alto Networks': ['Palo Alto'],
   };
   const upper = company.toUpperCase();
   for (const [key, aliases] of Object.entries(known)) {
     if (key.toUpperCase() === upper) { variations.push(...aliases); break; }
   }
-  const firstWord = company.split(/\s+/)[0];
-  if (firstWord !== company && firstWord.length > 3) variations.push(firstWord);
+  // Smart short name extraction
+  const shortName = getShortName(company);
+  if (shortName) variations.push(shortName);
   return [...new Set(variations)];
+}
+
+function getShortName(companyName) {
+  if (!companyName || companyName.length <= 6) return null;
+  if (/^[A-Z]{2,6}$/.test(companyName)) return null;
+  const noShort = new Set(['help at home','life is good','living the dream','next level','new horizons',
+    'bright future','first choice','united states','american express','national grid']);
+  if (noShort.has(companyName.toLowerCase())) return null;
+  const words = companyName.split(/\s+/);
+  const generic = new Set(['the','a','an','new','old','big','great','global','national','american',
+    'united','first','best','top','advanced','premier','elite','help','care','life','living',
+    'next','future','digital','virtual','business','enterprise','corporate','professional']);
+  const first = words[0];
+  if (generic.has(first.toLowerCase())) {
+    return (words.length > 1 && words[1].length > 3) ? words[1] : null;
+  }
+  return first.length >= 4 ? first : null;
 }
 
 // ── Apollo fallback ──
@@ -915,16 +958,19 @@ function inferTitleFromSlug(slug) {
 // Clean garbled company names
 function cleanCompanyName(name) {
   if (!name) return name;
-  let cleaned = name;
-  // Remove internal subsidiary codes: "SMITH & NEPHEW SNATS INC" -> "SMITH & NEPHEW"
-  const subMatch = cleaned.match(/^(.+?)\s+[A-Z]{2,}\s+(?:INC|LLC|CORP|LTD|CO)\.?$/i);
-  if (subMatch) cleaned = subMatch[1].trim();
-  // Remove all-caps internal codes
+  let cleaned = name.trim();
+  // Remove internal subsidiary codes
   cleaned = cleaned.replace(/\s+[A-Z]{3,}(?:\s+[A-Z]{3,})*\s+(?:INC|LLC|CORP|LTD|CO)\.?$/i, '').trim();
-  // Remove common suffixes
-  cleaned = cleaned.replace(/\s+(INC|LLC|CORP|LTD|CO|INCORPORATED|LIMITED)\.?$/i, '').trim();
-  // Strip trailing punctuation (commas, periods, semicolons)
-  cleaned = cleaned.replace(/[,;.]+$/, '').trim();
+  // Remove standard suffixes
+  cleaned = cleaned.replace(/[,\s]+(INC|LLC|CORP|LTD|CO|INCORPORATED|LIMITED|COMPANY|COMPANIES|GROUP|HOLDINGS|HOLDING|INTERNATIONAL|GLOBAL|WORLDWIDE|ENTERPRISES|ENTERPRISE|SOLUTIONS|SERVICES|CONSULTING|ADVISORS|ADVISORY|PARTNERS|PARTNERSHIP|ASSOCIATES|PLC|NV|SA|AG|GMBH|BV|SRL|SAS)\.?$/i, '').trim();
+  // Remove division indicators
+  cleaned = cleaned.replace(/\s*[-–—]\s*(US|USA|EMEA|APAC|LATAM|NA|EU|UK|AMER)\s*$/i, '').trim();
+  // Remove trailing punctuation
+  cleaned = cleaned.replace(/[,;.:]+$/, '').trim();
+  // Remove parenthetical additions
+  cleaned = cleaned.replace(/\s*\([^)]+\)\s*$/, '').trim();
+  // Normalize whitespace
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
   if (cleaned !== name) console.log(`🧹 Cleaned: "${name}" → "${cleaned}"`);
   return cleaned || name;
 }
