@@ -1529,7 +1529,7 @@
 
   <!-- ── Auth Modal ── -->
   <div class="auth-modal" id="authModal">
-    <div class="auth-box" style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:16px;padding:40px 36px;width:440px;max-width:92vw;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.12)">
+    <div class="auth-box" style="background:#FFFFFF;border:1px solid #D1D0CE;border-radius:16px;padding:44px 40px;width:480px;max-width:94vw;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.15)">
       <button class="modal-close" onclick="closeAuthModal()" style="position:absolute;top:16px;right:20px;font-size:1.4rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px">&times;</button>
 
       <!-- Login form -->
@@ -2259,9 +2259,8 @@
     function closeAuthModal() {
       document.getElementById('authModal').classList.remove('active');
     }
-    document.getElementById('authModal').addEventListener('click', e => {
-      if (e.target === e.currentTarget) closeAuthModal();
-    });
+    // Auth modal does NOT close on overlay click — only via X button
+    // Prevents accidental dismissal on mobile when tapping near inputs
 
     // ── Auth ──
     function showLogin() {
