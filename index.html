@@ -1912,6 +1912,11 @@
           <div style="text-align:center;margin-top:8px"><a href="#" onclick="event.preventDefault();startCheckout('unlimited_yearly')" style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem">$599/year (save $589)</a></div>
         </div>
       </div>
+      <!-- Manage Plan (shown for paid users) -->
+      <div id="managePlanSection" style="display:none;margin-top:16px;text-align:center;padding:14px;border-top:1px solid #E5E4E2">
+        <p style="font-size:0.85rem;color:#777;margin-bottom:10px">Already subscribed? Upgrade, downgrade, or cancel anytime.</p>
+        <button class="btn-secondary" style="padding:10px 24px" onclick="manageBilling()">Manage My Plan</button>
+      </div>
       <!-- Coaching Upsell -->
       <div style="margin-top:20px;background:rgba(184,168,138,0.06);border:1px solid rgba(184,168,138,0.2);border-radius:12px;padding:20px;text-align:center">
         <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:#111;margin-bottom:8px">Want one-on-one help from the expert who built this tool?</div>
@@ -2309,6 +2314,7 @@
             document.getElementById('navUpgradeBtn').style.display = 'none';
             document.getElementById('upgradeBanner').style.display = 'none';
             document.getElementById('manageBillingRow').style.display = '';
+            document.getElementById('managePlanSection').style.display = '';
           }
         }
       }).catch(function() {});
