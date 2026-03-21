@@ -17,20 +17,28 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { plan, email, userId } = req.body;
+    const { plan, email, userId, priceId: directPriceId, mode } = req.body;
 
-    // Use _plans.js as source of truth, env vars as override
-    const planDef = PLANS[plan];
-    const priceId = planDef?.stripe_price_id
-      || {
-        starter: process.env.STRIPE_PRICE_STARTER,
-        pro: process.env.STRIPE_PRICE_PRO,
-        unlimited_monthly: process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
-        unlimited_yearly: process.env.STRIPE_PRICE_UNLIMITED_YEARLY
-      }[plan];
+    // Support two flows:
+    // 1. Plan-based (subscription): { plan: 'starter' }
+    // 2. Direct price (one-time coaching): { priceId: 'price_xxx', mode: 'payment' }
+    let priceId = directPriceId;
+    let checkoutMode = mode || 'subscription';
+
+    if (!priceId && plan) {
+      const planDef = PLANS[plan];
+      priceId = planDef?.stripe_price_id
+        || {
+          starter: process.env.STRIPE_PRICE_STARTER,
+          pro: process.env.STRIPE_PRICE_PRO,
+          unlimited_monthly: process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
+          unlimited_yearly: process.env.STRIPE_PRICE_UNLIMITED_YEARLY
+        }[plan];
+      checkoutMode = 'subscription';
+    }
 
     if (!priceId) {
-      return res.status(400).json({ error: `Invalid plan: ${plan}` });
+      return res.status(400).json({ error: `Invalid plan or price: ${plan || directPriceId}` });
     }
 
     const origin = req.headers.origin || 'https://fearlessjobsearch.com';
@@ -42,14 +50,14 @@ export default async function handler(req, res) {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: new URLSearchParams({
-        'mode': 'subscription',
+        'mode': checkoutMode,
         'success_url': `${origin}?checkout=success`,
         'cancel_url': `${origin}?checkout=cancel`,
         'line_items[0][price]': priceId,
         'line_items[0][quantity]': '1',
         ...(email ? { 'customer_email': email } : {}),
         'metadata[supabase_user_id]': userId || '',
-        'metadata[plan]': plan
+        'metadata[plan]': plan || 'coaching'
       }).toString()
     });
 

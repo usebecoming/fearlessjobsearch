@@ -1952,7 +1952,7 @@
           <li>Final draft, ready to send out</li>
         </ul>
         <p style="font-size:0.82rem;color:#777777;font-style:italic;margin-bottom:12px">This is a review and enhancement of your existing resume, not a from-scratch build. Have your current resume ready.</p>
-        <a href="https://cal.com/drbenjaminritter/yourcareer" target="_blank" class="btn-primary" style="padding:12px 24px;font-size:0.94rem;text-decoration:none;display:inline-flex">Book Now</a>
+        <button class="btn-primary" style="padding:12px 24px;font-size:0.94rem" onclick="startCoachingCheckout('price_1TDFhJK3APtatfMmjK9kHib4')">Buy Now</button>
       </div>
       <div class="booking-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -1966,7 +1966,7 @@
           <li>Headline, summary, experience, and positioning all reworked</li>
         </ul>
         <p style="font-size:0.82rem;color:#777777;font-style:italic;margin-bottom:12px">This is a review and enhancement of your existing resume and LinkedIn. Have your current resume ready.</p>
-        <a href="https://cal.com/drbenjaminritter/yourcareer" target="_blank" class="btn-primary" style="padding:12px 24px;font-size:0.94rem;text-decoration:none;display:inline-flex">Book Now</a>
+        <button class="btn-primary" style="padding:12px 24px;font-size:0.94rem" onclick="startCoachingCheckout('price_1TDFi0K3APtatfMmtU7ZLSsk')">Buy Now</button>
       </div>
       <div style="text-align:center;margin-top:20px;padding-top:20px;border-top:1px solid #E5E4E2">
         <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:12px">Need more than resume and LinkedIn help?</p>
@@ -2081,6 +2081,32 @@
           body: JSON.stringify({ plan, email: user.email, userId: user.id })
         });
         const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert(data.error || 'Could not start checkout. Please try again.');
+        }
+      } catch {
+        alert('Could not connect to payment system. Please try again.');
+      }
+    }
+
+    // ── Coaching Checkout (one-time payment) ──
+    async function startCoachingCheckout(priceId) {
+      const { data: { session: _sess } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+      const user = _sess?.user;
+      if (!user) {
+        openAuthModal('signup');
+        return;
+      }
+      try {
+        const origin = window.location.origin || 'https://fearlessjobsearch.com';
+        const stripeKey = await fetch('/api/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ priceId: priceId, email: user.email, userId: user.id, mode: 'payment' })
+        });
+        const data = await stripeKey.json();
         if (data.url) {
           window.location.href = data.url;
         } else {
