@@ -1079,6 +1079,46 @@
       /* Problem section */
       .problem-item { padding: 16px; }
       .problem-item p { font-size: 0.9rem; }
+
+      /* Contact cards full width with spacing */
+      .contact-card { width: 100%; }
+      .contact-actions { flex-direction: column; }
+      .contact-actions a,
+      .contact-actions button { width: 100%; text-align: center; }
+
+      /* Outreach cards */
+      .outreach-card { width: 100%; }
+
+      /* Salary range dropdowns stack */
+      .salary-row { flex-direction: column; gap: 8px; }
+      .salary-row select { width: 100%; }
+
+      /* Back row buttons */
+      .back-row { flex-wrap: wrap; gap: 8px; }
+      .back-row .btn-back { font-size: 0.82rem; }
+
+      /* Account dropdown as bottom sheet on mobile */
+      .account-dropdown {
+        position: fixed !important;
+        right: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
+        padding: 20px 16px;
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+
+      /* LinkedIn link buttons stack */
+      .linkedin-links { flex-direction: column; gap: 8px; }
+      .linkedin-links a { width: 100%; text-align: center; }
+
+      /* Upgrade modal */
+      .upgrade-modal-content { width: 96%; margin: 1rem; max-height: 90vh; overflow-y: auto; }
     }
 
     /* ── Very small phones ── */
@@ -1558,12 +1598,13 @@
         <img src="assets/phoenix-logo.png" alt="Fearless Job Search" onerror="this.style.display='none'">
         <span>FEARLESS JOB SEARCH</span>
       </div>
-      <button class="nav-link" onclick="doSignOut()" title="Back to home page" style="font-size:0.85rem;color:#777777">&#8962; Home</button>
+      <a href="/" class="nav-link" title="Back to home page" style="font-size:0.85rem;color:#777777;text-decoration:none">&#8962; Home</a>
     </div>
     <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()">
       <span></span><span></span><span></span>
     </button>
     <div class="nav-right">
+      <a href="/" class="nav-link" style="text-decoration:none">&#8962; Home</a>
       <button class="nav-link" onclick="goToStep(1)">Search</button>
       <button class="nav-link" onclick="openPipeline()">Pipeline</button>
       <button class="nav-link accent" onclick="openBookingModal()">Get 1:1 Help</button>
@@ -4391,13 +4432,20 @@ Return a JSON object with a "sequences" array. Each sequence:
         const li = c.linkedin || c.linkedinUrl || '';
         return li.startsWith('http') ? li : 'https://' + li;
       }).join('\n');
-      navigator.clipboard.writeText(urls).then(() => {
-        const btn = document.querySelector('[onclick="copyAllLinkedIn()"]');
-        const orig = btn.textContent;
+      var btn = document.querySelector('[onclick="copyAllLinkedIn()"]');
+      function done() {
+        if (!btn) return;
+        var orig = btn.textContent;
         btn.textContent = 'Copied!';
         btn.style.color = '#3A8A5C';
-        setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
-      });
+        setTimeout(function() { btn.textContent = orig; btn.style.color = ''; }, 1500);
+      }
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(urls).then(done).catch(function() { fallbackCopy(urls); done(); });
+      } else {
+        fallbackCopy(urls);
+        done();
+      }
     }
 
     function exportOutreachCSV() {
@@ -4510,12 +4558,29 @@ Return a JSON object with a "sequences" array. Each sequence:
     }
 
     function copyText(text, btn) {
-      navigator.clipboard.writeText(text).then(() => {
-        const orig = btn.textContent;
+      function onSuccess() {
+        var orig = btn.textContent;
         btn.textContent = 'Copied!';
         btn.style.color = '#3A8A5C';
-        setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
-      });
+        setTimeout(function() { btn.textContent = orig; btn.style.color = ''; }, 1500);
+      }
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(function() { fallbackCopy(text); onSuccess(); });
+      } else {
+        fallbackCopy(text);
+        onSuccess();
+      }
+    }
+
+    function fallbackCopy(text) {
+      var el = document.createElement('textarea');
+      el.value = text;
+      el.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      try { document.execCommand('copy'); } catch(e) {}
+      document.body.removeChild(el);
     }
 
     // ── PWA Registration ──
