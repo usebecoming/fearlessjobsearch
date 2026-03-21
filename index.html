@@ -3024,6 +3024,16 @@
     // ── Step Navigation ──
     function goToStep(n) {
       state.currentStep = n;
+      // Reset search button when returning to step 1
+      if (n === 1) {
+        var searchBtn = document.getElementById('searchBtn');
+        if (searchBtn) {
+          searchBtn.disabled = false;
+          searchBtn.textContent = state.searchMode === 'companies' ? 'Find Decision-Makers' : 'Find Opportunities';
+          searchBtn.classList.remove('loading');
+        }
+        validateSearch();
+      }
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById(`section-${n}`).classList.add('active');
       for (let i = 1; i <= 4; i++) {
