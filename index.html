@@ -2754,6 +2754,48 @@
       return clean;
     }
 
+    // ── Pipeline Dedup ──
+    function buildPipelineKey(title, company) {
+      return (title || '').toLowerCase().trim() + '|' + (company || '').toLowerCase().trim();
+    }
+
+    async function getPipelineJobKeys() {
+      // Use already-loaded pipeline from state
+      if (state.pipeline && state.pipeline.length > 0) {
+        var keys = new Set();
+        state.pipeline.forEach(function(p) { keys.add(buildPipelineKey(p.title, p.company)); });
+        console.log('📋 Pipeline has ' + keys.size + ' existing jobs');
+        return keys;
+      }
+      // Fallback: load from Supabase if state not populated yet
+      if (!supabase || !state.userId) return new Set();
+      try {
+        var result = await supabase.from('pipeline').select('title,company').eq('user_id', state.userId);
+        if (!result.data) return new Set();
+        var keys2 = new Set();
+        result.data.forEach(function(p) { keys2.add(buildPipelineKey(p.title, p.company)); });
+        console.log('📋 Pipeline loaded from DB: ' + keys2.size + ' jobs');
+        return keys2;
+      } catch (err) {
+        console.error('Pipeline load error:', err.message);
+        return new Set();
+      }
+    }
+
+    async function filterOutPipelineJobs(jobs) {
+      var pipelineKeys = await getPipelineJobKeys();
+      if (pipelineKeys.size === 0) return { filtered: jobs, removedCount: 0 };
+      var filtered = jobs.filter(function(job) {
+        var key = buildPipelineKey(job.title, job.company);
+        var inPipeline = pipelineKeys.has(key);
+        if (inPipeline) console.log('⏭️ Already in pipeline — hiding: ' + job.title + ' at ' + job.company);
+        return !inPipeline;
+      });
+      var removedCount = jobs.length - filtered.length;
+      if (removedCount > 0) console.log('📋 Filtered ' + removedCount + ' pipeline job(s) from results');
+      return { filtered: filtered, removedCount: removedCount };
+    }
+
     async function callClaude(systemPrompt, userPrompt, options) {
       var bodyData = {
         system: systemPrompt,
@@ -3009,13 +3051,18 @@ Return a JSON array with one object per job:
           });
 
           stopProgress();
-          state.jobs = scoredJobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0)).slice(0, 10);
+          var sortedJobs = scoredJobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0)).slice(0, 10);
+          // Filter out jobs already in pipeline
+          var pipelineResult = await filterOutPipelineJobs(sortedJobs);
+          state.jobs = pipelineResult.filtered;
+          state.allJobs = sortedJobs; // keep unfiltered for "show all"
           console.log('\n🏆 TOP SCORED JOBS:');
           state.jobs.forEach(function(job, i) {
             var badge = job.fitScore >= 87 ? 'Strong Match' : job.fitScore >= 70 ? 'Good Match' : job.fitScore === -1 ? 'No Resume' : 'Stretch';
             console.log('  ' + (i+1) + '. ' + job.title + ' at ' + job.company + ' — Score: ' + job.fitScore + ' — ' + badge);
           });
           state.selectedJobs = [];
+          state.pipelineFilteredCount = pipelineResult.removedCount;
           renderJobs();
           // Show seniority filter note if jobs were filtered
           var totalBeforeScoring = realJobs.length;
@@ -3098,10 +3145,30 @@ Return a JSON array of objects with these exact fields:
     function renderJobs() {
       const container = document.getElementById('jobsContainer');
       container.innerHTML = '';
+
+      // Pipeline filter notice
+      if (state.pipelineFilteredCount > 0) {
+        const notice = document.createElement('div');
+        notice.style.cssText = 'background:#F9F6F1;border:1px solid #E5E4E2;border-radius:8px;padding:10px 16px;margin-bottom:12px;font-size:0.85rem;color:#555;font-weight:500;display:flex;align-items:center;justify-content:space-between';
+        notice.innerHTML = state.pipelineFilteredCount + ' job' + (state.pipelineFilteredCount !== 1 ? 's' : '') + ' already in your pipeline hidden';
+        var showAllBtn = document.createElement('button');
+        showAllBtn.textContent = 'Show all';
+        showAllBtn.style.cssText = 'background:none;border:none;color:#B8A88A;font-weight:600;cursor:pointer;font-size:0.85rem;font-family:inherit';
+        showAllBtn.onclick = function() { state.jobs = state.allJobs || state.jobs; state.pipelineFilteredCount = 0; renderJobs(); };
+        notice.appendChild(showAllBtn);
+        container.appendChild(notice);
+      }
+
       const grid = document.createElement('div');
       grid.className = 'job-grid';
       const isFree = isFreeTier();
       const visibleJobs = isFree ? state.jobs.slice(0, FREE_JOB_LIMIT) : state.jobs;
+
+      // Empty state when all jobs are in pipeline
+      if (state.jobs.length === 0 && state.pipelineFilteredCount > 0) {
+        container.innerHTML += '<div style="text-align:center;padding:40px 20px"><p style="font-size:0.95rem;color:#555;font-weight:500;margin-bottom:12px">All matching jobs are already in your pipeline.</p><p style="font-size:0.85rem;color:#999">Try different titles or locations for fresh opportunities.</p></div>';
+        return;
+      }
 
       // Show/hide paywall
       document.getElementById('jobsPaywall').style.display = (isFree && state.jobs.length > FREE_JOB_LIMIT) ? 'block' : 'none';
