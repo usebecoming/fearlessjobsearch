@@ -100,8 +100,14 @@ export default async function handler(req, res) {
       }
     }
 
-    // Add resume keyword search
+    // Resume processing
     const rawResumeText = req.body.resumeKeywords || '';
+    if (rawResumeText) {
+      console.log(`📄 Resume received: ${rawResumeText.length} chars`);
+      console.log(`📄 Resume preview: "${rawResumeText.slice(0, 150).replace(/\n/g, ' ')}..."`);
+    } else {
+      console.log(`📄 No resume uploaded — using default seniority and skipping keyword search`);
+    }
     const resumeKeywords = extractResumeKeywords(rawResumeText);
     if (resumeKeywords) {
       console.log('Resume keyword search:', resumeKeywords);
@@ -528,37 +534,60 @@ function expandTitle(title) {
 }
 
 // ── 4. Seniority filter ──
+// Smart resume body detection
+function getResumeBody(resumeText) {
+  if (!resumeText) return '';
+  const headers = [/\bSUMMARY\b/i, /\bPROFESSIONAL SUMMARY\b/i, /\bEXECUTIVE SUMMARY\b/i,
+    /\bPROFILE\b/i, /\bOBJECTIVE\b/i, /\bEXPERIENCE\b/i, /\bPROFESSIONAL EXPERIENCE\b/i,
+    /\bWORK EXPERIENCE\b/i, /\bEMPLOYMENT\b/i, /\bSKILLS\b/i, /\bKEY SKILLS\b/i, /\bCORE COMPETENCIES\b/i];
+  let earliest = resumeText.length;
+  for (const p of headers) {
+    const m = resumeText.search(p);
+    if (m !== -1 && m < earliest) earliest = m;
+  }
+  const skipTo = Math.max(Math.min(earliest, 400), 50);
+  console.log(`📄 Resume body starts at char ${skipTo} of ${resumeText.length}`);
+  return resumeText.slice(skipTo);
+}
+
 function detectSeniorityFromResume(resumeText) {
-  if (!resumeText || resumeText.length < 100) {
+  if (!resumeText || resumeText.length < 50) {
     console.log('📊 No resume — defaulting to senior');
     return 'senior';
   }
-  const body = resumeText.slice(500);
-  if (/(chief executive|chief operating|chief marketing|chief technology|chief people|chief hr|chief financial|chief revenue|chief product|\bCEO\b|\bCOO\b|\bCMO\b|\bCTO\b|\bCPO\b|\bCHRO\b|\bCFO\b|\bCRO\b)/i.test(body)) {
-    console.log('📊 Resume seniority: C-Suite');
-    return 'csuite';
+  const body = getResumeBody(resumeText);
+  const scores = { csuite: 0, svp: 0, vp: 0, director: 0, senior: 0, manager: 0 };
+
+  // Non-global patterns to avoid lastIndex issues
+  const levels = [
+    { key: 'csuite', patterns: [/chief\s+\w+\s+officer/i, /\b(ceo|coo|cto|cmo|chro|cpo|cfo|cro|cdo|cio)\b/i, /\bfounder\b/i, /\bco-founder\b/i, /\bpresident\b/i, /\bmanaging\s+director\b/i], weight: 3 },
+    { key: 'vp', patterns: [/\bvice\s+president\b/i, /\bvp\s+of\b/i, /\bvp,/i, /\bsvp\b/i, /\bevp\b/i, /\bsenior\s+vice\s+president\b/i, /\bglobal\s+head\b/i, /\bhead\s+of\b/i], weight: 3 },
+    { key: 'director', patterns: [/\bdirector\s+of\b/i, /\bdirector,/i, /\bsenior\s+director\b/i, /\bregional\s+director\b/i, /\bnational\s+director\b/i, /\bglobal\s+director\b/i], weight: 3 },
+    { key: 'senior', patterns: [/\bsenior\s+manager\b/i, /\bsenior\s+consultant\b/i, /\bsenior\s+advisor\b/i, /\bsenior\s+specialist\b/i, /\bprincipal\b/i], weight: 2 },
+    { key: 'manager', patterns: [/\bmanager\s+of\b/i, /\bmanager,/i, /\bconsultant\b/i, /\badvisor\b/i], weight: 1 }
+  ];
+
+  for (const level of levels) {
+    for (const p of level.patterns) {
+      const matches = body.match(new RegExp(p.source, 'gi')) || [];
+      scores[level.key] += matches.length * level.weight;
+    }
   }
-  if (/(executive vice president|EVP|senior vice president|SVP)/i.test(body)) {
-    console.log('📊 Resume seniority: SVP/EVP');
-    return 'svp';
+
+  // First title area gets extra weight
+  const firstArea = body.slice(0, 500);
+  for (const level of levels) {
+    if (level.patterns.some(p => p.test(firstArea))) { scores[level.key] += 10; break; }
   }
-  if (/(vice president|\bVP\b|\bVP,\b|\bVP of\b)/i.test(body)) {
-    console.log('📊 Resume seniority: VP');
-    return 'vp';
-  }
-  if (/\b(senior director|director of|director,|\bdirector\b)/i.test(body)) {
-    console.log('📊 Resume seniority: Director');
-    return 'director';
-  }
-  if (/\b(senior manager|senior lead|senior advisor|\bsenior\b|\bsr\.\b)/i.test(body)) {
-    console.log('📊 Resume seniority: Senior');
-    return 'senior';
-  }
-  if (/\b(manager of|manager,|\bmanager\b|lead,|\blead\b|principal)\b/i.test(body)) {
-    console.log('📊 Resume seniority: Manager');
-    return 'manager';
-  }
-  console.log('📊 Resume seniority: defaulting to senior');
+
+  console.log('📊 Seniority scores:', JSON.stringify(scores));
+  const threshold = 3;
+  if (scores.csuite >= threshold) { console.log('📊 Seniority: csuite'); return 'csuite'; }
+  if (scores.vp >= threshold) { console.log('📊 Seniority: vp'); return 'vp'; }
+  if (scores.director >= threshold) { console.log('📊 Seniority: director'); return 'director'; }
+  if (scores.senior >= threshold) { console.log('📊 Seniority: senior'); return 'senior'; }
+  if (scores.manager >= threshold) { console.log('📊 Seniority: manager'); return 'manager'; }
+  console.log('📊 No clear seniority — defaulting to senior');
   return 'senior';
 }
 
@@ -605,35 +634,38 @@ function getSeniority(title) {
 }
 
 // ── 5. Resume keyword extraction ──
+// Comprehensive skill regex
+const SKILL_REGEX = /leadership development|talent development|talent management|learning and development|l&d|organizational development|organizational design|organizational effectiveness|executive coaching|career coaching|career development|change management|performance management|succession planning|employee engagement|employee relations|culture transformation|workforce development|workforce planning|people analytics|hrbp|hr business partner|human resources|people operations|people strategy|talent acquisition|recruiting|compensation|benefits|facilitation|instructional design|curriculum design|adult learning|360 feedback|team effectiveness|demand generation|demand gen|brand strategy|brand marketing|content strategy|content marketing|growth marketing|digital marketing|performance marketing|product management|product strategy|user experience|agile|scrum|software engineering|software development|devops|cloud|data science|machine learning|business intelligence|sales strategy|revenue growth|business development|account management|enterprise sales|customer success|financial planning|fp&a|financial modeling|process improvement|supply chain|project management|program management|six sigma|lean|cross-functional|transformation|saas|b2b|startup|enterprise|fortune 500|consulting|advisory/gi;
+
 function extractResumeKeywords(resumeText) {
   if (!resumeText || resumeText.length < 100) {
-    console.log('⚠️ Resume too short — skipping resume search');
+    console.log('⚠️ Resume too short or empty — skipping keyword search');
     return null;
   }
+  const body = getResumeBody(resumeText);
+  const skillMatches = [...new Set((body.match(SKILL_REGEX) || []).map(s => s.toLowerCase().trim()))];
+  SKILL_REGEX.lastIndex = 0; // reset global regex
+  console.log(`📄 Raw keyword matches: ${skillMatches.length} terms found`);
 
-  const body = resumeText.slice(500);
-
-  // Aggressive skill extraction
-  const skillRegex = /(leadership|coaching|facilitation|organizational development|talent management|learning|training|curriculum|instructional design|executive coaching|career development|change management|performance management|succession planning|employee engagement|culture|workforce development|program management|stakeholder management|strategic planning|analytics|data-driven|SaaS|B2B|startup|enterprise|Fortune 500|consulting|organizational effectiveness|HRBP|HR business partner|talent acquisition|recruiting|compensation|benefits|HRIS|Workday|SAP|SuccessFactors|marketing|demand generation|brand|content|SEO|paid media|product management|roadmap|agile|scrum|engineering|software development|DevOps|cloud|sales|business development|revenue|account management|finance|FP&A|forecasting|budgeting|operations|process improvement|project management|human capital|workforce planning|people analytics|diversity|inclusion|dei|employee relations|total rewards)/gi;
-
-  const keywords = new Set();
-  const matches = body.match(skillRegex) || [];
-  matches.forEach(m => keywords.add(m.toLowerCase().trim()));
-
-  // Fallback: capitalized multi-word phrases
-  if (keywords.size < 2) {
-    const phrases = body.match(/[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)+/g) || [];
-    const clean = [...new Set(phrases)].filter(p => p.length > 8 && !/^(January|February|March|April|May|June|July|August|September|October|November|December)/.test(p));
-    clean.slice(0, 5).forEach(p => keywords.add(p.toLowerCase()));
+  if (skillMatches.length >= 2) {
+    const meaningful = skillMatches.filter(k => k.length > 4).filter(k => !['executive','strategic','senior','leader','enterprise'].includes(k)).slice(0, 6);
+    if (meaningful.length >= 2) {
+      console.log(`📄 Resume keywords: ${meaningful.join(', ')}`);
+      return meaningful.join(' ');
+    }
   }
 
-  const keywordArray = Array.from(keywords).slice(0, 5);
-  if (keywordArray.length < 2) {
-    console.log('⚠️ Resume keyword extraction returned too few keywords — skipping resume search');
-    return null;
+  // Fallback: capitalized phrases
+  const phrases = [...new Set((body.match(/[A-Z][a-z]{3,}(?:\s+[A-Z][a-z]{3,})+/g) || [])
+    .filter(p => p.length > 8)
+    .filter(p => !/^(January|February|March|April|May|June|July|August|September|October|November|December|Present|Current)/.test(p))
+  )].slice(0, 4);
+
+  if (phrases.length >= 2) {
+    console.log(`📄 Resume keywords (phrase fallback): ${phrases.join(', ')}`);
+    return phrases.join(' ');
   }
 
-  console.log(`📄 Resume keywords extracted: ${keywordArray.join(', ')}`);
-  return keywordArray.join(' ');
+  console.log('⚠️ Resume keyword extraction returned too few keywords — skipping');
+  return null;
 }
-// deploy 1774050865
