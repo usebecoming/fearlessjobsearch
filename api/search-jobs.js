@@ -555,54 +555,182 @@ function detectSeniorityFromResume(resumeText) {
     console.log('📊 No resume — defaulting to senior');
     return 'senior';
   }
-  const body = getResumeBody(resumeText);
-  const scores = { csuite: 0, svp: 0, vp: 0, director: 0, senior: 0, manager: 0 };
 
-  // Non-global patterns to avoid lastIndex issues
-  const levels = [
-    { key: 'csuite', patterns: [/chief\s+\w+\s+officer/i, /\b(ceo|coo|cto|cmo|chro|cpo|cfo|cro|cdo|cio)\b/i, /\bfounder\b/i, /\bco-founder\b/i, /\bpresident\b/i, /\bmanaging\s+director\b/i], weight: 3 },
-    { key: 'vp', patterns: [/\bvice\s+president\b/i, /\bvp\s+of\b/i, /\bvp,/i, /\bsvp\b/i, /\bevp\b/i, /\bsenior\s+vice\s+president\b/i, /\bglobal\s+head\b/i, /\bhead\s+of\b/i], weight: 3 },
-    { key: 'director', patterns: [/\bdirector\s+of\b/i, /\bdirector,/i, /\bsenior\s+director\b/i, /\bregional\s+director\b/i, /\bnational\s+director\b/i, /\bglobal\s+director\b/i], weight: 3 },
-    { key: 'senior', patterns: [/\bsenior\s+manager\b/i, /\bsenior\s+consultant\b/i, /\bsenior\s+advisor\b/i, /\bsenior\s+specialist\b/i, /\bprincipal\b/i], weight: 2 },
-    { key: 'manager', patterns: [/\bmanager\s+of\b/i, /\bmanager,/i, /\bconsultant\b/i, /\badvisor\b/i], weight: 1 }
+  const body = getResumeBody(resumeText);
+
+  // Extract text segments that look like job title lines
+  // Split on newlines, pipes, bullets, dashes, em-dashes
+  const segments = body
+    .split(/[\n\r\|•·–—]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 5 && s.length < 80)
+    .filter(s => !s.includes('@'))
+    .filter(s => !/^\d/.test(s))
+    .filter(s => !/[.?!]$/.test(s))
+    .filter(s => !/\b(and|or|but|for|with|the|of|in|at|to|a|an)\b.*\b(and|or|but|for|with|the|of|in|at|to|a|an)\b/i.test(s));
+
+  console.log(`📄 Title candidate segments: ${segments.length}`);
+
+  // Title patterns — only match at START of segment
+  // "Partnering with CEO" won't match; "Director, Talent Development" will
+  const titleLevels = [
+    {
+      level: 'csuite', score: 10,
+      patterns: [
+        /^chief\s+\w+\s+officer/i,
+        /^(ceo|coo|cto|cmo|chro|cpo|cfo|cro|cdo|cio)$/i,
+        /^(ceo|coo|cto|cmo|chro|cpo|cfo|cro|cdo|cio)[,\s]/i,
+        /^(founder|co-founder|president)$/i,
+        /^(founder|co-founder|president)[,\s]/i,
+        /^managing director/i
+      ]
+    },
+    {
+      level: 'svp', score: 8,
+      patterns: [/^senior vice president/i, /^svp\b/i, /^executive vice president/i, /^evp\b/i]
+    },
+    {
+      level: 'vp', score: 6,
+      patterns: [/^vice president/i, /^vp\s+of/i, /^vp,/i, /^vp\s+\w/i, /^head of/i, /^global head/i]
+    },
+    {
+      level: 'director', score: 4,
+      patterns: [/^director\s+of/i, /^director,/i, /^senior director/i, /^regional director/i, /^national director/i]
+    },
+    {
+      level: 'senior', score: 2,
+      patterns: [/^senior\s+(?:manager|consultant|advisor|specialist|analyst|strategist|lead|partner|talent)/i, /^principal\b/i, /^lead\s+\w/i, /^staff\s+\w/i]
+    },
+    {
+      level: 'manager', score: 1,
+      patterns: [/^(?:\w+\s+)?manager\b/i, /^consultant\b/i, /^advisor\b/i, /^specialist\b/i]
+    }
   ];
 
-  for (const level of levels) {
-    for (const p of level.patterns) {
-      const matches = body.match(new RegExp(p.source, 'gi')) || [];
-      scores[level.key] += matches.length * level.weight;
+  let highestLevel = null;
+  let highestScore = 0;
+
+  for (const segment of segments) {
+    for (const { level, score, patterns } of titleLevels) {
+      if (patterns.some(p => p.test(segment))) {
+        console.log(`  📌 Title match: "${segment}" → ${level}`);
+        if (score > highestScore) {
+          highestScore = score;
+          highestLevel = level;
+        }
+        break;
+      }
     }
   }
 
-  // First title area gets extra weight
-  const firstArea = body.slice(0, 500);
-  for (const level of levels) {
-    if (level.patterns.some(p => p.test(firstArea))) { scores[level.key] += 10; break; }
+  // If no title segments found — try scanning continuous text
+  // but only for very explicit own-title patterns
+  if (!highestLevel) {
+    console.log('📄 No title segments found — scanning continuous text');
+    const ownTitlePatterns = [
+      { level: 'director', score: 4, pattern: /\b(?:served|serve|working|work|acted|act)\s+as\s+(?:a\s+)?director/i },
+      { level: 'director', score: 4, pattern: /\bmy\s+role\s+as\s+(?:a\s+)?director/i },
+      { level: 'senior', score: 2, pattern: /\b(?:served|serve|working|work)\s+as\s+(?:a\s+)?senior/i },
+      { level: 'manager', score: 1, pattern: /\b(?:served|serve|working|work)\s+as\s+(?:a\s+)?manager/i }
+    ];
+    for (const { level, score, pattern } of ownTitlePatterns) {
+      if (pattern.test(body)) {
+        console.log(`  📌 Own-title pattern matched: ${level}`);
+        if (score > highestScore) {
+          highestScore = score;
+          highestLevel = level;
+        }
+      }
+    }
   }
 
-  console.log('📊 Seniority scores:', JSON.stringify(scores));
-  const threshold = 3;
-  if (scores.csuite >= threshold) { console.log('📊 Seniority: csuite'); return 'csuite'; }
-  if (scores.vp >= threshold) { console.log('📊 Seniority: vp'); return 'vp'; }
-  if (scores.director >= threshold) { console.log('📊 Seniority: director'); return 'director'; }
-  if (scores.senior >= threshold) { console.log('📊 Seniority: senior'); return 'senior'; }
-  if (scores.manager >= threshold) { console.log('📊 Seniority: manager'); return 'manager'; }
-  console.log('📊 No clear seniority — defaulting to senior');
-  return 'senior';
+  if (!highestLevel) {
+    console.log('📊 No seniority detected — defaulting to senior');
+    highestLevel = 'senior';
+  }
+
+  // One-level-down rule
+  const searchLevel = {
+    csuite: 'vp',
+    svp: 'director',
+    vp: 'director',
+    director: 'senior',
+    senior: 'senior',
+    manager: 'manager'
+  };
+
+  const finalLevel = searchLevel[highestLevel] || 'senior';
+  console.log(`📊 Detected: ${highestLevel} → Searching at: ${finalLevel}`);
+  return finalLevel;
 }
 
 function isFundraisingDevelopment(job) {
   const title = (job.job_title || '').toLowerCase();
-  const desc = (job.job_description || '').substring(0, 300).toLowerCase();
+  const desc = (job.job_description || '').substring(0, 400).toLowerCase();
+
+  // Title patterns that universally indicate fundraising
+  const fundraisingTitlePatterns = [
+    // "X of Development" where X is a seniority title = fundraising ~95% of the time
+    /\b(?:svp|evp|vp|vice president|director|senior director|executive director|president|officer|manager|associate|coordinator|specialist)\s+of\s+development\b/i,
+    // "Development Director/Officer/Manager" = fundraising
+    /\bdevelopment\s+(?:director|officer|manager|associate|coordinator|executive|lead|specialist)\b/i,
+    // Explicit fundraising terms in title
+    /\bmajor\s+gifts?\b/i,
+    /\bannual\s+(?:fund|giving|campaign)\b/i,
+    /\bplanned\s+giving\b/i,
+    /\bdonor\s+(?:relations?|engagement|stewardship|services?)\b/i,
+    /\bfundraising\b/i,
+    /\bphilanthrop/i,
+    /\bgrant\s+(?:writing|management|development|making)\b/i,
+    /\bcorporate\s+(?:giving|philanthropy|relations)\b/i
+  ];
+
+  // Check title first — L&D keywords override
+  const ldKeywords = ['learning', 'talent', 'training', 'organizational', 'leadership', 'people', 'workforce', 'l&d', 'coaching', 'curriculum', 'instructional', 'facilitati'];
+  const hasLDKeyword = ldKeywords.some(kw => title.includes(kw) || desc.includes(kw));
+
+  // If title matches a fundraising pattern and no L&D keywords → filter
+  if (!hasLDKeyword && fundraisingTitlePatterns.some(p => p.test(title))) {
+    return true;
+  }
+
+  // Original description-based check for titles containing "development"
   if (!title.includes('development')) return false;
-  const ldKeywords = ['learning', 'talent', 'training', 'organizational', 'leadership', 'people', 'workforce', 'l&d'];
-  if (ldKeywords.some(kw => title.includes(kw) || desc.includes(kw))) return false;
-  const fundraisingKeywords = ['nonprofit', 'non-profit', 'foundation', 'association', 'fundrais', 'donor', 'philanthrop', 'major gifts', 'annual fund'];
-  return fundraisingKeywords.some(kw => desc.includes(kw));
+  if (hasLDKeyword) return false;
+  const fundraisingDescSignals = ['nonprofit', 'non-profit', 'foundation', 'association', 'fundrais', 'donor', 'philanthrop', 'major gifts', 'annual fund', 'capital campaign', 'endowment', 'stewardship', '501', 'charitable'];
+  return fundraisingDescSignals.some(kw => desc.includes(kw));
 }
 
 function detectSearchFunction(titles) {
   const text = titles.join(' ').toLowerCase();
+
+  // Pre-check: explicit People/L&D patterns that commonly fail the main regex
+  // These catch titles with unusual word combinations like "Talent and Leadership Development Partner"
+  const explicitPeoplePatterns = [
+    /talent.*partner/i, /talent.*development/i, /talent.*lead/i,
+    /talent\s+and\s+leadership/i, /talent\s+&\s+leadership/i,
+    /talent\s+(?:and|&)?\s*(?:leadership|learning|organizational)\s+development/i,
+    /leadership.*development/i, /senior\s+leadership\s+development/i,
+    /leadership\s+development\s+(?:partner|architect|manager|lead|director|specialist|consultant|advisor|strategist)/i,
+    /learning.*development/i,
+    /learning\s+development\s+(?:partner|architect|manager|lead|director|specialist|consultant|advisor|strategist)/i,
+    /learning.*designer/i, /learning.*architect/i, /learning.*strategist/i,
+    /people.*lead/i, /people.*partner/i, /people.*advisor/i, /people.*consultant/i,
+    /people\s+leader\s+impact/i, /people\s+impact/i,
+    /organizational.*development/i, /organisation.*development/i,
+    /development.*architect/i, /development.*strategist/i, /development.*partner/i,
+    /performance.*development/i, /performance.*consulting/i, /performance.*partner/i,
+    /culture.*partner/i, /culture.*lead/i, /culture.*consultant/i, /culture.*manager/i,
+    /engagement.*partner/i, /engagement.*lead/i, /engagement.*consultant/i, /engagement.*manager/i,
+    /workforce.*development/i, /workforce.*planning/i, /workforce.*consultant/i, /workforce.*partner/i,
+    /capability.*development/i, /capability.*building/i, /capability.*partner/i,
+    /change\s+(?:management|lead|partner|consultant)/i
+  ];
+  if (explicitPeoplePatterns.some(p => p.test(text))) {
+    console.log(`✅ Function detected via explicit pattern: People for "${titles.join(', ')}"`);
+    return 'People';
+  }
+
   if (/(learning|training|talent|people|hr|organizational|workforce|l&d|coaching|leadership development|human capital)/i.test(text)) return 'People';
   if (/(marketing|brand|growth|demand|content|communications|seo)/i.test(text)) return 'Marketing';
   if (/(engineering|software|developer|technical|data science|devops|platform)/i.test(text)) return 'Engineering';

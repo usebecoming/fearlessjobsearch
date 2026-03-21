@@ -1633,12 +1633,8 @@
       <!-- Mode Instructions -->
       <div id="jobModeInstructions"></div>
       <div id="companyModeInstructions" style="display:none;background:#FFFFFF;border:1px solid #E5E4E2;border-radius:10px;padding:16px 20px;margin-bottom:20px">
-        <p style="font-size:0.88rem;color:#555;font-weight:500;line-height:1.6;margin-bottom:12px">Enter the companies you want to work at. We'll look for relevant leadership openings at each one. If no roles are currently posted, we'll still surface the right people to start building a relationship with.</p>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777;line-height:1.7">
-          <div style="font-weight:600;color:#555;margin-bottom:6px">Tips for better results:</div>
-          <div style="margin-bottom:4px">Use the company's official name as it appears on LinkedIn: "Stripe", "Salesforce", "RTX"</div>
-          <div>Add one company at a time. We'll search for leadership openings and key contacts at each.</div>
-        </div>
+        <p style="font-size:0.88rem;color:#555;font-weight:500;line-height:1.6;margin-bottom:8px">Find the right people to talk to at companies you want to work at — even if they're not actively hiring.</p>
+        <p style="font-size:0.82rem;color:#999;line-height:1.5;margin-bottom:0">Senior leaders get jobs through relationships, not applications. We'll find hiring managers, recruiters, and executives based on the role you're targeting.</p>
       </div>
 
       <!-- Saved Search Profiles -->
@@ -1666,10 +1662,17 @@
       </div>
 
       <!-- Target Companies (Company Mode) -->
-      <div class="form-group" id="companiesGroup" style="display:none">
-        <label class="form-label">Target Companies</label>
-        <div class="tag-input-wrap" id="companiesWrap">
-          <input type="text" class="tag-field" id="companiesField" placeholder="e.g. Google, Stripe, Notion, press Enter to add">
+      <div id="companiesGroup" style="display:none">
+        <div class="form-group">
+          <label class="form-label">What role are you targeting?</label>
+          <input type="text" class="form-input" id="companyTargetTitle" placeholder="e.g. Director of Learning and Development" style="width:100%;font-size:0.88rem;padding:10px 14px" oninput="validateSearch()">
+          <p style="font-size:0.82rem;color:#999;margin-top:6px">Used to find the right hiring managers and recruiters at each company.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Companies</label>
+          <div class="tag-input-wrap" id="companiesWrap">
+            <input type="text" class="tag-field" id="companiesField" placeholder="e.g. Google, Stripe, Notion, press Enter to add">
+          </div>
         </div>
       </div>
 
@@ -2617,7 +2620,8 @@
     function validateSearch() {
       const btn = document.getElementById('searchBtn');
       if (state.searchMode === 'companies') {
-        btn.disabled = state.companies.length === 0;
+        const companyTitle = (document.getElementById('companyTargetTitle')?.value || '').trim();
+        btn.disabled = state.companies.length === 0 || !companyTitle;
       } else {
         btn.disabled = state.titles.length === 0;
       }
@@ -2769,16 +2773,21 @@
 
       // Company Target: skip job listings, go straight to contacts
       if (state.searchMode === 'companies') {
-        // Build job data from company names + user's background
-        const companyJobData = state.companies.map((co, i) => ({
-          job_id: 'company-' + i,
-          title: state.titles.length > 0 ? state.titles[0] : 'Leadership',
+        // Get explicitly entered title — required by validation
+        const companyTargetTitle = (document.getElementById('companyTargetTitle')?.value || '').trim();
+        if (!companyTargetTitle) return; // shouldn't happen — button is disabled
+
+        // Build company-mode job data — one per company, all using the explicit title
+        const companyJobData = state.companies.map((co) => ({
+          job_id: 'company_' + co.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          title: companyTargetTitle,
           company: co,
+          type: 'company',
           industry: '',
           location: state.locations.length ? state.locations.join(', ') : ''
         }));
 
-        // Go directly to Step 3
+        // Go directly to Step 3 — use server-side verification (same pipeline as job mode)
         goToStep(3);
         const contactContainer = document.getElementById('contactsContainer');
         const contactEstimate = Math.max(25, companyJobData.length * 10);
@@ -2791,90 +2800,14 @@
             body: JSON.stringify({ jobs: companyJobData })
           });
 
-          let braveResults = null;
-          if (searchRes.ok) {
-            braveResults = await searchRes.json();
+          if (!searchRes.ok) {
+            const err = await searchRes.json().catch(() => ({}));
+            throw new Error(err.error || 'Contact search failed');
           }
 
-          showProgress(contactContainer, 'Organizing contacts and identifying roles...', 15);
-
-          const systemPrompt2 = 'You are a networking assistant for senior leaders. Respond ONLY with a JSON object. No markdown, no explanation.';
-          let userPrompt2;
-
-          if (braveResults && braveResults.results && braveResults.results.some(r => r.raw_contacts && r.raw_contacts.length > 0)) {
-            const jobContexts = braveResults.results.map(r => {
-              const dt = r.derived || r.derived_titles || { hmTitles: [], slTitles: [], func: '' };
-              return `Company: ${r.company} (${r.location || 'any location'})
-Function/Department: ${dt.func || 'Leadership'}
-User's background: ${state.titles.length > 0 ? state.titles.join(', ') : 'Leadership roles'}
-Hiring Manager titles: ${(dt.hmTitles || dt.hiringManager || []).join(', ')}
-Skip-Level titles: ${(dt.slTitles || dt.skipLevel || []).join(', ')}
-Raw contacts found: ${r.raw_contacts.length}`;
-            }).join('\n\n');
-
-            userPrompt2 = `You are verifying LinkedIn search results to find real people at target companies for proactive networking. No active job opening required. Identify the right people to build relationships with.
-
-${jobContexts}
-
-Apply the SAME strict rules as job-targeted contact verification:
-- ONLY include people who CURRENTLY work at the exact company. Past tense = reject. Ambiguous = reject.
-- One contact per role type max (Hiring Manager, Skip-Level, Recruiter/TA).
-- Reject vague titles: "Employee", "Team Member", "Senior Executive", "Leader", "Professional".
-- Reject wrong function: a sales director is not relevant for HR networking.
-- Staffing companies: only include "Corporate Recruiter" or "Internal TA", not client-facing recruiters.
-- Company name must match exactly or with clear abbreviation. Different entities = reject.
-- Never fabricate URLs. Keep exactly as provided.
-- Quality over quantity. 1-2 verified > 4-5 questionable.
-- Notes should focus on relationship building, not job applications.
-- SMALL COMPANY EXCEPTION: If strict rules reject all or most contacts, apply relaxed rules. Accept contacts where company name appears anywhere in snippet. Accept founders/CEOs/Presidents automatically. Accept slugs containing "-hr", "-people", "-talent". Aim for 30% acceptance rate minimum. Set confidence to "medium".
-
-Search results:
-${JSON.stringify(braveResults.results, null, 2)}
-
-Return a JSON object with a "results" array. Each result:
-{
-  "job_id": "string",
-  "company": "string",
-  "job_title": "Networking",
-  "contacts": [
-    {
-      "name": "string",
-      "title": "string (current title)",
-      "role": "Recruiter / TA" | "Hiring Manager" | "Skip-Level",
-      "linkedin": "string (exact URL)",
-      "confidence": "high" | "medium",
-      "note": "string (why connect with this person)"
-    }
-  ]
-}`;
-          } else {
-            stopProgress();
-            // Use slug/geoUrn from braveResults if available
-            var fallbackResults = braveResults && braveResults.results ? braveResults.results : state.companies.map(function(co) { return { company: co, linkedin_slug: '', geo_urn: null }; });
-            contactContainer.innerHTML = `<div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:28px;text-align:center">
-              <h3 style="font-size:1.1rem;margin-bottom:10px">No contacts found automatically</h3>
-              <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:16px">Search LinkedIn directly with filters applied:</p>
-              <div style="display:flex;flex-direction:column;gap:12px;max-width:500px;margin:0 auto">
-                ${fallbackResults.map(function(r) {
-                  var slug = r.linkedin_slug || '';
-                  var geoUrn = r.geo_urn || '';
-                  var companyParam = slug ? '&currentCompany=%5B%22' + encodeURIComponent(slug) + '%22%5D' : '';
-                  var geoParam = geoUrn ? '&geoUrn=%5B%22' + geoUrn + '%22%5D' : '';
-                  return '<div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;text-align:left"><div style="font-weight:600;font-size:0.92rem;margin-bottom:8px">' + esc(r.company) + '</div><div style="display:flex;flex-wrap:wrap;gap:6px">' +
-                    '<a href="https://www.linkedin.com/search/results/people/?keywords=VP+Director+Head' + companyParam + geoParam + '&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Hiring Managers &#8599;</a>' +
-                    '<a href="https://www.linkedin.com/search/results/people/?keywords=recruiter+talent+acquisition' + companyParam + geoParam + '&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters &#8599;</a>' +
-                    '<a href="https://www.linkedin.com/search/results/people/?keywords=CEO+COO+President+Chief' + companyParam + geoParam + '&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives &#8599;</a>' +
-                    (slug ? '<a href="https://www.linkedin.com/company/' + esc(slug) + '/people/" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Full Team &#8599;</a>' : '') +
-                  '</div></div>';
-                }).join('')}
-              </div>
-              <div style="margin-top:20px"><button class="btn-secondary" onclick="goToStep(1)">Back to search</button></div>
-            </div>`;
-            return;
-          }
-
-          const contactData = await callClaude(systemPrompt2, userPrompt2);
+          const contactData = await searchRes.json();
           stopProgress();
+
           state.contacts = contactData;
           renderContacts(contactData);
           logUsage('contact_search', { mode: 'company_target', companies: state.companies, contacts: (contactData.results || []).reduce(function(s,r){ return s + (r.contacts||[]).length; }, 0) });
@@ -3652,26 +3585,14 @@ Return a JSON array of objects with these exact fields:
         div.className = 'contacts-group fade-up';
         div.style.animationDelay = `${gi * 0.1}s`;
 
-        let html = `<h3 class="contacts-group-header">${esc(group.job_title)}</h3>
-                     <p class="contacts-group-sub">${esc(group.company)}</p>`;
+        const isCompanyMode = (group.job_id || '').startsWith('company_');
+        let html = isCompanyMode
+          ? `<h3 class="contacts-group-header">${esc(group.company)}</h3>
+             <p class="contacts-group-sub">Target company — people worth connecting with</p>`
+          : `<h3 class="contacts-group-header">${esc(group.job_title)}</h3>
+             <p class="contacts-group-sub">${esc(group.company)}</p>`;
 
-        // Show message if no contacts found for this job
-        if (!group.contacts || group.contacts.length === 0) {
-          const slug = group.linkedin_slug || '';
-          const geoUrn = group.geo_urn || '';
-          const companyParam = slug ? '&currentCompany=%5B%22' + encodeURIComponent(slug) + '%22%5D' : '';
-          const geoParam = geoUrn ? '&geoUrn=%5B%22' + geoUrn + '%22%5D' : '';
-          html += `<div style="background:#F9F6F1;border:1px solid #E5E4E2;border-radius:10px;padding:16px 20px;margin-bottom:16px">
-            <p style="font-size:0.88rem;color:#555;font-weight:500;margin-bottom:10px">${!group.company || group.company === 'Unknown' ? 'No company name listed for this role. We need a company name to find contacts.' : 'No verified contacts found at ' + esc(group.company) + '. Search LinkedIn directly with filters applied:'}</p>
-            ${group.company && group.company !== 'Unknown' ? `<div style="display:flex;gap:8px;flex-wrap:wrap">
-              <a href="https://www.linkedin.com/search/results/people/?keywords=VP+Director+Head${companyParam}${geoParam}&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Hiring Managers &#8599;</a>
-              <a href="https://www.linkedin.com/search/results/people/?keywords=recruiter+talent+acquisition${companyParam}${geoParam}&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters &#8599;</a>
-              <a href="https://www.linkedin.com/search/results/people/?keywords=CEO+COO+President+Chief${companyParam}${geoParam}&origin=GLOBAL_SEARCH_HEADER" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives &#8599;</a>
-              ${slug ? `<a href="https://www.linkedin.com/company/${esc(slug)}/people/" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Full Team &#8599;</a>` : ''}
-            </div>` : ''}
-          </div>`;
-        }
-
+        // Render contact cards
         (group.contacts || []).forEach(c => {
           const cId = `contact-${contactIdx}`;
           state.selectedContacts.add(cId);
@@ -3696,9 +3617,36 @@ Return a JSON array of objects with these exact fields:
           contactIdx++;
         });
 
+        // ALWAYS show LinkedIn links — below contacts when found, as primary when not
+        // Use keyword-based search (company name in quotes) — currentCompany parameter requires numeric IDs
+        const slug = group.linkedin_slug || '';
+        const hasContacts = group.contacts && group.contacts.length > 0;
+        const coQuoted = encodeURIComponent('"' + group.company + '"');
+        const liBase = 'https://www.linkedin.com/search/results/people/?keywords=';
+        const liOrigin = '&origin=GLOBAL_SEARCH_HEADER';
+
+        if (group.company && group.company !== 'Unknown') {
+          html += `<div style="background:#F9F6F1;border:1px solid #E5E4E2;border-radius:10px;padding:14px 18px;margin-top:${hasContacts ? '12' : '0'}px;margin-bottom:16px">
+            <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:8px">${hasContacts ? 'Find more people at ' + esc(group.company) + ':' : 'Start a conversation at ' + esc(group.company) + ' — search LinkedIn directly:'}</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <a href="${liBase}${coQuoted}+${encodeURIComponent('"VP" OR "CHRO" OR "CPO" OR "Director" OR "Head of"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">HR Leaders at ${esc(group.company)} &#8599;</a>
+              <a href="${liBase}${coQuoted}+${encodeURIComponent('"recruiter" OR "talent acquisition" OR "recruiting"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters at ${esc(group.company)} &#8599;</a>
+              <a href="${liBase}${coQuoted}+${encodeURIComponent('"CEO" OR "COO" OR "President" OR "Chief"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives at ${esc(group.company)} &#8599;</a>
+              ${slug ? `<a href="https://www.linkedin.com/company/${esc(slug)}/people/" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">All ${esc(group.company)} employees &#8599;</a>` : ''}
+            </div>
+            <p style="font-size:0.78rem;color:#999;margin-top:8px;margin-bottom:0">Links search LinkedIn by keyword — results show people who list ${esc(group.company)} in their profile. Login required.</p>
+          </div>`;
+        }
+
         div.innerHTML = html;
         container.appendChild(div);
       });
+
+      // If no contacts were found across all groups, hide outreach UI
+      if (contactIdx === 0) {
+        document.getElementById('contactsInstructions').style.display = 'none';
+        document.getElementById('contactsSelectionBar').style.display = 'none';
+      }
 
       updateContactSelectionCount();
     }

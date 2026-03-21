@@ -1,5 +1,19 @@
 # Fearless Job Search - Development Notes
 
+## Core Product Philosophy — Contacts
+
+Contacts are the most valuable feature. The goal is never just "find the hiring manager for this job posting" — it's "help the user start a conversation at a company they want to work at."
+
+This means:
+- Always show contacts even when no jobs are posted (company target mode)
+- Always show LinkedIn fallback links even when contacts are found ("Find more people at [Company]")
+- Never show an empty state — there is always someone to reach out to
+- The message is always "here's who to talk to" not "we couldn't find anyone"
+- Confirmed employees with vague titles are still valuable — the user can click through and see who they are
+- Recruiters and TA contacts are always relevant for any job function
+- LinkedIn links must always include the currentCompany filter so users land on the right people
+- `isFunctionRelevant` defaults to KEEP — only reject clearly wrong industry (nurse for Marketing, chef for People)
+
 ## Contact Pipeline Limitations
 
 The contact finding pipeline uses Brave Search to find LinkedIn profiles via public web indexing. Known limitations:

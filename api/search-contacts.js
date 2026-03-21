@@ -64,41 +64,80 @@ export default async function handler(req, res) {
       '3m':'3M Company','3m company':'3M Company'
     };
 
-    // Process all jobs in PARALLEL
-    console.log(`\n🚀 Processing ${jobs.length} jobs in parallel...`);
+    // ── Group jobs by company to avoid duplicate searches ──
+    console.log(`\n🚀 Processing ${jobs.length} jobs...`);
 
     const JOB_TIMEOUT_MS = 45000;
-    const jobPromises = jobs.map(async (job) => {
+
+    // Group by cleaned company name
+    const companyGroups = {};
+    const skipJobs = []; // jobs with no valid company
+
+    for (const job of jobs) {
       const company = job.company;
       const jobTitle = job.title;
 
-      // Skip if no company
       if (!company || company === 'Unknown' || company.length < 2) {
         console.log(`Skipping: no valid company name for "${jobTitle}"`);
-        return { job_id: job.job_id, company, job_title: jobTitle, location: job.location || '', derived: {}, contacts: [] };
+        skipJobs.push({ job_id: job.job_id, company, job_title: jobTitle, location: job.location || '', derived: {}, contacts: [] });
+        continue;
       }
 
-      // Clean + resolve aliases
       let cleanedCompany = cleanCompanyName(company);
       const alias = companyAliases[cleanedCompany.toLowerCase().trim()];
       if (alias) {
         console.log(`🔤 Company alias: "${cleanedCompany}" → "${alias}"`);
         cleanedCompany = alias;
       }
-      // Skip very short names that can't be searched safely
-      if (cleanedCompany.length <= 3 && !alias) {
-        console.log(`⚠️ Company name too short: "${cleanedCompany}" — using LinkedIn fallback`);
-        const slug = await getLinkedInCompanySlug(company, braveKey);
-        return { job_id: job.job_id, company, job_title: jobTitle, location: job.location || '', derived: {}, contacts: [], linkedin_slug: slug, geo_urn: getGeoUrn(job.location) };
-      }
-      if (cleanedCompany !== company) {
-        console.log(`🧹 Cleaned company: "${company}" → "${cleanedCompany}"`);
-      }
-      const searchCompany = cleanedCompany;
 
-      console.log(`\n=== CONTACTS FOR: ${jobTitle} at ${searchCompany} ===`);
+      const companyKey = cleanedCompany.toLowerCase().trim();
+      if (!companyGroups[companyKey]) {
+        companyGroups[companyKey] = {
+          searchCompany: cleanedCompany,
+          originalCompany: company,
+          jobs: []
+        };
+      }
+      companyGroups[companyKey].jobs.push(job);
+    }
+
+    // Log dedup savings
+    console.log(`\n📊 Contact search groups:`);
+    Object.values(companyGroups).forEach(group => {
+      console.log(`  ${group.searchCompany}: ${group.jobs.length} job(s)`);
+      group.jobs.forEach(j => console.log(`    - ${j.title}`));
+      if (group.jobs.length > 1) {
+        console.log(`  ♻️ Reusing contacts for ${group.searchCompany} across ${group.jobs.length} jobs — saved ${group.jobs.length - 1} Brave search + Claude call`);
+      }
+    });
+
+    // Run contact search once per unique company in parallel
+    const companyPromises = Object.values(companyGroups).map(async (group) => {
+      const company = group.originalCompany;
+      const searchCompany = group.searchCompany;
+      // Use first job for deriving function/titles
+      const representativeJob = group.jobs[0];
+      const jobTitle = representativeJob.title;
+
+      // Skip very short names that can't be searched safely
+      if (searchCompany.length <= 3 && !companyAliases[searchCompany.toLowerCase().trim()]) {
+        console.log(`⚠️ Company name too short: "${searchCompany}" — using LinkedIn fallback`);
+        const slug = await getLinkedInCompanySlug(company, braveKey);
+        group.result = {
+          company, derived: {}, contacts: [],
+          linkedin_slug: slug, geo_urn: getGeoUrn(representativeJob.location)
+        };
+        return;
+      }
+      if (searchCompany !== company) {
+        console.log(`🧹 Cleaned company: "${company}" → "${searchCompany}"`);
+      }
+
+      const isCompanyMode = representativeJob.type === 'company';
+      console.log(`\n=== CONTACTS FOR: ${isCompanyMode ? `(company mode) ${jobTitle}` : jobTitle} at ${searchCompany} ===`);
 
       // Step 1: Derive function, titles, hierarchy
+      // Company mode always has an explicit title now — no fallback needed
       const derived = deriveAll(jobTitle);
       console.log('Function:', derived.func);
       console.log('HM titles:', derived.hmTitles);
@@ -117,14 +156,12 @@ export default async function handler(req, res) {
           console.log(`  ${role} query [${co}]:`, q);
           let r = await braveSearch(q, braveKey);
 
-          // Fix 1: Filter name-based false positives on short name fallbacks
           if (isShortName && r.length > 0) {
             const before = r.length;
             r = r.filter(result => {
               const slug = (result.linkedin_url || '').toLowerCase();
               const snip = (result.snippet || '').toLowerCase();
               const short = co.toLowerCase();
-              // If short name is in the slug but NOT in snippet, it's likely the person's name
               if (slug.includes(short.replace(/\s+/g, '-')) && !snip.includes(short)) {
                 console.log(`  ❌ False positive: ${result.name} — "${short}" in slug is person's name`);
                 return false;
@@ -144,7 +181,6 @@ export default async function handler(req, res) {
       const hmQuery = derived.hmTitles.map(t => `"${t}"`).join(' OR ');
       const recQuery = derived.recTerms.map(t => `"${t}"`).join(' OR ');
       const slQuery = derived.slTitles.map(t => `"${t}"`).join(' OR ');
-      const primaryCo = companyNames[0];
 
       await Promise.all([
         searchAndFilter(co => `site:linkedin.com/in "${co}" (${hmQuery})`, 'Hiring Manager'),
@@ -170,17 +206,15 @@ export default async function handler(req, res) {
         allContacts.push(...apolloContacts);
       }
 
-      // Fix 2: Enhanced founder search for small companies
+      // Enhanced founder search for small companies
       let dedupedSoFar = dedupeContacts(allContacts);
       if (dedupedSoFar.length < 3) {
         console.log('🔍 Running founder/CEO search...');
-        // Query 1: site-restricted LinkedIn search
         const founderQuery1 = `site:linkedin.com/in "${company}" (Founder OR "Co-Founder" OR CEO OR President)`;
         const founderResults1 = await braveSearch(founderQuery1, braveKey);
         console.log(`  Founder search (site): ${founderResults1.length} results`);
         allContacts.push(...founderResults1.map(r => ({ ...r, searchRole: 'Skip-Level', isFounder: true })));
 
-        // Query 2: general web search for founder name + LinkedIn
         if (founderResults1.length < 1) {
           const founderQuery2 = `"${company}" founder CEO "linkedin.com/in"`;
           console.log(`  Founder web search: ${founderQuery2}`);
@@ -252,9 +286,9 @@ export default async function handler(req, res) {
 
       // Look up LinkedIn company slug for fallback links
       const companySlug = await getLinkedInCompanySlug(company, braveKey);
-      const geoUrn = getGeoUrn(job.location);
+      const geoUrn = getGeoUrn(representativeJob.location);
 
-      // Fix 3: Detect professional services / law firm
+      // Detect professional services / law firm
       const isProfServices = /law|legal|llp|llc|consulting|advisors|partners|group|associates/i.test(company);
       let extraSlTitles = [];
       if (isProfServices && derived.func === 'People') {
@@ -270,9 +304,13 @@ export default async function handler(req, res) {
       if (anthropicKey && contactsPassedIn > 0) {
         console.log(`\n🤖 Calling Claude to verify ${contactsPassedIn} contacts for ${company}...`);
 
+        const companyModeContext = isCompanyMode
+          ? `The user is interested in working at ${company} in a ${derived.func} role similar to "${jobTitle}". No active job posting — this is proactive networking.`
+          : '';
+
         const claudePrompt = `You are a contact role assigner. Some contacts are pre-qualified (preQualified: true) — do NOT reject these. Only assign role type, extract title, write reason.
 
-Job: ${jobTitle} at ${company}
+${isCompanyMode ? companyModeContext : `Job: ${jobTitle} at ${company}`}
 Function: ${derived.func}
 HM titles: ${derived.hmTitles.join(', ')}
 SL titles: ${[...derived.slTitles, ...extraSlTitles].join(', ')}
@@ -323,7 +361,6 @@ Return JSON array only — accepted contacts only:
                 console.log(`  ${icon} ${c.name} | ${c.role || c.role_type} | ${c.title} | ${c.confidence}`);
               });
               console.log(`\n  📊 Kept: ${verifiedContacts.length} of ${contactsPassedIn} (${Math.round(verifiedContacts.length/contactsPassedIn*100)}% acceptance)`);
-              // Log contacts dropped by Claude
               const returnedUrls = new Set(verifiedContacts.map(c => (c.linkedin || c.linkedin_url || '').toLowerCase()));
               toPassToClaude.forEach(c => {
                 if (!returnedUrls.has((c.linkedin_url || '').toLowerCase())) {
@@ -350,23 +387,19 @@ Return JSON array only — accepted contacts only:
         const beforeFilter = verifiedContacts.length;
         verifiedContacts = verifiedContacts.filter(c => {
           const roleType = c.role || c.role_type || '';
-          // If title is just the company name, keep but flag
           if (isTitleJustCompanyName(c.title, company)) {
             console.log(`  🔶 Title is company name — keeping: ${c.name} — "${c.title}"`);
             c.titleVerified = false;
             return true;
           }
-          // Reject vague titles (generous - only truly empty)
           if (isTitleTooVague(c.title, roleType)) {
             console.log(`  ❌ Vague title rejected: ${c.name} — "${c.title}"`);
             return false;
           }
-          // Reject former employees
           if (isFormerEmployee(c.title, c.note)) {
             console.log(`  ❌ Former employee rejected: ${c.name} — "${c.title}"`);
             return false;
           }
-          // Function relevance (generous - only rejects clearly wrong)
           if (!isFunctionRelevant(c.title, derived.func, roleType)) {
             console.log(`  ❌ Wrong function rejected: ${c.name} — "${c.title}" not relevant to ${derived.func}`);
             return false;
@@ -376,6 +409,14 @@ Return JSON array only — accepted contacts only:
         if (beforeFilter !== verifiedContacts.length) {
           console.log(`  Post-filter: ${beforeFilter} → ${verifiedContacts.length} contacts`);
         }
+
+        // Flag contacts whose title mentions a different major company
+        verifiedContacts = verifiedContacts.map(c => {
+          if (titleMentionsDifferentCompany(c.title, company)) {
+            return { ...c, confidence: 'medium', note: (c.note || '') + ' (Title may reference previous employer — verify profile)' };
+          }
+          return c;
+        });
       }
 
       // Post-Claude founder search if too few verified
@@ -400,11 +441,9 @@ Return JSON array only — accepted contacts only:
         });
       }
 
-      return {
-        job_id: job.job_id,
+      // Store result for this company group
+      group.result = {
         company,
-        job_title: jobTitle,
-        location: job.location || '',
         derived: { func: derived.func, hmTitles: derived.hmTitles, slTitles: [...derived.slTitles, ...extraSlTitles], recTerms: derived.recTerms },
         contacts: verifiedContacts,
         linkedin_slug: companySlug,
@@ -413,18 +452,36 @@ Return JSON array only — accepted contacts only:
       };
     });
 
-    // Run all jobs in parallel with per-job timeout
-    const results = await Promise.all(
-      jobPromises.map(p => Promise.race([
+    // Run all company searches in parallel with per-company timeout
+    await Promise.all(
+      companyPromises.map(p => Promise.race([
         p,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Job timeout')), JOB_TIMEOUT_MS))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Company timeout')), JOB_TIMEOUT_MS))
       ]).catch(err => {
-        console.error(`❌ Job failed: ${err.message}`);
-        return { job_id: '', company: '', job_title: '', contacts: [], error: err.message };
+        console.error(`❌ Company search failed: ${err.message}`);
       }))
     );
 
-    console.log(`\n✅ All ${results.length} jobs completed`);
+    // Build results — apply company contacts to ALL jobs at that company
+    const results = [...skipJobs];
+    for (const group of Object.values(companyGroups)) {
+      const r = group.result || { company: group.originalCompany, derived: {}, contacts: [], linkedin_slug: '', geo_urn: null };
+      for (const job of group.jobs) {
+        results.push({
+          job_id: job.job_id,
+          company: r.company,
+          job_title: job.title,
+          location: job.location || '',
+          derived: r.derived,
+          contacts: [...r.contacts], // copy so cross-company dedup doesn't affect siblings
+          linkedin_slug: r.linkedin_slug,
+          geo_urn: r.geo_urn || getGeoUrn(job.location),
+          is_professional_services: r.is_professional_services
+        });
+      }
+    }
+
+    console.log(`\n✅ All ${results.length} jobs completed (${Object.keys(companyGroups).length} unique companies searched)`);
 
     // ── CROSS-JOB DEDUPLICATION ──
     // Fix 1: Cross-COMPANY dedup (same company = keep, different company = remove)
@@ -500,52 +557,220 @@ function deriveAll(jobTitle) {
   return { func, level, hmTitles, slTitles, recTerms };
 }
 
+// Company-mode: derive titles from target function directly (no job title)
+function deriveAllFromFunction(targetFunction) {
+  const func = targetFunction || 'General';
+  const level = 'director'; // default seniority for company-mode
+
+  let hmTitles, slTitles, recTerms;
+  if (func === 'General') {
+    hmTitles = ['CEO', 'COO', 'President', 'Managing Director'];
+    slTitles = ['Chairman', 'Board Member'];
+    recTerms = ['recruiter', 'talent acquisition', 'recruiting partner', 'talent partner', 'HR business partner'];
+  } else {
+    hmTitles = getHiringManagerTitles(func, level);
+    slTitles = getSkipLevelTitles(func, level);
+    recTerms = getRecruiterTerms(func);
+  }
+
+  const hmSet = new Set(hmTitles.map(t => t.toLowerCase()));
+  slTitles = slTitles.filter(t => !hmSet.has(t.toLowerCase()));
+
+  console.log(`✅ Company-mode function: ${func} (default ${level} level)`);
+  return { func, level, hmTitles, slTitles, recTerms };
+}
+
 function deriveFunction(jobTitle) {
-  const text = jobTitle.toLowerCase();
+  if (!jobTitle) return 'General';
 
-  // People/HR must be checked FIRST (before Engineering catches "development")
-  if (/\bpeople\b|people leader|hr|human resources|human capital|people ops|people operations|talent development|talent management|learning|l&d|organizational development|\bod\b|training|culture|workforce|hris|compensation|benefits|recruiting|recruiter|talent acquisition|performance|engagement|workforce planning|people analytics|diversity|inclusion|\bdei\b|employee relations|labor relations|total rewards|people strategy/i.test(text)) {
-    return 'People';
-  }
-  if (/engineering|software|developer|devops|infrastructure|platform|backend|frontend|fullstack|data engineer|ml engineer|site reliability/i.test(text)) {
-    return 'Engineering';
-  }
-  if (/product management|product manager|product strategy|product lead|product director|product vp/i.test(text)) {
-    return 'Product';
-  }
-  if (/marketing|brand|demand gen|growth|content|seo|campaigns|communications|pr |public relations/i.test(text)) {
-    return 'Marketing';
-  }
-  if (/sales|revenue|account executive|business development|bd |partnerships|channel/i.test(text)) {
-    return 'Sales';
-  }
-  if (/finance|accounting|fp&a|financial planning|controller|treasury|audit/i.test(text)) {
-    return 'Finance';
-  }
-  if (/design|ux|user experience|ui |creative|visual/i.test(text)) {
-    return 'Design';
-  }
-  if (/legal|compliance|counsel|risk|regulatory/i.test(text)) {
-    return 'Legal';
-  }
-  if (/operations|supply chain|logistics|facilities|biz ops/i.test(text)) {
-    return 'Operations';
-  }
-  if (/data science|analytics|business intelligence|bi |insights|data analyst/i.test(text)) {
-    return 'Data';
-  }
-  if (/security|infosec|cybersecurity|information security/i.test(text)) {
-    return 'Security';
-  }
-  if (/customer|client|success|support|customer experience/i.test(text)) {
-    return 'Customer Success';
-  }
-  if (/strategy|planning|transformation|corporate development/i.test(text)) {
-    return 'Strategy';
+  const title = jobTitle.toLowerCase();
+
+  // TOKEN-BASED SCORING — each function has signal words worth different points
+  // Highest scoring function wins. Threshold of 2 required.
+  const functionTokens = {
+    'People': {
+      high: [
+        'hr', 'hris', 'hrbp', 'chro', 'cpo',
+        'human resources', 'people ops', 'people operations',
+        'talent acquisition', 'talent management', 'talent development',
+        'talent partner', 'talent lead',
+        'learning and development', 'l&d',
+        'organizational development', 'organisation development',
+        'leadership development', 'leader development',
+        'learning design', 'instructional design',
+        'workforce development', 'workforce planning',
+        'employee experience', 'employee relations',
+        'people partner', 'people lead', 'people business partner',
+        'hr business partner', 'hr generalist', 'hr manager',
+        'culture partner', 'dei', 'diversity', 'inclusion',
+        'total rewards', 'compensation', 'benefits',
+        'succession planning', 'performance management',
+        'change management', 'organizational design',
+        'capability development', 'capability building',
+        'executive coaching', 'career development',
+        'adult learning', 'facilitation'
+      ],
+      medium: [
+        'talent', 'learning', 'training', 'development',
+        'people', 'culture', 'engagement', 'coaching',
+        'organizational', 'workforce', 'employee',
+        'recruiting', 'recruiter', 'recruitment',
+        'onboarding', 'retention',
+        'performance', 'feedback',
+        'leadership', 'team effectiveness'
+      ],
+      low: [
+        'partner', 'advisor', 'strategist', 'architect',
+        'consultant', 'specialist', 'generalist',
+        'impact', 'effectiveness', 'capability'
+      ]
+    },
+    'Engineering': {
+      high: [
+        'software engineer', 'software developer', 'frontend', 'backend',
+        'full stack', 'fullstack', 'devops', 'sre', 'platform engineer',
+        'machine learning', 'ml engineer', 'data engineer',
+        'security engineer', 'cloud engineer', 'infrastructure engineer'
+      ],
+      medium: [
+        'engineering', 'developer', 'programmer',
+        'technical', 'infrastructure', 'cloud',
+        'platform', 'api', 'microservices'
+      ],
+      low: ['tech', 'technology', 'systems']
+    },
+    'Marketing': {
+      high: [
+        'demand generation', 'demand gen', 'growth marketing',
+        'performance marketing', 'brand marketing', 'content marketing',
+        'product marketing', 'field marketing', 'email marketing',
+        'seo', 'sem', 'paid media', 'paid social',
+        'marketing operations', 'marketing analytics'
+      ],
+      medium: [
+        'marketing', 'brand', 'growth', 'content', 'creative',
+        'communications', 'pr', 'public relations', 'campaign'
+      ],
+      low: ['awareness', 'messaging', 'positioning', 'go-to-market', 'gtm']
+    },
+    'Product': {
+      high: [
+        'product manager', 'product management', 'product owner',
+        'product designer', 'ux designer', 'ui designer',
+        'user researcher', 'ux researcher', 'product analyst'
+      ],
+      medium: [
+        'product', 'ux', 'ui', 'user experience', 'user research',
+        'design', 'roadmap', 'agile', 'scrum'
+      ],
+      low: ['feature', 'launch', 'mvp']
+    },
+    'Sales': {
+      high: [
+        'account executive', 'account manager', 'sales manager',
+        'business development', 'bdr', 'sdr', 'sales development',
+        'enterprise sales', 'inside sales', 'field sales',
+        'revenue operations', 'revops', 'sales operations',
+        'customer success', 'client success', 'relationship manager'
+      ],
+      medium: [
+        'sales', 'revenue', 'quota', 'pipeline',
+        'account', 'client', 'customer', 'partnerships', 'commercial'
+      ],
+      low: ['prospecting', 'negotiation', 'deal']
+    },
+    'Finance': {
+      high: [
+        'financial planning', 'fp&a', 'financial analyst',
+        'controller', 'comptroller', 'treasurer', 'cfo',
+        'accounting manager', 'tax manager', 'audit manager',
+        'corporate finance'
+      ],
+      medium: [
+        'finance', 'financial', 'accounting', 'treasury',
+        'budget', 'forecast', 'audit', 'tax', 'payroll'
+      ],
+      low: ['cost', 'variance']
+    },
+    'Operations': {
+      high: [
+        'supply chain manager', 'logistics manager', 'operations manager',
+        'chief operating officer', 'vp operations',
+        'procurement manager', 'vendor management',
+        'business operations', 'biz ops'
+      ],
+      medium: [
+        'operations', 'ops', 'supply chain', 'logistics',
+        'procurement', 'vendor', 'fulfillment',
+        'process improvement', 'lean', 'six sigma'
+      ],
+      low: ['efficiency', 'optimization', 'workflow']
+    },
+    'Legal': {
+      high: [
+        'general counsel', 'chief legal officer',
+        'corporate attorney', 'litigation attorney',
+        'compliance officer', 'chief compliance officer',
+        'legal operations', 'contract manager'
+      ],
+      medium: [
+        'legal', 'attorney', 'counsel', 'lawyer',
+        'compliance', 'regulatory', 'risk', 'governance'
+      ],
+      low: ['policy', 'regulation']
+    },
+    'Data': {
+      high: [
+        'data scientist', 'data engineer', 'data analyst',
+        'business intelligence', 'bi engineer', 'bi analyst',
+        'analytics engineer', 'data architect'
+      ],
+      medium: [
+        'data', 'analytics', 'insights',
+        'statistics', 'tableau', 'looker'
+      ],
+      low: ['metrics', 'dashboard', 'visualization']
+    }
+  };
+
+  // Use word-boundary matching for short tokens to avoid false positives
+  // e.g. "pr" should not match inside "practitioner"
+  function tokenMatch(text, token) {
+    if (token.length <= 3) {
+      return new RegExp(`\\b${token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text);
+    }
+    return text.includes(token);
   }
 
-  console.warn(`⚠️ Could not detect function for: "${jobTitle}" — defaulting to General`);
-  return 'General';
+  const scores = {};
+  for (const [func, tokens] of Object.entries(functionTokens)) {
+    let score = 0;
+    for (const token of tokens.high) {
+      if (tokenMatch(title, token)) score += 3;
+    }
+    for (const token of tokens.medium) {
+      if (tokenMatch(title, token)) score += 2;
+    }
+    for (const token of tokens.low) {
+      if (tokenMatch(title, token)) score += 1;
+    }
+    scores[func] = score;
+  }
+
+  const sorted = Object.entries(scores).sort(([,a], [,b]) => b - a);
+  const [topFunction, topScore] = sorted[0];
+
+  console.log(`🔍 Function scores for "${jobTitle}": ${
+    sorted.filter(([,s]) => s > 0).map(([f,s]) => `${f}:${s}`).join(', ') || 'none'
+  }`);
+
+  if (topScore < 2) {
+    console.log(`⚠️ Could not detect function for: "${jobTitle}" — defaulting to General`);
+    return 'General';
+  }
+
+  console.log(`✅ Function detected: ${topFunction} (score: ${topScore}) for "${jobTitle}"`);
+  return topFunction;
 }
 
 function deriveLevel(jobTitle) {
@@ -740,8 +965,99 @@ function extractNameFromUrl(url) {
     if (credentials.has(p)) return false; // credential suffixes
     return true;
   });
-  if (parts.length < 2) return parts.length === 1 ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : '';
-  return parts.slice(0, 3).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+
+  // If slug has hyphens — use existing hyphen-split logic
+  if (parts.length >= 2) {
+    return parts.slice(0, 3).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+  }
+
+  // Single word slug (no hyphens) — try name splitting
+  if (parts.length === 1) {
+    const split = splitSingleWordSlug(parts[0]);
+    return split;
+  }
+
+  return '';
+}
+
+// Split single-word LinkedIn slugs like "anjelicagarcia" → "Anjelica Garcia"
+function splitSingleWordSlug(slug) {
+  if (!slug || slug.length < 4) return slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : '';
+
+  const commonFirstNames = new Set([
+    'michael', 'christopher', 'matthew', 'jonathan', 'nicholas',
+    'benjamin', 'alexander', 'nathaniel', 'zachary', 'timothy',
+    'joshua', 'andrew', 'brandon', 'samuel', 'raymond',
+    'gregory', 'patrick', 'stephen', 'jeffrey',
+    'charles', 'richard', 'anthony', 'william', 'robert',
+    'thomas', 'daniel', 'joseph', 'kenneth', 'donald',
+    'george', 'edward', 'steven', 'brian', 'ronald',
+    'kevin', 'jason', 'gary', 'eric', 'jacob',
+    'tyler', 'aaron', 'peter', 'walter', 'harold',
+    'frank', 'henry', 'carl', 'albert', 'arthur',
+    'fred', 'leonard', 'clarence', 'eugene', 'ralph',
+    'wayne', 'russell', 'louis', 'alan', 'dennis',
+    'jerry', 'lawrence', 'justin', 'terry', 'sean',
+    'jennifer', 'jessica', 'stephanie', 'elizabeth', 'rebecca',
+    'kathleen', 'michelle', 'kimberly', 'christina', 'margaret',
+    'patricia', 'barbara', 'linda', 'susan',
+    'dorothy', 'sarah', 'karen', 'lisa', 'nancy',
+    'betty', 'sandra', 'ashley', 'emily', 'donna',
+    'carol', 'amanda', 'melissa', 'deborah', 'rachel',
+    'sharon', 'laura', 'cynthia', 'angela', 'shirley',
+    'anna', 'brenda', 'pamela', 'emma', 'nicole',
+    'helen', 'samantha', 'katherine', 'christine', 'debra',
+    'carolyn', 'janet', 'catherine', 'maria', 'heather',
+    'diane', 'julie', 'joyce', 'victoria', 'kelly',
+    'virginia', 'joan', 'evelyn', 'lauren', 'judith',
+    'olivia', 'frances', 'martha', 'cheryl', 'megan',
+    'andrea', 'hannah', 'jacqueline', 'gloria',
+    'jean', 'kathryn', 'alice', 'teresa', 'sara',
+    'janice', 'doris', 'madison', 'julia', 'grace',
+    'judy', 'abigail', 'marie', 'denise', 'amber',
+    'brittany', 'danielle', 'theresa', 'natalie', 'diana',
+    'rose', 'kayla', 'morgan', 'taylor', 'jordan',
+    'skylar', 'paige', 'maya', 'ella', 'avery', 'addison',
+    'alejandro', 'carlos', 'antonio', 'miguel', 'jose',
+    'juan', 'rafael', 'sergio', 'marco', 'mario',
+    'lucia', 'carolina', 'valentina', 'isabella', 'camila',
+    'anjelica', 'madeleine', 'brianna',
+    'amy', 'ann', 'eve', 'joy', 'kay', 'kim',
+    'lee', 'meg', 'pat', 'sue',
+    'adam', 'alex', 'andy', 'ben', 'bob', 'brad',
+    'brett', 'chad', 'clay', 'cole', 'cody', 'dale',
+    'dan', 'dave', 'dean', 'drew', 'duke', 'earl',
+    'evan', 'gene', 'glen', 'gus', 'hal', 'hank',
+    'ian', 'ivan', 'jack', 'jake', 'jeff',
+    'jim', 'joe', 'joel', 'john', 'jon', 'josh',
+    'karl', 'kent', 'kirk', 'kurt', 'kyle',
+    'lance', 'lars', 'leon', 'liam', 'luke', 'marc',
+    'mark', 'matt', 'max', 'mike', 'milo', 'neal',
+    'neil', 'nick', 'noah', 'noel', 'omar', 'otto',
+    'owen', 'paul', 'pete', 'phil', 'reed', 'reid',
+    'rex', 'rick', 'rob', 'rod', 'ron', 'ross',
+    'roy', 'ryan', 'sam', 'seth',
+    'stan', 'ted', 'tim', 'todd', 'tom', 'tony',
+    'troy', 'wade', 'will', 'zach'
+  ]);
+
+  const lower = slug.toLowerCase();
+
+  // Try each first name — longest match first to avoid partial matches
+  // Sort by length descending so "christopher" matches before "chris"
+  const sorted = [...commonFirstNames].sort((a, b) => b.length - a.length);
+  for (const firstName of sorted) {
+    if (lower.startsWith(firstName) && lower.length > firstName.length + 1) {
+      const lastName = slug.slice(firstName.length);
+      if (lastName.length >= 2) {
+        return firstName.charAt(0).toUpperCase() + firstName.slice(1) + ' ' +
+               lastName.charAt(0).toUpperCase() + lastName.slice(1);
+      }
+    }
+  }
+
+  // Can't split — return capitalized as-is
+  return slug.charAt(0).toUpperCase() + slug.slice(1);
 }
 
 // ── Company name variations ──
@@ -839,13 +1155,47 @@ const KNOWN_FALSE_POSITIVES = new Set([
 
 // City/name words that cause false positives in slugs
 const COMMON_NAME_WORDS = new Set([
+  // Cities/places that are also surnames
   'austin', 'clifton', 'houston', 'dallas', 'phoenix', 'jordan', 'hunter', 'taylor',
   'morgan', 'parker', 'lincoln', 'grant', 'hayes', 'reed', 'scott', 'young', 'white',
-  'black', 'brown', 'green', 'gray', 'mason', 'logan', 'carter', 'cooper', 'riley',
+  'mason', 'logan', 'carter', 'cooper', 'riley',
+  // Common surnames that overlap with company names
   'smith', 'johnson', 'anderson', 'miller', 'wilson', 'moore', 'jackson', 'martin',
   'lee', 'thompson', 'garcia', 'martinez', 'robinson', 'clark', 'rodriguez', 'lewis',
-  'walker', 'hall', 'allen', 'king', 'wright', 'hill', 'baker', 'nelson', 'mitchell',
-  'campbell', 'roberts', 'turner'
+  'walker', 'hall', 'allen', 'wright', 'baker', 'nelson', 'mitchell',
+  'campbell', 'roberts', 'turner',
+  // Company-name surnames — cause false positives when company name contains a common surname
+  'hanger', 'hangar', 'ford', 'honda', 'toyota', 'dell',
+  'gates', 'jobs', 'cook', 'hewlett', 'packard',
+  'kaiser', 'porter', 'graham', 'burns', 'reid',
+  'hunt', 'price', 'waters', 'fisher', 'marsh',
+  'black', 'gray', 'gold', 'silver', 'diamond',
+  'stone', 'wood', 'woods', 'fields', 'banks',
+  'bond', 'sharp', 'bell', 'crane', 'wolf',
+  'fox', 'holt', 'roper', 'hoover', 'church',
+  'page', 'monk', 'ross', 'wade',
+  'knight', 'bishop', 'king', 'cross', 'wells',
+  'bay', 'lake', 'hill', 'ridge', 'glen',
+  'north', 'south', 'east', 'west', 'central',
+  'crown', 'summit', 'peak', 'apex', 'crest',
+  'national', 'federal', 'capital', 'metro',
+  'pioneer', 'heritage', 'legacy', 'cornerstone',
+  'keystone', 'landmark', 'beacon', 'harbor',
+  'anchor', 'compass', 'meridian', 'zenith',
+  'sterling', 'golden', 'bright', 'swift', 'strong', 'keen',
+  'brown', 'green',
+  // Company names that match surnames or slug words
+  'holdsworth', 'loenbro', 'cisco', 'adobe', 'oracle', 'tesla',
+  'lyft', 'uber', 'slack', 'zoom', 'stripe', 'square', 'block',
+  'shopify', 'twilio', 'okta', 'splunk', 'veeva', 'workday',
+  'zendesk', 'hubspot', 'datadog', 'snowflake', 'palantir',
+  'asana', 'notion', 'figma', 'canva', 'dropbox', 'box',
+  'airtable', 'monday', 'rippling', 'gusto', 'lattice',
+  'greenhouse', 'lever', 'bamboo', 'namely', 'paylocity',
+  'paycom', 'ceridian', 'kronos', 'ultimate', 'saba',
+  'sumtotal', 'absorb', 'docebo', 'bridge', 'degreed',
+  'edcast', 'percipio', 'linkedin', 'coursera', 'udemy',
+  'pluralsight', 'skillsoft'
 ]);
 
 function preQualifyContact(url, snippet, companyName, pageTitle) {
@@ -982,11 +1332,23 @@ function cleanCompanyName(rawName) {
   let cleaned = rawName.trim();
   // 1. Parenthetical
   cleaned = cleaned.replace(/\s*\([^)]+\)\s*$/, '').trim();
-  // 2. Internal codes (SNATS, GBS etc between name and suffix)
-  cleaned = cleaned.replace(/\s+\b([A-Z]{2,8})\b\s+(?=(?:INC|LLC|CORP|LTD|CO|PLC)\.?\s*$)/gi, (m, code) => {
-    if (!/[AEIOU]/i.test(code) || /^(AND|THE|FOR|GBS|EBO|SNO|SNA)$/i.test(code)) return ' ';
-    return m;
-  }).trim();
+  // 2. Universal subsidiary code detection
+  // Pattern: [Real Name] [CODE] [SUFFIX] — CODE = all-caps 2-8 chars before legal suffix
+  // Requires at least 2 words before the code (so "IBM INC" isn't affected)
+  const realCodeWords = new Set(['AND','THE','FOR','NEW','OLD','NORTH','SOUTH','EAST','WEST',
+    'GLOBAL','GROUP','US','USA','NA','EMEA','APAC','LATAM','INTERNATIONAL','NATIONAL']);
+  cleaned = cleaned.replace(
+    /^(.+\s+\S+)\s+([A-Z]{2,8})\s+(INC|LLC|CORP|LTD|CO|PLC)\.?\s*$/,
+    (match, realName, code, suffix) => {
+      if (realCodeWords.has(code.toUpperCase())) return `${realName} ${code}`.trim();
+      // All-caps short codes are almost always subsidiary codes
+      if (/^[A-Z]+$/.test(code) && code.length <= 6) {
+        console.log(`🧹 Removed subsidiary code "${code}" from "${rawName}"`);
+        return realName.trim();
+      }
+      return `${realName} ${code}`.trim();
+    }
+  );
   // 3. Legal suffixes
   cleaned = cleaned.replace(/[,\s]+(INC\.?|LLC\.?|CORP\.?|LTD\.?|CO\.?|PLC\.?|INCORPORATED|LIMITED|CORPORATION)(\s+|$)/gi, ' ').trim();
   // 4. Generic trailing words - only strip from 3+ word names to protect brand names
@@ -1043,10 +1405,13 @@ function isTitleTooVague(title, roleType) {
     'sales', 'finance', 'operations', 'legal', 'recruiting', 'recruiter'];
   if (acceptable.some(a => t.includes(a))) return false;
 
-  // Only reject truly vague
-  const trulyVague = ['employee at', 'team member', 'works at', 'staff at'];
-  if (trulyVague.some(v => t.startsWith(v) || t === v.trim())) return true;
+  // Vague but has company name — borderline, keep
+  // e.g. "Red Bull Employee", "Employee at Dell" — they're confirmed there
+  if (/employee|team member|staff/i.test(t) && t.length > 8) return false;
+
+  // Only reject truly vague (single generic word, no company context)
   if (/^employee$/i.test(t) || /^professional$/i.test(t) || /^associate$/i.test(t)) return true;
+  if (/^team member$/i.test(t) || /^staff$/i.test(t)) return true;
   if (t.length < 3) return true;
 
   return false;
@@ -1061,44 +1426,80 @@ function isFormerEmployee(title, note) {
 // Function relevance - generous, only rejects clearly wrong functions
 function isFunctionRelevant(title, jobFunction, roleType) {
   if (!title) return false;
-  const t = title.toLowerCase();
+  const t = title.toLowerCase().trim();
 
-  // Skip-Level always relevant
+  // ALWAYS KEEP — never reject these:
+
+  // Skip-Level contacts
   if (roleType === 'Skip-Level') return true;
 
-  // C-suite and senior leadership always relevant
-  if (/(ceo|coo|cto|cmo|cfo|chro|cpo|president|founder|co-founder|managing director|chairman)/i.test(t)) return true;
-  if (/(executive|vp|vice president|svp|evp|director|senior leader|leader)/i.test(t)) return true;
+  // C-suite
+  if (/(ceo|coo|cto|cmo|cfo|chro|cpo|cro|cdo|cio|president|founder|co-founder|managing director)/i.test(t)) return true;
 
-  // HR certifications = always HR relevant
+  // Executive/senior titles
+  if (/(executive|vice president|\bvp\b|svp|evp|director|senior leader|head of)/i.test(t)) return true;
+
+  // HR certifications
   if (/(phr|sphr|shrm|hrbp)/i.test(t)) return true;
+
+  // Recruiting and TA — never reject
+  if (/(recruit|recruiting|recruitment|talent acquisition|talent partner|sourcing|sourcer|staffing|\bta\b)/i.test(t)) return true;
+
+  // HR/People function titles — never reject
+  if (/(hr|human resources|people ops|people operations|people partner|people manager|people director|people lead|hrbp|hr business partner|hr generalist|hr manager|hr director|hr coordinator|workforce|compensation|benefits|total rewards|employee relations|labor relations|dei|diversity|inclusion|talent management|learning|training|organizational|culture|engagement)/i.test(t)) return true;
 
   // General function = accept anything
   if (jobFunction === 'General') return true;
 
-  // Check clearly wrong function (hard reject)
-  const clearlyWrong = {
-    'People': ['athletics', 'sports', 'coach', 'athletic director', 'custodial', 'groundskeeper', 'plumber', 'electrician', 'mechanic'],
-    'Marketing': ['software engineer', 'developer', 'devops', 'accountant', 'auditor', 'attorney'],
-    'Engineering': ['marketing manager', 'brand manager', 'accountant', 'attorney', 'hr manager'],
-  };
-  const wrongList = clearlyWrong[jobFunction] || [];
-  if (wrongList.some(w => t.includes(w))) return false;
-
   // Function-specific keywords
-  const funcKeywords = {
-    'People': ['hr', 'human resources', 'people', 'talent', 'learning', 'training', 'organizational', 'culture', 'workforce', 'recruiting', 'recruiter', 'hrbp', 'compensation', 'benefits', 'od', 'l&d', 'hris', 'employee'],
-    'Marketing': ['marketing', 'brand', 'growth', 'demand', 'content', 'communications', 'pr', 'creative', 'campaign'],
-    'Engineering': ['engineering', 'software', 'technology', 'technical', 'developer', 'devops', 'infrastructure', 'platform', 'data', 'security', 'architect'],
-    'Product': ['product', 'ux', 'user experience', 'design', 'research', 'program'],
-    'Sales': ['sales', 'revenue', 'account', 'business development', 'partnerships', 'commercial'],
-    'Finance': ['finance', 'financial', 'accounting', 'treasury', 'fp&a', 'controller'],
-    'Operations': ['operations', 'ops', 'supply chain', 'logistics', 'facilities', 'procurement'],
-    'Legal': ['legal', 'counsel', 'compliance', 'risk', 'regulatory', 'attorney'],
+  const functionKeywords = {
+    'People': ['hr', 'human resources', 'people', 'talent', 'learning', 'training', 'organizational', 'culture', 'workforce', 'od', 'l&d', 'employee', 'engagement', 'inclusion', 'diversity', 'dei'],
+    'Marketing': ['marketing', 'brand', 'growth', 'demand', 'content', 'communications', 'creative', 'campaign', 'seo', 'paid', 'digital'],
+    'Engineering': ['engineering', 'software', 'technology', 'technical', 'developer', 'devops', 'infrastructure', 'platform', 'data', 'security', 'architect', 'ml', 'ai'],
+    'Product': ['product', 'ux', 'user experience', 'design', 'research', 'roadmap', 'program manager'],
+    'Sales': ['sales', 'revenue', 'account', 'business development', 'partnerships', 'commercial', 'enterprise'],
+    'Finance': ['finance', 'financial', 'accounting', 'treasury', 'fp&a', 'controller', 'audit'],
+    'Operations': ['operations', 'ops', 'supply chain', 'logistics', 'procurement', 'biz ops'],
+    'Legal': ['legal', 'counsel', 'compliance', 'risk', 'regulatory', 'attorney', 'general counsel'],
+    'Data': ['data', 'analytics', 'business intelligence', 'insights', 'bi', 'analyst']
   };
-  const keywords = funcKeywords[jobFunction] || [];
-  if (keywords.length === 0) return true;
-  return keywords.some(kw => t.includes(kw));
+
+  const keywords = functionKeywords[jobFunction] || [];
+  if (keywords.some(kw => t.includes(kw))) return true;
+
+  // Only reject if clearly wrong industry/function with no ambiguity
+  const clearlyWrong = {
+    'People': [/\bchef\b/i, /\bcook\b/i, /\bdriver\b/i, /\bmechanic\b/i, /\belectrician\b/i, /\bplumber\b/i, /\bjanitor\b/i, /\bnurse\b/i, /\bphysician\b/i, /\bdoctor\b/i, /\bsurgeon\b/i, /\blifeguard\b/i, /\bsecurity guard\b/i],
+    'Marketing': [/\bnurse\b/i, /\bphysician\b/i, /\bsoftware engineer\b/i],
+    'Engineering': [/\bnurse\b/i, /\bmarketing manager\b/i, /\battorney\b/i]
+  };
+
+  const wrongPatterns = clearlyWrong[jobFunction] || [];
+  if (wrongPatterns.some(p => p.test(t))) return false;
+
+  // Default — KEEP. Better to show a borderline contact than lose a real one
+  return true;
+}
+
+function titleMentionsDifferentCompany(title, expectedCompany) {
+  if (!title || !expectedCompany) return false;
+  const t = title.toLowerCase();
+  const company = expectedCompany.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+  const majorCompanies = [
+    'google', 'microsoft', 'apple', 'amazon', 'meta', 'facebook',
+    'netflix', 'salesforce', 'oracle', 'sap', 'ibm', 'intel',
+    'twitter', 'linkedin', 'uber', 'lyft', 'airbnb', 'spotify',
+    'slack', 'zoom', 'dropbox', 'stripe', 'square', 'paypal',
+    'goldman sachs', 'jpmorgan', 'morgan stanley', 'mckinsey',
+    'deloitte', 'pwc', 'kpmg', 'bain', 'bcg', 'accenture'
+  ];
+  for (const co of majorCompanies) {
+    if (t.includes(co) && !company.includes(co)) {
+      console.log(`⚠️ Title may reference previous employer: "${title}" (searching: ${expectedCompany})`);
+      return true;
+    }
+  }
+  return false;
 }
 
 function dedupeContacts(contacts) {
@@ -1156,24 +1557,59 @@ function slugifyCompany(name) {
 
 // ── LinkedIn geo URN map ──
 const LINKEDIN_GEO_URNS = {
-  'austin': '103743442', 'new york': '105080838', 'san francisco': '102277331',
-  'los angeles': '102448103', 'chicago': '103112676', 'seattle': '102885535',
-  'boston': '102380872', 'denver': '105763813', 'atlanta': '103996544',
-  'dallas': '103544739', 'houston': '106929867', 'miami': '102918819',
-  'washington': '103644278', 'washington dc': '103644278', 'portland': '101978430',
-  'san diego': '106091299', 'phoenix': '102712797', 'minneapolis': '105044203',
-  'nashville': '102033146', 'charlotte': '103068493', 'philadelphia': '102437668',
-  'salt lake city': '106051040', 'detroit': '102380645', 'san jose': '106204433',
-  'columbus': '101716677', 'indianapolis': '103017440', 'raleigh': '102459580',
-  'tampa': '101654608', 'orlando': '103363856', 'pittsburgh': '101413020',
-  'san antonio': '102463825', 'jacksonville': '102676224', 'sacramento': '100906991',
-  'las vegas': '102277788', 'kansas city': '103440085', 'richmond': '104378955',
-  'st louis': '103752558', 'milwaukee': '101871398', 'baltimore': '103338958',
-  'cleveland': '102009786', 'boise': '104076313',
+  'austin': '103743442', 'round rock': '103743442', 'cedar park': '103743442',
+  'new york': '105080838', 'brooklyn': '105080838', 'manhattan': '105080838',
+  'san francisco': '102277331', 'oakland': '102277331',
+  'los angeles': '102448103', 'santa monica': '102448103', 'pasadena': '102448103',
+  'chicago': '103112676', 'evanston': '103112676',
+  'seattle': '102885535', 'bellevue': '102885535', 'redmond': '102885535',
+  'boston': '102380872', 'cambridge': '102380872',
+  'denver': '105763813', 'boulder': '105763813',
+  'atlanta': '103996544', 'marietta': '103996544',
+  'dallas': '103544739', 'fort worth': '103544739', 'plano': '103544739', 'irving': '103544739',
+  'houston': '106929867', 'the woodlands': '106929867',
+  'miami': '102918819', 'fort lauderdale': '102918819',
+  'washington': '103644278', 'washington dc': '103644278', 'arlington': '103644278', 'bethesda': '103644278',
+  'portland': '101978430',
+  'san diego': '106091299',
+  'phoenix': '102712797', 'scottsdale': '102712797', 'tempe': '102712797',
+  'minneapolis': '105044203', 'st paul': '105044203',
+  'nashville': '102033146',
+  'charlotte': '103068493',
+  'philadelphia': '102437668',
+  'salt lake city': '106051040',
+  'detroit': '102380645',
+  'san jose': '106204433', 'sunnyvale': '106204433', 'cupertino': '106204433', 'mountain view': '106204433', 'palo alto': '106204433',
+  'columbus': '101716677',
+  'indianapolis': '103017440',
+  'raleigh': '102459580', 'durham': '102459580',
+  'tampa': '101654608', 'st petersburg': '101654608',
+  'orlando': '103363856',
+  'pittsburgh': '101413020',
+  'san antonio': '102463825',
+  'jacksonville': '102676224',
+  'sacramento': '100906991',
+  'las vegas': '102277788',
+  'kansas city': '103440085',
+  'richmond': '104378955',
+  'st louis': '103752558',
+  'milwaukee': '101871398',
+  'baltimore': '103338958',
+  'cleveland': '102009786',
+  'boise': '104076313',
 };
 
 function getGeoUrn(location) {
   if (!location) return null;
   const loc = location.toLowerCase().replace(/,.*$/, '').trim();
-  return LINKEDIN_GEO_URNS[loc] || null;
+
+  // Try exact match first
+  if (LINKEDIN_GEO_URNS[loc]) return LINKEDIN_GEO_URNS[loc];
+
+  // Try partial match — check if any key is contained in the location string
+  for (const [city, urn] of Object.entries(LINKEDIN_GEO_URNS)) {
+    if (loc.includes(city)) return urn;
+  }
+
+  return null;
 }
