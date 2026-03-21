@@ -1787,7 +1787,7 @@
 
     <!-- ── Step 2: Job Listings ── -->
     <div class="section" id="section-2">
-      <div class="back-row"><button class="btn-back" onclick="goToStep(1)">← Back to search</button></div>
+      <div class="back-row"><button class="btn-back" onclick="goToStep(1)">← Back to search</button><button class="btn-back" onclick="resetToInitialState()" style="margin-left:8px;color:#B8A88A">New Search</button></div>
       <h2 class="section-title">Matched Opportunities</h2>
       <p class="section-sub">Real listings scored against your resume. Results vary by market. Try adding more titles or enabling Remote to expand your results.</p>
       <div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:0.88rem;color:#555;font-weight:500">Click any card to select it. When ready, hit "Find Decision-Makers" below. <span style="color:#777;font-size:0.82rem">(Finding contacts typically takes 30-60 seconds as we search, verify, and identify the right people.)</span></div>
@@ -1813,7 +1813,7 @@
 
     <!-- ── Step 3: Decision-Makers ── -->
     <div class="section" id="section-3">
-      <div class="back-row"><button class="btn-back" onclick="goToStep(2)">← Back to jobs</button></div>
+      <div class="back-row"><button class="btn-back" onclick="goToStep(2)">← Back to jobs</button><button class="btn-back" onclick="resetToInitialState()" style="margin-left:8px;color:#B8A88A">New Search</button></div>
       <h2 class="section-title">Decision-Makers</h2>
       <p class="section-sub">Real people at each company, found via LinkedIn. Verified to currently work there.</p>
 
@@ -1842,7 +1842,7 @@
 
     <!-- ── Step 4: Outreach Sequences ── -->
     <div class="section" id="section-4">
-      <div class="back-row"><button class="btn-back" onclick="goToStep(3)">← Back to contacts</button></div>
+      <div class="back-row"><button class="btn-back" onclick="goToStep(3)">← Back to contacts</button><button class="btn-back" onclick="resetToInitialState()" style="margin-left:8px;color:#B8A88A">New Search</button></div>
       <h2 class="section-title">Outreach Sequences</h2>
       <p class="section-sub">Personalized 4-message sequences for each contact. Copy, paste, start conversations.</p>
       <div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;margin-bottom:14px;font-size:0.88rem;color:#555;font-weight:500">Each contact gets a full outreach sequence across 14 days. Click "Copy" on any message to copy it to your clipboard, then paste it into LinkedIn or email.</div>
@@ -2879,13 +2879,15 @@
     function logUsage(action, details) {
       if (!state.userId) { console.log('logUsage skipped: no userId'); return; }
       console.log('logUsage:', action, details);
-      fetch('/api/log-usage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: state.userId, action: action, details: details || {} })
-      }).then(function(r) { return r.json(); }).then(function(d) {
-        console.log('logUsage:', d.ok ? 'success' : 'failed');
-      }).catch(function(e) { console.error('logUsage failed:', e); });
+      getAuthHeaders().then(function(h) {
+        fetch('/api/log-usage', {
+          method: 'POST',
+          headers: h,
+          body: JSON.stringify({ action: action, details: details || {} })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+          console.log('logUsage:', d.ok ? 'success' : 'failed');
+        }).catch(function(e) { console.error('logUsage failed:', e); });
+      });
     }
 
     // Input sanitization
@@ -3245,7 +3247,7 @@ Return a JSON array with one object per job:
           try {
             const s = supabase ? await supabase.auth.getSession() : null;
             if (s?.data?.session?.user?.id) {
-              fetch('/api/increment-usage', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({user_id: s.data.session.user.id}) }).catch(function(){});
+              getAuthHeaders().then(function(h) { fetch('/api/increment-usage', { method: 'POST', headers: h, body: JSON.stringify({}) }).catch(function(){}); });
             }
           } catch(e) {}
           return;

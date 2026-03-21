@@ -1,4 +1,5 @@
 import { rateLimit } from './_rateLimit.js';
+import { verifyUser } from './_auth.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -10,7 +11,7 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many requests' });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL || 'https://tgicomrycbhrinobvnlr.supabase.co';
+  const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
   if (!supabaseServiceKey) {
@@ -18,8 +19,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { user_id } = req.body;
-    if (!user_id) return res.status(400).json({ error: 'User ID required' });
+    const auth = await verifyUser(req);
+    if (auth.error) {
+      return res.status(401).json({ error: auth.error });
+    }
+    const user_id = auth.userId;
 
     // Get current count
     const getRes = await fetch(
