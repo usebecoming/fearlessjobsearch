@@ -279,6 +279,12 @@ Return JSON array only — accepted contacts only:
         const beforeFilter = verifiedContacts.length;
         verifiedContacts = verifiedContacts.filter(c => {
           const roleType = c.role || c.role_type || '';
+          // If title is just the company name, keep but flag
+          if (isTitleJustCompanyName(c.title, company)) {
+            console.log(`  🔶 Title is company name — keeping: ${c.name} — "${c.title}"`);
+            c.titleVerified = false;
+            return true;
+          }
           // Reject vague titles (generous - only truly empty)
           if (isTitleTooVague(c.title, roleType)) {
             console.log(`  ❌ Vague title rejected: ${c.name} — "${c.title}"`);
@@ -633,12 +639,24 @@ async function braveSearch(query, apiKey) {
 }
 
 function extractNameFromUrl(url) {
-  let slug = '';
-  if (url.includes('linkedin.com/in/')) slug = url.split('linkedin.com/in/')[1];
-  else if (url.includes('linkedin.com/pub/')) slug = url.split('linkedin.com/pub/')[1];
-  if (!slug) return '';
-  const parts = slug.split('/')[0].split('-').filter(p => p.length > 0 && !/^\d+$/.test(p));
-  if (parts.length < 2) return '';
+  const match = url.match(/linkedin\.com\/(?:in|pub)\/([^\/\?]+)/);
+  if (!match) return '';
+  const slug = match[1].toLowerCase();
+  const credentials = new Set([
+    'mba', 'phr', 'sphr', 'shrm', 'cpa', 'cgma', 'lmsw', 'mpaff', 'phd', 'edd',
+    'jd', 'md', 'rn', 'cfa', 'cfe', 'pmp', 'csm', 'ciso', 'cissp', 'cipp',
+    'hrm', 'mhrm', 'mshrm', 'mpa', 'mps', 'ms', 'ma', 'bs', 'ba', 'bba', 'msc', 'pdm',
+    'cpo', 'chro', 'cto', 'cmo', 'cfo', 'coo', 'ceo', 'cro', 'cio', 'hr'
+  ]);
+  const parts = slug.split('-').filter(p => {
+    if (p.length === 0) return false;
+    if (/^\d+$/.test(p)) return false; // pure numbers
+    if (/^[a-z0-9]*\d[a-z0-9]*$/.test(p) && /\d/.test(p) && p.length > 3) return false; // alphanumeric IDs
+    if (p.length === 1) return false; // single letters
+    if (credentials.has(p)) return false; // credential suffixes
+    return true;
+  });
+  if (parts.length < 2) return parts.length === 1 ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : '';
   return parts.slice(0, 3).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
 }
 
@@ -711,7 +729,11 @@ function categorizeRole(title, derived) {
 
 // Known false positive profiles that appear across multiple companies
 const KNOWN_FALSE_POSITIVES = new Set([
-  'ann-miller-hr', 'iker-zubia-hr', 'leigh-gordon-1ab5517', 'leigh-gordon', 'stephanie-yocum'
+  'ann-miller-hr', 'iker-zubia-hr', 'leigh-gordon-1ab5517', 'leigh-gordon', 'stephanie-yocum',
+  'chris-plonsky-9700165',        // Athletics at UFCU - wrong function
+  'prakash-ilango-8962541b',      // Dell - no title signal
+  'sridhar-gurram-b5905011',      // Dell - no title signal
+  'kirk-scott-562a7b74'           // Dell - no title signal
 ]);
 
 // City/name words that cause false positives in slugs
@@ -819,6 +841,15 @@ function inferTitleFromSlug(slug) {
   if (s.includes('-legal')) return 'Legal Professional';
   if (s.includes('-operations')) return 'Operations Professional';
   return '';
+}
+
+// Company-name-as-title check
+function isTitleJustCompanyName(title, companyName) {
+  if (!title || !companyName) return false;
+  const t = title.toLowerCase().trim();
+  const c = companyName.toLowerCase().trim();
+  return t === c || t === c + ' employee' || t === 'employee at ' + c || t === c + ' team member' ||
+    t.replace(/[^a-z]/g, '') === c.replace(/[^a-z]/g, '');
 }
 
 // Vague title check - generous, only rejects truly empty titles
