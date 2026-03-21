@@ -3157,7 +3157,7 @@
         throw new Error('Unexpected response from AI. Please try again.');
       }
       let text = data.content[0].text;
-      console.log('Claude raw response:', text.substring(0, 200));
+      console.log(`Claude response: ${text.length} chars, ends with: "${text.slice(-50)}"`);
       // Strip markdown fences
       text = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
       try {
@@ -3443,7 +3443,7 @@
           if (resumeSummary) {
             showProgress(container, 'Scoring opportunities against your profile...', 15);
 
-            const scoringPrompt = `Score each of the following real job listings against the candidate's resume. For each job, provide a fitScore (0-100) and a one-line fitReason explaining the match.
+            const scoringPrompt = `Score each job against the resume. For each job return fitScore (0-100) and fitReason (15 words max, no fluff).
 
 Use this exact scoring rubric:
 90-100: 5+ direct skill matches, same industry, same seniority level, same scope
