@@ -17,14 +17,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { plan, email, userId, priceId: directPriceId, mode } = req.body;
+    const { plan, email, userId, priceId: directPriceId } = req.body;
 
-    // Support two flows:
-    // 1. Plan-based (subscription): { plan: 'starter' }
-    // 2. Direct price (one-time coaching): { priceId: 'price_xxx', mode: 'payment' }
+    // Coaching product price IDs — one-time payments, not subscriptions
+    const COACHING_PRICE_IDS = [
+      'price_1TDFhJK3APtatfMmjK9kHib4',  // Resume
+      'price_1TDFi0K3APtatfMmtU7ZLSsk'   // Resume + LinkedIn
+    ];
+
+    // Resolve price ID
     let priceId = directPriceId;
-    let checkoutMode = mode || 'subscription';
-
     if (!priceId && plan) {
       const planDef = PLANS[plan];
       priceId = planDef?.stripe_price_id
@@ -34,12 +36,14 @@ export default async function handler(req, res) {
           unlimited_monthly: process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
           unlimited_yearly: process.env.STRIPE_PRICE_UNLIMITED_YEARLY
         }[plan];
-      checkoutMode = 'subscription';
     }
 
     if (!priceId) {
       return res.status(400).json({ error: `Invalid plan or price: ${plan || directPriceId}` });
     }
+
+    // Server determines mode from price ID — no client trust needed
+    const checkoutMode = COACHING_PRICE_IDS.includes(priceId) ? 'payment' : 'subscription';
 
     const origin = req.headers.origin || 'https://fearlessjobsearch.com';
 
