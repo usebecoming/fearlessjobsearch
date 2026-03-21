@@ -1598,13 +1598,13 @@
         <img src="assets/phoenix-logo.png" alt="Fearless Job Search" onerror="this.style.display='none'">
         <span>FEARLESS JOB SEARCH</span>
       </div>
-      <a href="/" class="nav-link" title="Back to home page" style="font-size:0.85rem;color:#777777;text-decoration:none">&#8962; Home</a>
+      <a href="/" class="nav-link" title="Back to home page" style="font-size:0.85rem;color:#777777;text-decoration:none" onclick="event.preventDefault();showLandingPage()">&#8962; Home</a>
     </div>
     <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()">
       <span></span><span></span><span></span>
     </button>
     <div class="nav-right">
-      <a href="/" class="nav-link" style="text-decoration:none">&#8962; Home</a>
+      <a href="/" class="nav-link" style="text-decoration:none" onclick="event.preventDefault();showLandingPage()">&#8962; Home</a>
       <button class="nav-link" onclick="goToStep(1)">Search</button>
       <button class="nav-link" onclick="openPipeline()">Pipeline</button>
       <button class="nav-link accent" onclick="openBookingModal()">Get 1:1 Help</button>
@@ -2456,6 +2456,13 @@
       document.getElementById('mainApp').style.display = 'none';
       document.getElementById('appContent').style.display = 'none';
       window.scrollTo({ top: 0 });
+    }
+
+    function showLandingPage() {
+      document.getElementById('landingPage').classList.remove('hidden');
+      document.getElementById('mainApp').style.display = 'none';
+      document.getElementById('mainNav').style.display = 'none';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function showApp(user) {
