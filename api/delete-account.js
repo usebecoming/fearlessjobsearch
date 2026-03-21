@@ -25,7 +25,33 @@ export default async function handler(req, res) {
 
     console.log(`🗑️ Deleting account: ${userId}`);
 
-    // Delete from all user tables (service key bypasses RLS)
+    // Step 1 — Cancel Stripe subscription if exists
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    const profileRes = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=stripe_customer_id,subscription_id,plan`,
+      {
+        headers: {
+          'apikey': supabaseServiceKey,
+          'Authorization': `Bearer ${supabaseServiceKey}`
+        }
+      }
+    );
+    const profiles = await profileRes.json();
+    const profile = profiles?.[0];
+
+    if (stripeKey && profile?.subscription_id && profile?.plan !== 'free') {
+      try {
+        await fetch(`https://api.stripe.com/v1/subscriptions/${profile.subscription_id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${stripeKey}` }
+        });
+        console.log(`✅ Stripe subscription cancelled: ${profile.subscription_id}`);
+      } catch (e) {
+        console.error(`⚠️ Stripe cancellation failed: ${e.message}`);
+      }
+    }
+
+    // Step 2 — Delete from all user tables (service key bypasses RLS)
     const tables = ['pipeline', 'search_profiles', 'usage_log', 'favorites'];
     for (const table of tables) {
       await fetch(
