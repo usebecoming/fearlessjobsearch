@@ -220,6 +220,14 @@
       opacity: 0.3; cursor: not-allowed; transform: none;
       background: #111111;
     }
+    .btn-primary.loading {
+      opacity: 0.8; cursor: wait;
+      animation: btnPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes btnPulse {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 0.5; }
+    }
     .btn-secondary {
       background: transparent; border: 1px solid #E5E4E2;
       color: #6E6E6E; padding: 12px 24px; border-radius: 8px;
@@ -3239,10 +3247,23 @@
       }
       validateSearch();
 
+      // Immediate visual feedback — before any async work
+      const searchBtn = document.getElementById('searchBtn');
+      const originalBtnText = searchBtn.textContent;
+      searchBtn.disabled = true;
+      searchBtn.textContent = 'Searching...';
+      searchBtn.classList.add('loading');
+
+      function restoreButton() {
+        searchBtn.disabled = false;
+        searchBtn.textContent = state.searchMode === 'companies' ? 'Find Decision-Makers' : 'Find Opportunities';
+        searchBtn.classList.remove('loading');
+      }
+
       // Check usage limits before searching
       const searchAction = state.searchMode === 'companies' ? 'company_target' : 'search_jobs';
       const allowed = await checkGate(searchAction);
-      if (!allowed) return;
+      if (!allowed) { restoreButton(); return; }
 
       // Usage check handled by checkGate above
 
@@ -3276,7 +3297,7 @@
       // Company Target: skip job listings, go straight to contacts
       if (state.searchMode === 'companies') {
         // Get explicitly entered titles — required by validation
-        if (state.companyTargetTitles.length === 0) return;
+        if (state.companyTargetTitles.length === 0) { restoreButton(); return; }
 
         // Build company-mode job data — one per company, using the first target title
         const companyJobData = state.companies.map((co) => ({
