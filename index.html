@@ -2200,36 +2200,25 @@
 
     // ── Coaching Checkout (one-time payment) ──
     async function startCoachingCheckout(priceId) {
-      console.log('🛒 Step 1: Coaching checkout started, priceId:', priceId);
+      if (!state.userId || !state.userEmail) {
+        closeBookingModal();
+        openAuthModal('signup');
+        return;
+      }
       try {
-        // Use state directly — don't call getSession which can hang
-        if (!state.userId || !state.userEmail) {
-          console.log('🛒 Not logged in — opening auth');
-          closeBookingModal();
-          openAuthModal('signup');
-          return;
-        }
-        console.log('🛒 Step 2: User from state:', state.userEmail);
-        var payload = { priceId: priceId, email: state.userEmail, userId: state.userId };
-        console.log('🛒 Step 3: Calling /api/create-checkout...');
-        const stripeRes = await fetch('/api/create-checkout', {
+        var res = await fetch('/api/create-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ priceId: priceId, email: state.userEmail, userId: state.userId })
         });
-        console.log('🛒 Step 4: Response status:', stripeRes.status);
-        const data = await stripeRes.json();
-        console.log('🛒 Step 8: Response data:', JSON.stringify(data));
+        var data = await res.json();
         if (data.url) {
-          console.log('🛒 Step 9: Redirecting to Stripe...');
           window.location.href = data.url;
         } else {
-          console.error('🛒 No URL returned:', data);
           alert(data.error || 'Could not start checkout. Please try again.');
         }
       } catch(e) {
-        console.error('🛒 Exception at some step:', e.message, e);
-        alert('Checkout error: ' + e.message);
+        alert('Could not connect to payment system. Please try again.');
       }
     }
 
