@@ -29,21 +29,21 @@ export const PLANS = {
     pipeline_enabled: true,
     company_target_enabled: true
   },
-  unlimited_monthly: {
-    name: 'Unlimited',
+  accelerate_monthly: {
+    name: 'Accelerate',
     price: 99,
-    searches_per_month: 999,
-    jobs_per_search: 10,
+    searches_per_month: 10,
+    jobs_per_search: 20,
     contacts_enabled: true,
     outreach_enabled: true,
     pipeline_enabled: true,
     company_target_enabled: true
   },
-  unlimited_yearly: {
-    name: 'Unlimited (Annual)',
-    price: 599,
-    searches_per_month: 999,
-    jobs_per_search: 10,
+  accelerate_yearly: {
+    name: 'Accelerate (Annual)',
+    price: 999,
+    searches_per_month: 10,
+    jobs_per_search: 20,
     contacts_enabled: true,
     outreach_enabled: true,
     pipeline_enabled: true,
@@ -55,8 +55,8 @@ export const PLANS = {
 export const PRICE_TO_PLAN = {
   'price_1TCuhfK3APtatfMmhlcWdsdW': 'starter',
   'price_1TCuiKK3APtatfMmOQCSWWd4': 'pro',
-  'price_1TCujoK3APtatfMmz0GggJn4': 'unlimited_monthly',
-  'price_1TCukaK3APtatfMmKNbheswb': 'unlimited_yearly'
+  'price_1TCujoK3APtatfMmz0GggJn4': 'accelerate_monthly',
+  'price_1TCukaK3APtatfMmKNbheswb': 'accelerate_yearly'
 };
 
 export const ADMIN_EMAILS = [

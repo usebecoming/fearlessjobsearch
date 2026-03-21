@@ -28,8 +28,8 @@ Built by Dr. Benjamin Ritter | Live for Yourself Consulting
 ## Stripe Price IDs
 - Starter $29/mo:          price_1TCuhfK3APtatfMmhlcWdsdW
 - Pro $59/mo:              price_1TCuiKK3APtatfMmOQCSWWd4
-- Unlimited Monthly $99:   price_1TCujoK3APtatfMmz0GggJn4
-- Unlimited Yearly $599:   price_1TCukaK3APtatfMmKNbheswb
+- Accelerate Monthly $99:  price_1TCujoK3APtatfMmz0GggJn4
+- Accelerate Yearly $999:  price_1TCukaK3APtatfMmKNbheswb
 - Resume Review $500:      price_1TDFhJK3APtatfMmjK9kHib4  ← payment mode, not subscription
 - Resume + LinkedIn $800:  price_1TDFi0K3APtatfMmtU7ZLSsk  ← payment mode, not subscription
 
@@ -37,7 +37,7 @@ Built by Dr. Benjamin Ritter | Live for Yourself Consulting
 - Free: 3 jobs visible, no contacts, no outreach
 - Starter: 1 search/mo, 10 jobs, contacts + outreach enabled
 - Pro: 4 searches/mo, company target mode enabled
-- Unlimited: unlimited searches, all features, priority support
+- Accelerate: 10 searches/mo, 20 jobs/search, all features, priority support
 
 ## Coaching Products
 - Resume Review ($500) and Resume + LinkedIn ($800) are one-time Stripe payments

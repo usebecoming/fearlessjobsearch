@@ -45,8 +45,8 @@ export default async function handler(req, res) {
         || {
           starter: process.env.STRIPE_PRICE_STARTER,
           pro: process.env.STRIPE_PRICE_PRO,
-          unlimited_monthly: process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
-          unlimited_yearly: process.env.STRIPE_PRICE_UNLIMITED_YEARLY
+          accelerate_monthly: process.env.STRIPE_PRICE_ACCELERATE_MONTHLY,
+          accelerate_yearly: process.env.STRIPE_PRICE_ACCELERATE_YEARLY
         }[plan];
     }
 

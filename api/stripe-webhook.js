@@ -138,11 +138,11 @@ function emailWelcomePro(firstName) {
     </div>`;
 }
 
-function emailWelcomeUnlimited(firstName) {
+function emailWelcomeAccelerate(firstName) {
   return `
     <div style="font-family:sans-serif;font-size:14px;line-height:1.8;color:#222;max-width:600px;">
       <p>${firstName},</p>
-      <p>You've got the full toolkit \u2014 unlimited searches, Company Target Mode, contact discovery, outreach generation, and priority support. The cap is gone.</p>
+      <p>You've got the full toolkit \u2014 10 searches per month, 20 roles per search, Company Target Mode, contact discovery, outreach generation, and priority support.</p>
       <p>Here's how to use it well.</p>
       ${stepBlock('Start with a focused target list',
         'Before running searches, write down the 5\u201310 companies you\'d actually want to work at and the 2\u20133 titles that represent your next move. Focused targeting beats scattered volume every time.')}
@@ -151,9 +151,9 @@ function emailWelcomeUnlimited(firstName) {
       ${stepBlock('Build your pipeline and stay active in it',
         'Flag the roles you\'re serious about. Generate outreach for those contacts. Download the list and keep it in front of you. Send the messages. Follow up. Book the calls. The pipeline only moves if you\'re working it.')}
       <p>If you hit a wall \u2014 outreach isn't landing, you're not sure which companies to target, something feels off \u2014 reply here. I read these.</p>
-      ${planBox('What\'s included in Unlimited', [
-        'Unlimited searches',
-        'Unlimited matched job listings',
+      ${planBox('What\'s included in Accelerate', [
+        '10 searches per month',
+        'Up to 20 matched job listings per search',
         'Company Target Mode \u2014 search by company, not just keyword',
         'Decision-maker contact discovery',
         'AI-generated personalized outreach messages',
@@ -173,8 +173,8 @@ const COACHING_PRICE_IDS = new Set([
 const SUBSCRIPTION_PRICE_META = {
   'price_1TCuhfK3APtatfMmhlcWdsdW': { plan: 'Starter',           amount: '$29/mo',  template: 'starter' },
   'price_1TCuiKK3APtatfMmOQCSWWd4': { plan: 'Pro',               amount: '$59/mo',  template: 'pro' },
-  'price_1TCujoK3APtatfMmz0GggJn4': { plan: 'Unlimited Monthly', amount: '$99/mo',  template: 'unlimited' },
-  'price_1TCukaK3APtatfMmKNbheswb': { plan: 'Unlimited Yearly',  amount: '$599/yr', template: 'unlimited' },
+  'price_1TCujoK3APtatfMmz0GggJn4': { plan: 'Accelerate Monthly', amount: '$99/mo',   template: 'accelerate' },
+  'price_1TCukaK3APtatfMmKNbheswb': { plan: 'Accelerate Yearly',  amount: '$999/yr', template: 'accelerate' },
 };
 
 const COACHING_PRODUCTS = {
@@ -374,12 +374,12 @@ export default async function handler(req, res) {
               const welcomeHtml =
                 meta.template === 'starter'   ? emailWelcomeStarter(firstName) :
                 meta.template === 'pro'       ? emailWelcomePro(firstName) :
-                                                emailWelcomeUnlimited(firstName);
+                                                emailWelcomeAccelerate(firstName);
 
               const welcomeSubject =
                 meta.template === 'starter'   ? 'You\'re in. Here\'s how to get your first conversation booked' :
                 meta.template === 'pro'       ? 'Pro is live. You\'ve got enough firepower to run a real campaign' :
-                                                'Unlimited is active \u2014 here\'s the strategy that works';
+                                                'Accelerate is active \u2014 here\'s the strategy that works';
 
               await Promise.all([
                 sendEmail({ to: customerEmail, subject: welcomeSubject, html: welcomeHtml }),

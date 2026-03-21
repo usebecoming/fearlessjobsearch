@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
   if (!supabaseServiceKey) {
-    return res.status(200).json({ allowed: true, plan: 'unlimited', searches_remaining: 999 });
+    return res.status(200).json({ allowed: true, plan: 'accelerate', searches_remaining: 999 });
   }
 
   try {
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
 
     // Admin bypass — uses verified email from session, not request body
     if (isAdmin(auth.email)) {
-      return res.status(200).json({ allowed: true, plan: 'unlimited', searches_remaining: 999, admin: true });
+      return res.status(200).json({ allowed: true, plan: 'accelerate', searches_remaining: 999, admin: true });
     }
 
     // Fetch user profile
@@ -124,6 +124,7 @@ export default async function handler(req, res) {
           searches_used: searchCount,
           searches_remaining: plan.searches_per_month - searchCount,
           searches_limit: plan.searches_per_month,
+          jobs_per_search: plan.jobs_per_search,
           resets_at: resetDate ? resetDate.toISOString() : null
         });
 
@@ -172,6 +173,7 @@ export default async function handler(req, res) {
           searches_used: searchCount,
           searches_remaining: remaining,
           searches_limit: plan.searches_per_month,
+          jobs_per_search: plan.jobs_per_search,
           resets_at: resetDate ? resetDate.toISOString() : null,
           reason: searchCount >= plan.searches_per_month ? `You've used your ${plan.searches_per_month} search${plan.searches_per_month !== 1 ? 'es' : ''} this month. Upgrade for more.` : null
         });

@@ -1472,7 +1472,7 @@
         <div class="pricing-card" style="border-color:#E5E4E2">
           <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#777777;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Starter</div>
           <div class="pricing-amount">$29<span>/mo</span></div>
-          <div class="pricing-annual">One focused search per month</div>
+          <div class="pricing-annual">For focused exploration</div>
           <ul class="pricing-features">
             <li>1 search per month</li>
             <li>10 AI-matched roles per search</li>
@@ -1486,36 +1486,50 @@
 
         <!-- Pro -->
         <div class="pricing-card">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Pro</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px">Pro</div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;font-weight:600;color:#fff;background:#B8A88A;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px">Most Popular</span>
+          </div>
           <div class="pricing-amount">$59<span>/mo</span></div>
-          <div class="pricing-annual">Four searches per month</div>
+          <div class="pricing-annual">For active job seekers running multiple opportunities</div>
           <ul class="pricing-features">
             <li>4 searches per month</li>
             <li>40 AI-matched roles per month</li>
             <li>Up to 240 verified decision-maker contacts</li>
             <li>Personalized outreach sequences</li>
-            <li>Company target mode — find contacts at your dream companies</li>
-            <li>Resume-powered fit scoring</li>
+            <li>LinkedIn profiles with current employment confirmed</li>
+            <li>Pipeline tracking</li>
             <li>Saved search profiles</li>
+            <li>Resume-powered fit scoring</li>
+            <li>Company target mode</li>
           </ul>
           <button class="btn-primary" style="width:100%;justify-content:center;padding:14px" onclick="startCheckout('pro')">Start Pro</button>
         </div>
 
-        <!-- Unlimited -->
+        <!-- Accelerate -->
         <div class="pricing-card" style="border-color:#111111">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#111111;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Unlimited</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#111111;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Accelerate</div>
           <div class="pricing-amount">$99<span>/mo</span></div>
-          <div class="pricing-annual">or $599/year (save $589)
-            <br><a href="#" onclick="event.preventDefault();startCheckout('unlimited_yearly')" style="font-size:0.85rem">Choose annual</a>
+          <div class="pricing-annual">or $999/year (save $189)
+            <br><a href="#" onclick="event.preventDefault();startCheckout('accelerate_yearly')" style="font-size:0.85rem">Choose annual</a>
           </div>
+          <div class="pricing-annual" style="margin-top:4px">For faster, multi-track job search execution</div>
           <ul class="pricing-features">
-            <li>Unlimited searches</li>
-            <li>Unlimited verified contacts</li>
-            <li>Unlimited personalized outreach</li>
-            <li>Every feature, no restrictions</li>
+            <li>10 searches per month</li>
+            <li>100 AI-matched roles per month</li>
+            <li>Up to 600 verified decision-maker contacts</li>
+            <li>Personalized outreach sequences</li>
+            <li>LinkedIn profiles with current employment confirmed</li>
+            <li>Pipeline tracking</li>
+            <li>Saved search profiles</li>
+            <li>Resume-powered fit scoring</li>
+            <li>Company target mode</li>
+            <li>Run multiple searches in parallel</li>
+            <li>Duplicate &amp; iterate searches quickly</li>
+            <li>Priority processing speed</li>
             <li>Priority support</li>
           </ul>
-          <button class="btn-primary" style="width:100%;justify-content:center;padding:14px;background:#111111" onclick="startCheckout('unlimited_monthly')">Go Unlimited</button>
+          <button class="btn-primary" style="width:100%;justify-content:center;padding:14px;background:#111111" onclick="startCheckout('accelerate_monthly')">Go Accelerate</button>
         </div>
 
       </div>
@@ -1679,7 +1693,7 @@
     <div class="section active" id="section-1">
       <!-- Upgrade Banner -->
       <div class="upgrade-banner" id="upgradeBanner">
-        <p><strong>Want more searches?</strong> Upgrade your plan for weekly or unlimited access to AI-matched roles, contacts, and outreach.</p>
+        <p><strong>Want more searches?</strong> Upgrade your plan for more AI-matched roles, contacts, and outreach.</p>
         <button class="btn-primary" style="padding:12px 24px;font-size:0.94rem;white-space:nowrap" onclick="openUpgradeModal()">View Plans</button>
       </div>
 
@@ -1954,15 +1968,15 @@
           <button class="btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="startCheckout('pro')">Select</button>
         </div>
         <div style="border:2px solid #111;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Unlimited</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Accelerate</div>
           <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$99<span style="font-size:1rem;color:#777777;font-weight:400">/mo</span></div>
           <ul style="list-style:none;margin:16px 0;font-size:0.88rem;color:#555;font-weight:500">
-            <li style="padding:4px 0">Unlimited roles and contacts</li>
-            <li style="padding:4px 0">Unlimited outreach sequences</li>
-            <li style="padding:4px 0">Everything in Pro</li>
+            <li style="padding:4px 0">10 searches, 20 roles per search</li>
+            <li style="padding:4px 0">600 verified contacts</li>
+            <li style="padding:4px 0">Everything in Pro + priority support</li>
           </ul>
-          <button class="btn-primary" style="width:100%;justify-content:center;padding:10px;background:#111" onclick="startCheckout('unlimited_monthly')">Select</button>
-          <div style="text-align:center;margin-top:8px"><a href="#" onclick="event.preventDefault();startCheckout('unlimited_yearly')" style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem">$599/year (save $589)</a></div>
+          <button class="btn-primary" style="width:100%;justify-content:center;padding:10px;background:#111" onclick="startCheckout('accelerate_monthly')">Select</button>
+          <div style="text-align:center;margin-top:8px"><a href="#" onclick="event.preventDefault();startCheckout('accelerate_yearly')" style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem">$999/year (save $189)</a></div>
         </div>
       </div>
       <!-- Manage Plan (shown for paid users) -->
@@ -2498,10 +2512,10 @@
         body: JSON.stringify({ action: 'search_jobs' })
       }).then(function(r) { return r.json(); }).then(function(usage) {
         if (usage.admin) {
-          document.getElementById('accountPlan').textContent = 'Admin (Unlimited)';
+          document.getElementById('accountPlan').textContent = 'Admin (Accelerate)';
           document.getElementById('accountSearches').textContent = 'Unlimited';
         } else {
-          var planNames = { free: 'Free', starter: 'Starter', pro: 'Pro', unlimited: 'Unlimited' };
+          var planNames = { free: 'Free', starter: 'Starter', pro: 'Pro', accelerate: 'Accelerate', accelerate_monthly: 'Accelerate', accelerate_yearly: 'Accelerate' };
           document.getElementById('accountPlan').textContent = planNames[usage.plan] || 'Free';
           document.getElementById('accountSearches').textContent = usage.searches_used + ' / ' + usage.searches_limit;
           if (usage.plan !== 'free') {
