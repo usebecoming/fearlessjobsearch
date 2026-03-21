@@ -2118,13 +2118,12 @@
     // ── Manage Billing (Stripe Portal) ──
     async function manageBilling() {
       try {
-        const sess = supabase ? await supabase.auth.getSession() : null;
-        const userId = sess?.data?.session?.user?.id;
-        if (!userId) { openAuthModal('login'); return; }
+        var authH = await getAuthHeaders();
+        if (!authH['Authorization']) { openAuthModal('login'); return; }
         const res = await fetch('/api/billing-portal', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: userId, returnUrl: window.location.href })
+          headers: authH,
+          body: JSON.stringify({ returnUrl: window.location.href })
         });
         const data = await res.json();
         if (data.url) {
@@ -2208,13 +2207,12 @@
       if (!confirm('Are you sure you want to delete your account? This cannot be undone. All your data will be permanently removed.')) return;
       if (!confirm('This is permanent. Your pipeline, saved searches, and all data will be deleted. Continue?')) return;
       try {
-        var sess = supabase ? await supabase.auth.getSession() : null;
-        var userId = sess?.data?.session?.user?.id;
-        if (!userId) { alert('Please sign in first.'); return; }
+        var authH = await getAuthHeaders();
+        if (!authH['Authorization']) { alert('Please sign in first.'); return; }
         var res = await fetch('/api/delete-account', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: userId })
+          headers: authH,
+          body: JSON.stringify({})
         });
         var data = await res.json();
         if (data.success) {
@@ -2890,18 +2888,26 @@
     }
 
     // ── Universal gate checker ──
+    // Get auth headers for API calls — passes JWT for server-side verification
+    async function getAuthHeaders() {
+      var sess = supabase ? await supabase.auth.getSession() : null;
+      var token = sess?.data?.session?.access_token;
+      var headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      return headers;
+    }
+
     async function checkGate(action) {
       if (ADMIN_EMAILS.includes(state.userEmail)) return true;
       try {
-        const sess = supabase ? await supabase.auth.getSession() : null;
-        const userId = sess?.data?.session?.user?.id;
-        if (!userId) return true; // not logged in — let auth modal handle it
+        var headers = await getAuthHeaders();
+        if (!headers['Authorization']) return true; // not logged in
         const controller = new AbortController();
         const timeout = setTimeout(function() { controller.abort(); }, 3000);
         const res = await fetch('/api/check-usage', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, email: state.userEmail, action: action }),
+          headers: headers,
+          body: JSON.stringify({ action: action }),
           signal: controller.signal
         });
         clearTimeout(timeout);
@@ -3195,7 +3201,7 @@ Return a JSON array of objects with these exact fields:
 
     // Free preview: show 3 jobs, lock the rest
     const FREE_JOB_LIMIT = 3;
-    const ADMIN_EMAILS = ['ben@liveforyourselfconsulting.com', 'ritterbenjamin@gmail.com'];
+    const ADMIN_EMAILS = ['ritterbenjamin@gmail.com'];
     function isFreeTier() {
       if (ADMIN_EMAILS.includes(state.userEmail)) return false;
       return !state.hasPaid;
@@ -3900,6 +3906,8 @@ Return a JSON array of objects with these exact fields:
 
     // ── Step 4: Outreach ──
     async function runOutreach() {
+      const outreachAllowed = await checkGate('generate_outreach');
+      if (!outreachAllowed) return;
       goToStep(4);
       const container = document.getElementById('outreachContainer');
 

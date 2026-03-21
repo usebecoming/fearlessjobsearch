@@ -1,5 +1,6 @@
 import { rateLimit } from './_rateLimit.js';
 import { getPlan, isAdmin } from './_plans.js';
+import { verifyUser } from './_auth.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -19,14 +20,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { user_id, email, action } = req.body;
-
-    if (!user_id) {
-      return res.status(400).json({ error: 'User ID required' });
+    // Verify authenticated user from JWT — not request body
+    const auth = await verifyUser(req);
+    if (auth.error) {
+      return res.status(401).json({ error: auth.error });
     }
+    const user_id = auth.userId;
+    const { action } = req.body;
 
-    // Admin bypass
-    if (isAdmin(email)) {
+    // Admin bypass — uses verified email from session, not request body
+    if (isAdmin(auth.email)) {
       return res.status(200).json({ allowed: true, plan: 'unlimited', searches_remaining: 999, admin: true });
     }
 

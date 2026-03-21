@@ -20,6 +20,9 @@
     },
     "api/check-usage.js": {
       "maxDuration": 10
+    },
+    "api/delete-account.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [

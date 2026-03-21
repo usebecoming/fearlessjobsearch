@@ -1,5 +1,6 @@
 import { rateLimit } from './_rateLimit.js';
 import { isAdmin } from './_plans.js';
+import { verifyUser } from './_auth.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -20,10 +21,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { userId } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID required' });
+    // Verify authenticated user — prevent deleting someone else's account
+    const auth = await verifyUser(req);
+    if (auth.error) {
+      return res.status(401).json({ error: auth.error });
     }
+    const userId = auth.userId;
 
     console.log(`🗑️ Delete account started: ${userId}`);
     console.log(`🔑 Service key present: ${!!supabaseServiceKey}`);

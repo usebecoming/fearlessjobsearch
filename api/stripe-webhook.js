@@ -1,4 +1,5 @@
 import { PRICE_TO_PLAN } from './_plans.js';
+import crypto from 'crypto';
 
 // Coaching session price IDs - skip plan update for these
 const COACHING_PRICE_IDS = new Set([
@@ -6,12 +7,46 @@ const COACHING_PRICE_IDS = new Set([
   'price_1TDFi0K3APtatfMmtU7ZLSsk'   // Resume + LinkedIn
 ]);
 
+function verifyStripeSignature(payload, sigHeader, secret) {
+  if (!sigHeader || !secret) throw new Error('Missing signature or secret');
+  const parts = sigHeader.split(',');
+  const tPart = parts.find(p => p.startsWith('t='));
+  const v1Part = parts.find(p => p.startsWith('v1='));
+  if (!tPart || !v1Part) throw new Error('Invalid signature format');
+  const timestamp = tPart.split('=')[1];
+  const signature = v1Part.split('=')[1];
+  const signedPayload = `${timestamp}.${payload}`;
+  const expected = crypto.createHmac('sha256', secret).update(signedPayload).digest('hex');
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+    throw new Error('Signature mismatch');
+  }
+  // Reject events older than 5 minutes
+  const now = Math.floor(Date.now() / 1000);
+  if (now - parseInt(timestamp) > 300) {
+    throw new Error('Timestamp too old');
+  }
+  return JSON.parse(payload);
+}
+
+// Read raw body from request stream (bodyParser disabled)
+function getRawBody(req) {
+  return new Promise((resolve, reject) => {
+    if (typeof req.body === 'string') { resolve(req.body); return; }
+    if (Buffer.isBuffer(req.body)) { resolve(req.body.toString()); return; }
+    const chunks = [];
+    req.on('data', chunk => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks).toString()));
+    req.on('error', reject);
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
@@ -20,7 +55,25 @@ export default async function handler(req, res) {
   }
 
   try {
-    const event = req.body;
+    // Verify Stripe signature
+    const rawBody = await getRawBody(req);
+    const sig = req.headers['stripe-signature'];
+
+    let event;
+    if (webhookSecret && sig) {
+      try {
+        event = verifyStripeSignature(rawBody, sig, webhookSecret);
+        console.log(`📨 Verified webhook event: ${event.type}`);
+      } catch (sigErr) {
+        console.error(`❌ Webhook signature verification failed: ${sigErr.message}`);
+        return res.status(400).json({ error: `Webhook signature failed: ${sigErr.message}` });
+      }
+    } else {
+      // Fallback: no webhook secret configured — log warning but process
+      console.warn('⚠️ STRIPE_WEBHOOK_SECRET not set — processing without signature verification');
+      event = JSON.parse(rawBody);
+    }
+
     const eventType = event.type;
     console.log(`📨 Stripe webhook: ${eventType}`);
 
@@ -190,6 +243,6 @@ export default async function handler(req, res) {
 
 export const config = {
   api: {
-    bodyParser: true
+    bodyParser: false
   }
 };

@@ -60,8 +60,7 @@ export const PRICE_TO_PLAN = {
 };
 
 export const ADMIN_EMAILS = [
-  'ritterbenjamin@gmail.com',
-  'ben@liveforyourselfconsulting.com'
+  'ritterbenjamin@gmail.com'
 ];
 
 export function getPlan(planKey) {

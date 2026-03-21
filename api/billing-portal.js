@@ -1,4 +1,5 @@
 import { rateLimit } from './_rateLimit.js';
+import { verifyUser } from './_auth.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -19,7 +20,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { userId, returnUrl } = req.body;
+    const auth = await verifyUser(req);
+    if (auth.error) {
+      return res.status(401).json({ error: auth.error });
+    }
+    const userId = auth.userId;
+    const { returnUrl } = req.body;
 
     if (!userId) {
       return res.status(400).json({ error: 'User ID required' });
