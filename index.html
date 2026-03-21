@@ -1490,23 +1490,24 @@
 
   <!-- ── Auth Modal ── -->
   <div class="auth-modal" id="authModal">
-    <div class="auth-box" style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:32px;width:360px;max-width:90vw;position:relative">
-      <button class="modal-close" onclick="closeAuthModal()" style="position:absolute;top:12px;right:16px">&times;</button>
+    <div class="auth-box" style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:16px;padding:40px 36px;width:440px;max-width:92vw;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.12)">
+      <button class="modal-close" onclick="closeAuthModal()" style="position:absolute;top:16px;right:20px;font-size:1.4rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px">&times;</button>
 
       <!-- Login form -->
       <div id="loginForm">
-        <h2 style="text-align:center;font-size:1.2rem;margin-bottom:20px">Sign In</h2>
+        <h2 style="text-align:center;font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;margin-bottom:8px">Welcome Back</h2>
+        <p style="text-align:center;font-size:0.88rem;color:#777;margin-bottom:24px">Sign in to your Fearless Job Search account</p>
         <div class="form-group">
           <label class="form-label">Email</label>
-          <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com">
+          <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com" style="padding:14px 16px;font-size:0.95rem">
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
-          <input type="password" class="form-input" id="loginPassword" placeholder="Your password" onkeydown="if(event.key==='Enter')handleLogin()">
+          <input type="password" class="form-input" id="loginPassword" placeholder="Your password" style="padding:14px 16px;font-size:0.95rem" onkeydown="if(event.key==='Enter')handleLogin()">
         </div>
-        <button class="btn-primary" style="width:100%;justify-content:center" onclick="handleLogin()">Sign In</button>
+        <button class="btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:0.95rem" onclick="handleLogin()">Sign In</button>
         <div class="auth-error" id="loginError"></div>
-        <div class="auth-toggle">
+        <div class="auth-toggle" style="margin-top:16px">
           <a href="#" onclick="event.preventDefault();showForgotPassword()" style="color:#B8A88A">Forgot password?</a>
         </div>
         <div class="auth-toggle">
@@ -1516,31 +1517,33 @@
 
       <!-- Forgot password form -->
       <div id="forgotForm" style="display:none">
-        <h2 style="text-align:center;font-size:1.2rem;margin-bottom:20px">Reset Password</h2>
+        <h2 style="text-align:center;font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;margin-bottom:8px">Reset Password</h2>
+        <p style="text-align:center;font-size:0.88rem;color:#777;margin-bottom:24px">Enter your email and we'll send you a reset link</p>
         <div class="form-group">
           <label class="form-label">Email</label>
-          <input type="email" class="form-input" id="forgotEmail" placeholder="you@example.com">
+          <input type="email" class="form-input" id="forgotEmail" placeholder="you@example.com" style="padding:14px 16px;font-size:0.95rem">
         </div>
-        <button class="btn-primary" style="width:100%;justify-content:center" onclick="handleForgotPassword()">Send Reset Link</button>
+        <button class="btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:0.95rem" onclick="handleForgotPassword()">Send Reset Link</button>
         <div class="auth-error" id="forgotError"></div>
         <div class="auth-success" id="forgotSuccess" style="display:none"></div>
-        <div class="auth-toggle">
+        <div class="auth-toggle" style="margin-top:16px">
           <a href="#" onclick="event.preventDefault();showLogin()">Back to sign in</a>
         </div>
       </div>
 
       <!-- Signup form -->
       <div id="signupForm" style="display:none">
-        <h2 style="text-align:center;font-size:1.2rem;margin-bottom:20px">Create Account</h2>
+        <h2 style="text-align:center;font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;margin-bottom:8px">Get Started</h2>
+        <p style="text-align:center;font-size:0.88rem;color:#777;margin-bottom:24px">Create your account to start finding opportunities</p>
         <div class="form-group">
           <label class="form-label">Email</label>
-          <input type="email" class="form-input" id="signupEmail" placeholder="you@example.com">
+          <input type="email" class="form-input" id="signupEmail" placeholder="you@example.com" style="padding:14px 16px;font-size:0.95rem">
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
-          <input type="password" class="form-input" id="signupPassword" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')handleSignup()">
+          <input type="password" class="form-input" id="signupPassword" placeholder="Min 6 characters" style="padding:14px 16px;font-size:0.95rem" onkeydown="if(event.key==='Enter')handleSignup()">
         </div>
-        <button class="btn-primary" style="width:100%;justify-content:center" onclick="handleSignup()">Create Account</button>
+        <button class="btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:0.95rem" onclick="handleSignup()">Create Account</button>
         <div class="auth-error" id="signupError"></div>
         <div class="auth-success" id="signupSuccess" style="display:none"></div>
         <div class="auth-toggle">
