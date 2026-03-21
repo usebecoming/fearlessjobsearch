@@ -25,6 +25,8 @@ export default async function handler(req, res) {
       'price_1TDFi0K3APtatfMmtU7ZLSsk'   // Resume + LinkedIn
     ]);
 
+    console.log(`🛒 Checkout request: priceId=${directPriceId || 'none'}, plan=${plan || 'none'}, user=${email}`);
+
     // Resolve price ID
     let priceId = directPriceId;
     if (!priceId && plan) {
@@ -44,6 +46,7 @@ export default async function handler(req, res) {
 
     // Server determines mode from price ID — no client trust needed
     const checkoutMode = coachingPriceIds.has(priceId) ? 'payment' : 'subscription';
+    console.log(`🛒 Is coaching: ${coachingPriceIds.has(priceId)}, Mode: ${checkoutMode}`);
 
     const origin = req.headers.origin || 'https://fearlessjobsearch.com';
 

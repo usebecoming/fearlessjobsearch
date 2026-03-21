@@ -1696,7 +1696,7 @@
           <input type="text" class="tag-field" id="locationField" placeholder="Start typing a city..." autocomplete="off">
         </div>
         <div class="location-suggestions" id="locationSuggestions"></div>
-        <p style="font-size:0.82rem;color:#999;margin-top:6px" id="locationHintJobs">Add "Remote" to significantly expand your results. Most senior roles have remote or hybrid options.</p>
+        <p style="font-size:0.82rem;color:#999;margin-top:6px" id="locationHintJobs">Remote is an option — adding it to your locations often surfaces roles not listed locally.</p>
         <p style="font-size:0.82rem;color:#999;margin-top:6px;display:none" id="locationHintCompany">Where do you want your target contacts to be located? Add cities or countries.</p>
       </div>
 
@@ -2437,10 +2437,11 @@
       }
 
       // Load plan info from server
+      getAuthHeaders().then(function(authH) {
       fetch('/api/check-usage', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id, email: user.email })
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authH),
+        body: JSON.stringify({ action: 'search_jobs' })
       }).then(function(r) { return r.json(); }).then(function(usage) {
         if (usage.admin) {
           document.getElementById('accountPlan').textContent = 'Admin (Unlimited)';
@@ -2457,6 +2458,7 @@
             document.getElementById('managePlanSection').style.display = '';
           }
         }
+      }).catch(function() {});
       }).catch(function() {});
     }
 
@@ -2475,6 +2477,23 @@
 
     // Check existing session on load
     (async () => {
+      // Check for password recovery token in URL hash
+      var hashParams = new URLSearchParams(window.location.hash.slice(1));
+      var recoveryType = hashParams.get('type');
+      var recoveryToken = hashParams.get('access_token');
+      var refreshToken = hashParams.get('refresh_token');
+
+      if (recoveryType === 'recovery' && recoveryToken) {
+        try {
+          await supabase.auth.setSession({
+            access_token: recoveryToken,
+            refresh_token: refreshToken
+          });
+        } catch (e) { console.error('Recovery session error:', e); }
+        showSetNewPasswordForm();
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         showApp(session.user);
@@ -2483,6 +2502,34 @@
       validateSearch();
       loadSearchProfiles();
     })();
+
+    function showSetNewPasswordForm() {
+      document.body.insertAdjacentHTML('beforeend',
+        '<div id="set-password-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999">' +
+          '<div style="background:#FDFCF9;border-radius:14px;padding:2rem;width:100%;max-width:400px;margin:1rem;box-shadow:0 8px 32px rgba(0,0,0,0.15)">' +
+            '<h2 style="font-family:Playfair Display,serif;font-size:20px;font-weight:600;margin-bottom:1.5rem;color:#111">Set your new password</h2>' +
+            '<input type="password" id="new-password-input" placeholder="New password (min 8 characters)" style="width:100%;margin-bottom:0.75rem;box-sizing:border-box;padding:12px;border:1px solid #E5E4E2;border-radius:8px;font-size:15px" />' +
+            '<input type="password" id="confirm-password-input" placeholder="Confirm new password" style="width:100%;margin-bottom:1rem;box-sizing:border-box;padding:12px;border:1px solid #E5E4E2;border-radius:8px;font-size:15px" />' +
+            '<p id="password-reset-error" style="font-size:13px;color:#C94444;margin-bottom:0.75rem;display:none"></p>' +
+            '<button id="set-password-btn" class="btn-primary" style="width:100%;padding:12px;font-size:15px">Set new password</button>' +
+          '</div>' +
+        '</div>'
+      );
+      document.getElementById('set-password-btn').addEventListener('click', async function() {
+        var pw = document.getElementById('new-password-input').value;
+        var pw2 = document.getElementById('confirm-password-input').value;
+        var errEl = document.getElementById('password-reset-error');
+        if (!pw || pw.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display = 'block'; return; }
+        if (pw !== pw2) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
+        var { error } = await supabase.auth.updateUser({ password: pw });
+        if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+        window.history.replaceState({}, '', window.location.pathname);
+        document.getElementById('set-password-modal').remove();
+        var { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) { showApp(session.user); await loadUserData(); }
+        showToast('Password updated successfully.');
+      });
+    }
 
     // ── State ──
     const state = {
