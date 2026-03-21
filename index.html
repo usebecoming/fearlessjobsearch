@@ -3293,7 +3293,7 @@ Return a JSON array of objects with these exact fields:
         try {
           const s = supabase ? await supabase.auth.getSession() : null;
           if (s?.data?.session?.user?.id) {
-            fetch('/api/increment-usage', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({user_id: s.data.session.user.id}) }).catch(function(){});
+            getAuthHeaders().then(function(h) { fetch('/api/increment-usage', { method: 'POST', headers: h, body: JSON.stringify({}) }).catch(function(){}); });
           }
         } catch(e) {}
       } catch (err) {
