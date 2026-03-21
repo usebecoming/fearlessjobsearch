@@ -1974,6 +1974,31 @@
     </div>
   </div>
 
+  <!-- ── Delete Account Modal ── -->
+  <div class="modal-overlay" id="deleteAccountModal">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-header">
+        <h2 style="font-size:1.2rem;color:#C94444">Delete your account</h2>
+        <button class="modal-close" onclick="closeDeleteModal()">&#10005;</button>
+      </div>
+      <p style="font-size:0.88rem;color:#555;font-weight:500;margin-bottom:12px">This is permanent and cannot be undone. The following will be deleted immediately:</p>
+      <ul style="font-size:0.85rem;color:#6E6E6E;margin-bottom:16px;padding-left:18px;line-height:1.8">
+        <li>Your search history and saved searches</li>
+        <li>Your pipeline jobs</li>
+        <li>Your contacts and outreach messages</li>
+        <li>Your account and profile</li>
+      </ul>
+      <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:16px">Your subscription will be cancelled. No refund for the current billing period.</p>
+      <p style="font-size:0.88rem;color:#111;font-weight:600;margin-bottom:8px">Type <span style="font-family:'IBM Plex Mono',monospace;color:#C94444">DELETE</span> to confirm:</p>
+      <input type="text" class="form-input" id="deleteConfirmInput" placeholder="Type DELETE to confirm" autocomplete="off" spellcheck="false" style="margin-bottom:8px" oninput="document.getElementById('confirmDeleteBtn').disabled = this.value !== 'DELETE'">
+      <p id="deleteErrorMsg" style="display:none;font-size:0.85rem;color:#C94444;font-weight:500;margin-bottom:8px"></p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
+        <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        <button id="confirmDeleteBtn" disabled onclick="executeDeleteAccount()" style="background:#C94444;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer">Permanently delete my account</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ── Check checkout success ──
     if (window.location.search.includes('checkout=success')) {
@@ -1986,6 +2011,46 @@
         document.body.appendChild(toast);
         setTimeout(function() { toast.remove(); }, 4000);
       }, 500);
+    }
+
+    // ── Session Cache (top-level, persists across step navigation) ──
+    const sessionCache = {
+      contacts: {},
+      outreach: null,
+      setContacts(key, data) { this.contacts[key] = { ...data, cachedAt: Date.now() }; },
+      getContacts(key) { return this.contacts[key] || null; },
+      setOutreach(data) { this.outreach = { data: data, cachedAt: Date.now() }; },
+      getOutreach() { return this.outreach?.data || null; },
+      clearContacts(key) { if (key) delete this.contacts[key]; else this.contacts = {}; },
+      clearOutreach() { this.outreach = null; },
+      clear() { this.contacts = {}; this.outreach = null; }
+    };
+
+    function buildContactCacheKey(jobs) {
+      return jobs.map(function(j) { return (j.company || '').toLowerCase().trim(); }).sort().join('|');
+    }
+
+    // ── Reset State ──
+    function resetToInitialState() {
+      console.log('🔄 Resetting to initial state');
+      sessionCache.clear();
+      state.jobs = [];
+      state.allJobs = [];
+      state.selectedJobs = [];
+      state.contacts = {};
+      state.sequences = [];
+      state.pipelineFilteredCount = 0;
+      ['jobsContainer', 'contactsContainer', 'outreachContainer'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+      });
+      var paywall = document.getElementById('jobsPaywall');
+      if (paywall) paywall.style.display = 'none';
+      var selBar = document.getElementById('selectionBar');
+      if (selBar) selBar.style.display = 'none';
+      goToStep(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      console.log('✅ Reset complete');
     }
 
     // ── Sign Out (defined early so it always works) ──
@@ -2059,6 +2124,9 @@
     }
     document.getElementById('upgradeModal').addEventListener('click', e => {
       if (e.target === e.currentTarget) closeUpgradeModal();
+    });
+    document.getElementById('deleteAccountModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeDeleteModal();
     });
 
     // ── Stripe Checkout ──
@@ -2203,9 +2271,28 @@
         document.getElementById('forgotSuccess').textContent = 'Check your email for a password reset link.';
       }
     }
-    async function handleDeleteAccount() {
-      if (!confirm('Are you sure you want to delete your account? This cannot be undone. All your data will be permanently removed.')) return;
-      if (!confirm('This is permanent. Your pipeline, saved searches, and all data will be deleted. Continue?')) return;
+    function handleDeleteAccount() {
+      // Close account dropdown
+      var dd = document.getElementById('accountDropdown');
+      if (dd) dd.classList.remove('open');
+      // Show delete modal
+      var modal = document.getElementById('deleteAccountModal');
+      if (modal) modal.classList.add('active');
+      var inp = document.getElementById('deleteConfirmInput');
+      if (inp) inp.value = '';
+      var btn = document.getElementById('confirmDeleteBtn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Permanently delete my account'; }
+      var err = document.getElementById('deleteErrorMsg');
+      if (err) err.style.display = 'none';
+    }
+    function closeDeleteModal() {
+      var modal = document.getElementById('deleteAccountModal');
+      if (modal) modal.classList.remove('active');
+    }
+    async function executeDeleteAccount() {
+      var btn = document.getElementById('confirmDeleteBtn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Deleting...'; }
+      var errEl = document.getElementById('deleteErrorMsg');
       try {
         var authH = await getAuthHeaders();
         if (!authH['Authorization']) { alert('Please sign in first.'); return; }
@@ -2217,14 +2304,16 @@
         var data = await res.json();
         if (data.success) {
           await supabase.auth.signOut();
-          alert('Your account and all data have been deleted.');
-          window.location.reload();
+          closeDeleteModal();
+          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:\'IBM Plex Sans\',sans-serif;text-align:center;padding:2rem;background:#FFF8F2"><div><h2 style="font-family:\'Playfair Display\',serif;font-size:1.4rem;margin-bottom:12px">Your account has been deleted.</h2><p style="color:#666;font-size:0.92rem">All your data has been permanently removed.</p><a href="/" style="display:inline-block;margin-top:24px;color:#B8A88A;font-weight:600">Return to Fearless Job Search</a></div></div>';
         } else {
-          alert(data.error || 'Something went wrong. Please try again.');
+          if (errEl) { errEl.textContent = data.error || 'Deletion failed. Please try again.'; errEl.style.display = 'block'; }
+          if (btn) { btn.disabled = false; btn.textContent = 'Permanently delete my account'; }
         }
       } catch (err) {
         console.error('Delete account error:', err);
-        alert('Something went wrong. Please email support@lfyconsulting.com for help.');
+        if (errEl) { errEl.textContent = 'Something went wrong. Please email support@lfyconsulting.com'; errEl.style.display = 'block'; }
+        if (btn) { btn.disabled = false; btn.textContent = 'Permanently delete my account'; }
       }
     }
 
@@ -2979,6 +3068,17 @@
         // Go directly to Step 3 — use server-side verification (same pipeline as job mode)
         goToStep(3);
         const contactContainer = document.getElementById('contactsContainer');
+
+        // Check session cache first
+        var cacheKey = buildContactCacheKey(companyJobData);
+        var cached = sessionCache.getContacts(cacheKey);
+        if (cached) {
+          console.log('⚡ Contacts from session cache');
+          state.contacts = cached;
+          renderContacts(cached);
+          return;
+        }
+
         const contactEstimate = Math.max(25, companyJobData.length * 10);
         showProgress(contactContainer, 'Searching for decision-makers at your target companies...', contactEstimate);
 
@@ -2998,6 +3098,7 @@
           stopProgress();
 
           state.contacts = contactData;
+          sessionCache.setContacts(cacheKey, contactData);
           renderContacts(contactData);
           logUsage('contact_search', { mode: 'company_target', companies: state.companies, contacts: (contactData.results || []).reduce(function(s,r){ return s + (r.contacts||[]).length; }, 0) });
         } catch (err) {
@@ -3707,11 +3808,20 @@ Return a JSON array of objects with these exact fields:
         .filter(j => state.selectedJobs.includes(j.id))
         .map(j => ({ job_id: j.id, title: j.title, company: j.company, industry: j.industry, location: j.location }));
 
+      // Check session cache first
+      var contactCacheKey = buildContactCacheKey(selectedJobData);
+      var cachedContacts = sessionCache.getContacts(contactCacheKey);
+      if (cachedContacts) {
+        console.log('⚡ Contacts from session cache');
+        state.contacts = cachedContacts;
+        renderContacts(cachedContacts);
+        return;
+      }
+
       const contactEstimate = Math.max(25, selectedJobData.length * 10);
       showProgress(container, 'Searching LinkedIn for real decision-makers...', contactEstimate);
 
       try {
-        // Step 1: Search Brave for real LinkedIn profiles
         const searchRes = await fetch('/api/search-contacts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3725,6 +3835,7 @@ Return a JSON array of objects with these exact fields:
 
         const contactData = await searchRes.json();
         stopProgress();
+        sessionCache.setContacts(contactCacheKey, contactData);
 
         // API now handles Claude verification, dedup, and founder search server-side
         // contactData.results already has verified contacts
@@ -3908,6 +4019,17 @@ Return a JSON array of objects with these exact fields:
     async function runOutreach() {
       const outreachAllowed = await checkGate('generate_outreach');
       if (!outreachAllowed) return;
+
+      // Check session cache first
+      var cachedOutreach = sessionCache.getOutreach();
+      if (cachedOutreach) {
+        console.log('⚡ Outreach from session cache');
+        goToStep(4);
+        state.sequences = cachedOutreach;
+        renderOutreach(cachedOutreach);
+        return;
+      }
+
       goToStep(4);
       const container = document.getElementById('outreachContainer');
 
@@ -3977,6 +4099,7 @@ Return a JSON object with a "sequences" array. Each sequence:
         const data = await callClaude(systemPrompt, userPrompt);
         stopProgress();
         state.sequences = data;
+        sessionCache.setOutreach(data);
         renderOutreach(data);
         logUsage('outreach_generated', { sequences: (data.sequences || []).length });
         // Update pipeline status in background
