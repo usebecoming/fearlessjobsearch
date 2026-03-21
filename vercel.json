@@ -23,6 +23,9 @@
     },
     "api/delete-account.js": {
       "maxDuration": 30
+    },
+    "api/invalidate-cache.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [

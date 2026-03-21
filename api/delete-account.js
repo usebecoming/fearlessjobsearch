@@ -66,7 +66,7 @@ export default async function handler(req, res) {
     }
 
     // Step 3 — Delete from all data tables
-    const tables = ['pipeline', 'search_profiles', 'usage_log', 'favorites'];
+    const tables = ['outreach_cache', 'pipeline', 'search_profiles', 'usage_log', 'favorites'];
     for (const table of tables) {
       const delRes = await fetch(
         `${supabaseUrl}/rest/v1/${table}?user_id=eq.${userId}`,

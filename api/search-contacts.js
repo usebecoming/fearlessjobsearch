@@ -1,4 +1,5 @@
 import { rateLimit } from './_rateLimit.js';
+import { getContactCache, setContactCache } from './_cache.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -144,6 +145,26 @@ export default async function handler(req, res) {
       console.log('Skip-Level titles:', derived.slTitles);
       console.log('Recruiter terms:', derived.recTerms);
 
+      // CHECK PERSISTENT CACHE FIRST
+      // Contact results are shared — same company = same contacts regardless of user
+      const cached = await getContactCache(searchCompany, derived.func);
+      if (cached) {
+        console.log(`⚡ Contacts served from Supabase cache: ${searchCompany} (${cached.contacts.length} contacts)`);
+        const geoUrn = getGeoUrn(representativeJob.location);
+        group.result = {
+          company,
+          derived: { func: derived.func, hmTitles: derived.hmTitles, slTitles: derived.slTitles, recTerms: derived.recTerms },
+          contacts: cached.contacts,
+          linkedin_slug: cached.companySlug,
+          geo_urn: geoUrn,
+          is_professional_services: false,
+          fromCache: true
+        };
+        return; // skip Brave pipeline entirely
+      }
+      console.log(`🔍 Cache miss — running Brave pipeline for ${searchCompany}`);
+
+      let braveQueryCount = 0;
       const companyNames = getCompanyVariations(searchCompany);
       const allContacts = [];
 
@@ -155,6 +176,7 @@ export default async function handler(req, res) {
           const q = queryBuilder(co);
           console.log(`  ${role} query [${co}]:`, q);
           let r = await braveSearch(q, braveKey);
+          braveQueryCount++;
 
           if (isShortName && r.length > 0) {
             const before = r.length;
@@ -212,6 +234,7 @@ export default async function handler(req, res) {
         console.log('🔍 Running founder/CEO search...');
         const founderQuery1 = `site:linkedin.com/in "${company}" (Founder OR "Co-Founder" OR CEO OR President)`;
         const founderResults1 = await braveSearch(founderQuery1, braveKey);
+        braveQueryCount++;
         console.log(`  Founder search (site): ${founderResults1.length} results`);
         allContacts.push(...founderResults1.map(r => ({ ...r, searchRole: 'Skip-Level', isFounder: true })));
 
@@ -219,6 +242,7 @@ export default async function handler(req, res) {
           const founderQuery2 = `"${company}" founder CEO "linkedin.com/in"`;
           console.log(`  Founder web search: ${founderQuery2}`);
           const founderResults2 = await braveSearch(founderQuery2, braveKey);
+          braveQueryCount++;
           console.log(`  Founder web results: ${founderResults2.length}`);
           allContacts.push(...founderResults2.map(r => ({ ...r, searchRole: 'Skip-Level', isFounder: true })));
         }
@@ -261,6 +285,7 @@ export default async function handler(req, res) {
         const fq1 = `"${company}" founder CEO president "linkedin.com/in"`;
         console.log(`  Founder query: ${fq1}`);
         const fResults = await braveSearch(fq1, braveKey);
+        braveQueryCount++;
         console.log(`  Founder results: ${fResults.length}`);
         for (const fr of fResults) {
           if (!preQualified.some(p => p.linkedin_url === fr.linkedin_url) && !claudeDecide.some(p => p.linkedin_url === fr.linkedin_url)) {
@@ -425,6 +450,7 @@ Return JSON array only — accepted contacts only:
         const fq = `"${company}" founder CEO president "linkedin.com/in"`;
         console.log(`  Founder query: ${fq}`);
         const fRes = await braveSearch(fq, braveKey);
+        braveQueryCount++;
         console.log(`  Founder search returned: ${fRes.length} results`);
         fRes.forEach(r => {
           if (r.linkedin_url && !verifiedContacts.some(v => (v.linkedin || v.linkedin_url || '').includes(r.linkedin_url.split('/').pop()))) {
@@ -450,6 +476,16 @@ Return JSON array only — accepted contacts only:
         geo_urn: geoUrn,
         is_professional_services: isProfServices
       };
+
+      // Save to persistent cache — fire and forget
+      setContactCache(
+        searchCompany,
+        derived.func,
+        verifiedContacts,
+        null, // fallback links built client-side
+        companySlug,
+        braveQueryCount
+      ).catch(err => console.error('Cache write failed:', err.message));
     });
 
     // Run all company searches in parallel with per-company timeout
@@ -461,6 +497,17 @@ Return JSON array only — accepted contacts only:
         console.error(`❌ Company search failed: ${err.message}`);
       }))
     );
+
+    // Cache summary
+    const groups = Object.values(companyGroups);
+    const cacheHits = groups.filter(g => g.result?.fromCache).length;
+    const cacheMisses = groups.filter(g => g.result && !g.result.fromCache).length;
+    console.log(`\n📊 CACHE SUMMARY:`);
+    console.log(`  Cache hits:   ${cacheHits} companies`);
+    console.log(`  Cache misses: ${cacheMisses} companies`);
+    if (cacheHits > 0) {
+      console.log(`  Estimated Brave queries saved: ${cacheHits * 6}`);
+    }
 
     // Build results — apply company contacts to ALL jobs at that company
     const results = [...skipJobs];
