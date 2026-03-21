@@ -2212,18 +2212,19 @@
         var sess = supabase ? await supabase.auth.getSession() : null;
         var userId = sess?.data?.session?.user?.id;
         if (!userId) { alert('Please sign in first.'); return; }
-        // Delete user data from all tables
-        await Promise.all([
-          supabase.from('pipeline').delete().eq('user_id', userId),
-          supabase.from('search_profiles').delete().eq('user_id', userId),
-          supabase.from('usage_log').delete().eq('user_id', userId),
-          supabase.from('favorites').delete().eq('user_id', userId),
-          supabase.from('profiles').delete().eq('id', userId)
-        ]);
-        // Sign out
-        await supabase.auth.signOut();
-        alert('Your account and all data have been deleted.');
-        window.location.reload();
+        var res = await fetch('/api/delete-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: userId })
+        });
+        var data = await res.json();
+        if (data.success) {
+          await supabase.auth.signOut();
+          alert('Your account and all data have been deleted.');
+          window.location.reload();
+        } else {
+          alert(data.error || 'Something went wrong. Please try again.');
+        }
       } catch (err) {
         console.error('Delete account error:', err);
         alert('Something went wrong. Please email support@lfyconsulting.com for help.');
