@@ -40,14 +40,14 @@ export default async function handler(req, res) {
     // Resolve price ID
     let priceId = directPriceId;
     if (!priceId && plan) {
-      const planDef = PLANS[plan];
-      priceId = planDef?.stripe_price_id
-        || {
-          starter: process.env.STRIPE_PRICE_STARTER,
-          pro: process.env.STRIPE_PRICE_PRO,
-          accelerate_monthly: process.env.STRIPE_PRICE_ACCELERATE_MONTHLY,
-          accelerate_yearly: process.env.STRIPE_PRICE_ACCELERATE_YEARLY
-        }[plan];
+      const PLAN_PRICE_IDS = {
+        starter: 'price_1TCuhfK3APtatfMmhlcWdsdW',
+        pro: 'price_1TCuiKK3APtatfMmOQCSWWd4',
+        accelerate_monthly: 'price_1TCujoK3APtatfMmz0GggJn4',
+        accelerate: 'price_1TCujoK3APtatfMmz0GggJn4',
+        accelerate_yearly: 'price_1TCukaK3APtatfMmKNbheswb'
+      };
+      priceId = PLAN_PRICE_IDS[plan];
     }
 
     if (!priceId) {
