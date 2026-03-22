@@ -4100,9 +4100,12 @@ Return a JSON array with one object per job:
       if (!job) return;
       const panel = document.getElementById('jobDetailPanel');
 
-      const fitBadge = job.fitScore >= 87 ? 'badge-green' :
+      const noResume = job.fitScore === -1;
+      const fitBadge = noResume ? 'badge-gold' :
+                       job.fitScore >= 87 ? 'badge-green' :
                        job.fitScore >= 70 ? 'badge-gold' : 'badge-red';
-      const fitLabel = job.fitScore >= 87 ? 'Strong Match' :
+      const fitLabel = noResume ? 'No Resume' :
+                       job.fitScore >= 87 ? 'Strong Match' :
                        job.fitScore >= 70 ? 'Good Match' : 'Stretch';
       const isFav = state.favorites.some(f => f.title === job.title && f.company === job.company);
       const isSelected = state.selectedJobs.includes(job.id);
@@ -4124,13 +4127,17 @@ Return a JSON array with one object per job:
           ${job.salary ? `<span>${esc(job.salary)}</span>` : ''}
         </div>
 
+        ${noResume ? `
         <div class="job-detail-section">
-          <h3>Fit Score</h3>
+          <p style="font-size:0.88rem;color:#7A6C52;font-style:italic;font-weight:500">Upload your resume to see how well you match this role.</p>
+        </div>` : `
+        <div class="job-detail-section">
+          <h3>Resume Fit</h3>
           <div style="display:flex;align-items:center;gap:12px">
-            <span class="badge ${fitBadge}" style="font-size:0.85rem;padding:6px 14px">${job.fitScore} / 100 · ${fitLabel}</span>
+            <span class="badge ${fitBadge}" style="font-size:0.85rem;padding:6px 14px">${job.fitScore} / 100 &middot; ${fitLabel}</span>
           </div>
           <p style="margin-top:8px;font-size:0.88rem;color:#555555;font-style:italic;font-weight:500">${esc(job.fitReason)}</p>
-        </div>
+        </div>`}
 
         ${job.highlights ? `
         <div class="job-detail-section">
@@ -4149,7 +4156,6 @@ Return a JSON array with one object per job:
           <button class="btn-primary" onclick="toggleJobSelection('${esc(job.id)}');closeJobDetail()">
             ${isSelected ? 'Remove from Selection' : 'Select for Outreach'}
           </button>
-          ${job.url ? `<a href="${esc(job.url)}" target="_blank" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center">View Listing &#8599;</a>` : ''}
         </div>
       `;
 
