@@ -896,10 +896,10 @@ function getHiringManagerTitles(func, level) {
 
   const levelMap = {
     'manager': [`Director of ${func}`, `Director ${func}`, `Head of ${func}`, `Senior Director ${func}`],
-    'senior_manager': [`Director of ${func}`, `Senior Director ${func}`, `Head of ${func}`],
-    'director': [`VP of ${func}`, `VP ${func}`, `Vice President ${func}`, `Head of ${func}`],
-    'senior_director': [`VP of ${func}`, `SVP ${func}`, `Senior Vice President ${func}`],
-    'head': [`VP of ${func}`, `VP ${func}`, `SVP ${func}`],
+    'senior_manager': [`Director of ${func}`, `Senior Director ${func}`, `Head of ${func}`, `VP of ${func}`],
+    'director': [`VP of ${func}`, `VP ${func}`, `Vice President ${func}`, `Head of ${func}`, `SVP ${func}`, ...csuiteTitles],
+    'senior_director': [`SVP ${func}`, `VP of ${func}`, `Senior Vice President ${func}`, ...csuiteTitles],
+    'head': [`VP of ${func}`, `VP ${func}`, `SVP ${func}`, ...csuiteTitles],
     'vp': [`SVP ${func}`, `Senior Vice President ${func}`, `EVP ${func}`, ...csuiteTitles],
     'svp': [...csuiteTitles, 'CEO', 'President'],
     'csuite': ['CEO', 'President', 'Founder'],
@@ -909,7 +909,7 @@ function getHiringManagerTitles(func, level) {
   if (func === 'General') {
     return ['CEO', 'COO', 'President', 'Managing Director'];
   }
-  return levelMap[level] || [`VP of ${func}`, `Director ${func}`, `Head of ${func}`];
+  return levelMap[level] || [`VP of ${func}`, `Head of ${func}`, ...csuiteTitles];
 }
 
 function getSkipLevelTitles(func, level) {
@@ -930,7 +930,7 @@ function getSkipLevelTitles(func, level) {
   if (func === 'General') {
     return ['CEO', 'President', 'Chairman', 'Board Member'];
   }
-  return levelMap[level] || ['CEO', 'President', 'COO'];
+  return levelMap[level] || [...csuiteTitles, 'CEO', 'President'];
 }
 
 function getCsuiteForFunction(func) {
@@ -1704,7 +1704,7 @@ function titleMentionsDifferentCompany(title, expectedCompany) {
   // CEO/Founder title mismatch — if they claim CEO/Founder of a different company, flag it
   if (/\b(ceo|founder|co-founder|president)\b/i.test(t)) {
     var ceoCompanyMatch = t.match(
-      /(?:ceo|founder|co-founder|president)\s+(?:at|of|@|,|-|&)\s+(.+?)(?:\s*[,|·]|$)/i
+      /(?:ceo|founder|co-founder|president)\s+(?:at|of|@)\s+(.+?)(?:\s*[,|·]|$)/i
     );
     if (ceoCompanyMatch) {
       var claimedCompany = ceoCompanyMatch[1].toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
