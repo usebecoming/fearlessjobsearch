@@ -156,18 +156,27 @@ export default async function handler(req, res) {
       // Contact results are shared — same company = same contacts regardless of user
       const cached = await getContactCache(searchCompany, derived.func);
       if (cached) {
-        console.log(`⚡ Contacts served from Supabase cache: ${searchCompany} (${cached.contacts.length} contacts)`);
-        const geoUrn = getGeoUrn(representativeJob.location);
-        group.result = {
-          company,
-          derived: { func: derived.func, hmTitles: derived.hmTitles, slTitles: derived.slTitles, recTerms: derived.recTerms },
-          contacts: cached.contacts,
-          linkedin_slug: cached.companySlug,
-          geo_urn: geoUrn,
-          is_professional_services: false,
-          fromCache: true
-        };
-        return; // skip Brave pipeline entirely
+        const cleanedCached = cached.contacts.filter(c => isValidExtractedName(c.name));
+        if (cleanedCached.length < cached.contacts.length) {
+          console.log(`  🧹 Filtered ${cached.contacts.length - cleanedCached.length} bad names from cache`);
+        }
+        // If too many bad names, bypass cache and re-fetch
+        if (cleanedCached.length < 2 && cached.contacts.length >= 3) {
+          console.log(`  ⚠️ Cache has too many bad names — bypassing for fresh fetch`);
+        } else {
+          console.log(`⚡ Contacts served from Supabase cache: ${searchCompany} (${cleanedCached.length} contacts)`);
+          const geoUrn = getGeoUrn(representativeJob.location);
+          group.result = {
+            company,
+            derived: { func: derived.func, hmTitles: derived.hmTitles, slTitles: derived.slTitles, recTerms: derived.recTerms },
+            contacts: cleanedCached,
+            linkedin_slug: cached.companySlug,
+            geo_urn: geoUrn,
+            is_professional_services: false,
+            fromCache: true
+          };
+          return;
+        }
       }
       console.log(`🔍 Cache miss — running Brave pipeline for ${searchCompany}`);
 
@@ -984,6 +993,7 @@ async function braveSearch(query, apiKey) {
 
       const name = extractNameFromUrl(cleanUrl);
       if (!name || name.length < 3) continue;
+      if (!isValidExtractedName(name)) continue;
 
       contacts.push({
         name,
@@ -999,6 +1009,20 @@ async function braveSearch(query, apiKey) {
     console.error('Brave search failed:', err.message);
     return [];
   }
+}
+
+function isValidExtractedName(name) {
+  if (!name || name.length < 3) return false;
+  const hasSpace = name.includes(' ');
+  // Must have a space (first + last) unless very short
+  if (!hasSpace && name.length > 10) return false;
+  // Reject digits mixed with letters (slug IDs)
+  if (/[a-z][0-9]|[0-9][a-z]/i.test(name.replace(/\s/g, ''))) return false;
+  // Reject all lowercase with no spaces (unsplit slug)
+  if (name === name.toLowerCase() && !hasSpace) return false;
+  // Reject single long word (12+ chars, no space)
+  if (!hasSpace && name.length > 12) return false;
+  return true;
 }
 
 function extractNameFromUrl(url) {
