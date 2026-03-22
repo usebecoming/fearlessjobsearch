@@ -4180,7 +4180,7 @@ Return a JSON array with one object per job:
 
       // Also delete from Supabase in background
       if (supabase) {
-        supabase.from('search_profiles').delete().eq('id', id).catch(function() {});
+        try { supabase.from('search_profiles').delete().eq('id', id); } catch(e) {}
       }
 
       // Force rebuild dropdown
@@ -4726,7 +4726,7 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
           if (state.selectedJobs.includes(p.jobId)) {
             p.status = 'Outreach Ready';
             if (p.dbId && supabase) {
-              supabase.from('pipeline_jobs').update({ status: 'Outreach Ready' }).eq('id', p.dbId).catch(() => {});
+              try { await supabase.from('pipeline_jobs').update({ status: 'Outreach Ready' }).eq('id', p.dbId); } catch(e) {}
             }
           }
         }
