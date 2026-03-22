@@ -364,8 +364,12 @@ ${isProfServices ? 'This is a law firm / professional services company. Accept M
 
 For pre-qualified contacts: assign role, extract title from snippet or use inferredTitle, write reason. Do NOT reject pre-qualified contacts.
 For claudeDecide contacts: verify employment, then assign role or omit entirely.
-Never return empty titles — use inferredTitle or infer from slug.
-NEVER use the job title from the search query as a contact's title. If you cannot determine a contact's actual title from their snippet or URL, set their title to the company name (e.g. 'Red Bull') — do not invent a title.
+Never return empty titles. Use this hierarchy for assigning titles:
+1. Extract from snippet or page title (best — use the actual title mentioned)
+2. Use the inferredTitle field already provided (inferred from LinkedIn URL slug)
+3. Look for role keywords in snippet (HR, People, Talent, Recruiting, etc.) and construct a minimal title like 'HR Professional' or 'Talent Acquisition'
+4. Company name as last resort ONLY when no title signal exists anywhere (e.g. 'Red Bull Employee')
+NEVER use the job title from the search query as a contact's title — do not borrow or invent titles.
 
 IMPORTANT: Return ONLY accepted contacts in the JSON array. Do NOT include rejected contacts. Do NOT use "Rejected" as a role value. Valid roles are ONLY: "Hiring Manager", "Skip-Level", "Recruiter / TA". If you would reject a contact, simply omit them from the array.
 
@@ -442,6 +446,10 @@ Return JSON array only — accepted contacts only:
               return true;
             }
             console.log(`  ❌ Vague company-name title rejected: ${c.name} — "${c.title}"`);
+            return false;
+          }
+          if (isSportsTeamFalsePositive(c.title, c.note, company)) {
+            console.log(`  ❌ Sports team false positive: ${c.name} — "${c.title}"`);
             return false;
           }
           if (isTitleTooVague(c.title, roleType)) {
@@ -1516,6 +1524,22 @@ function isTitleJustCompanyName(title, companyName) {
 }
 
 // Vague title check - generous, only rejects truly empty titles
+function isSportsTeamFalsePositive(title, note, companyName) {
+  var text = ((title || '') + ' ' + (note || '')).toLowerCase();
+  var company = (companyName || '').toLowerCase();
+  var sportsIndicators = [
+    'new york red bulls', 'rb leipzig', 'red bull salzburg', 'red bull racing',
+    'fc ', ' fc', ' united', ' city fc', ' athletics',
+    ' stadium', ' arena', 'major league soccer', ' mls', ' nfl', ' nba', ' nhl',
+    ' league', ' club', 'premier league', 'bundesliga', 'la liga', 'serie a',
+    'formula 1', 'f1 ', ' f1'
+  ];
+  if (!company.includes('sport') && !company.includes(' fc') && !company.includes('athletic')) {
+    return sportsIndicators.some(function(s) { return text.includes(s); });
+  }
+  return false;
+}
+
 function isTitleTooVague(title, roleType) {
   if (!title) return true;
   const t = title.toLowerCase().trim();
