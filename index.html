@@ -1986,7 +1986,7 @@
       <div class="back-row" style="display:flex;justify-content:space-between;align-items:center"><button class="btn-back" onclick="goToStep(3)">← Back to contacts</button><button class="btn-back" onclick="resetToInitialState()" style="color:#B8A88A">New Search</button></div>
       <h2 class="section-title">Outreach Sequences</h2>
       <p class="section-sub">Personalized 4-message sequences for each contact. Copy, paste, start conversations.</p>
-      <div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;margin-bottom:14px;font-size:0.88rem;color:#555;font-weight:500">Each contact gets a full outreach sequence across 14 days. Click "Copy" on any message to copy it to your clipboard, then paste it into LinkedIn. Optimized for LinkedIn responses — expect around 30% connection acceptance on the first message, with another 20% responding by the 3rd or 4th touchpoint.</div>
+      <div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;margin-bottom:14px;font-size:0.88rem;color:#555;font-weight:500">Each contact gets a full outreach sequence across 14 days. Click "Copy" on any message to copy it to your clipboard, then paste it into LinkedIn. Connection requests are optimized for the 200-character free LinkedIn limit (300 for Premium). Expect around 30% connection acceptance on the first message, with another 20% responding by the 3rd or 4th touchpoint.</div>
       <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
         <button class="btn-secondary btn-small" onclick="exportOutreachCSV()">Export to Spreadsheet</button>
       </div>
@@ -4789,7 +4789,7 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
               ${msg.step === 'Connection Request' ? (() => {
                 const chars = (msg.body || '').length;
                 const over = chars > 200;
-                return '<div style="font-size:11px;margin-top:4px;color:' + (over ? '#C94444' : '#999') + '">' + chars + ' / 200 characters' + (over ? ' — <strong>over LinkedIn limit, edit before sending</strong>' : '') + '</div>';
+                return '<div style="font-size:11px;margin-top:4px;color:' + (over ? '#C94444' : '#999') + '">' + chars + ' / 200 characters' + (over ? ' — <strong>over free LinkedIn limit (300 for Premium)</strong>' : '') + '</div>';
               })() : ''}
             </div>`;
         });
