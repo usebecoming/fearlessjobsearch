@@ -4487,7 +4487,25 @@ Return a JSON array with one object per job:
     }
 
     // ── Step 4: Outreach ──
+    function showNoResumeMessage() {
+      goToStep(4);
+      var target = document.getElementById('outreachContainer');
+      if (target) {
+        target.innerHTML = '<div style="max-width:480px;margin:3rem auto;text-align:center;padding:2rem">' +
+          '<div style="font-size:2rem;margin-bottom:1rem">📄</div>' +
+          '<h3 style="font-size:1.1rem;font-weight:600;color:#1a1a1a;margin-bottom:0.75rem">Upload your resume to generate outreach</h3>' +
+          '<p style="font-size:0.9rem;color:#666;line-height:1.6;margin-bottom:1.5rem">Without your resume, we can\'t write messages that sound like you. Your outreach needs to reference your actual credentials, team sizes, and outcomes — not generic placeholders.</p>' +
+          '<button onclick="goToStep(1)" style="background:#1a1a1a;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:0.9rem;font-weight:500;cursor:pointer">Go back and upload resume</button>' +
+          '</div>';
+      }
+    }
+
     async function runOutreach() {
+      if (!state.resumeText || state.resumeText.trim().length < 100) {
+        showNoResumeMessage();
+        return;
+      }
+
       const outreachAllowed = await checkGate('generate_outreach');
       if (!outreachAllowed) return;
 
