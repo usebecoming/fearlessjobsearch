@@ -3367,7 +3367,7 @@
           if (!data.allowed) {
             var msg = '';
             if (data.reason === 'search_limit_reached') {
-              msg = "You've used all " + data.limit + " search" + (data.limit !== 1 ? 'es' : '') + " this month. Upgrade for more searches.";
+              msg = "You've used your searches for this month. Upgrade for more.";
             } else if (data.reason === 'contacts_not_on_plan') {
               msg = "Contact discovery is available on Starter and above.";
             } else if (data.reason === 'outreach_not_on_plan') {
