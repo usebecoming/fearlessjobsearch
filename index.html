@@ -1602,6 +1602,12 @@
       <button class="btn-primary" style="font-size:1.05rem;padding:18px 40px" onclick="document.getElementById('pricingSection').scrollIntoView({behavior:'smooth'})">Start Having the Right Conversations</button>
     </div>
 
+    <!-- Sign In Prompt (visible only when logged out) -->
+    <div id="signInPrompt" style="padding:48px 24px;text-align:center;max-width:600px;margin:0 auto;border-top:1px solid #F0EFED">
+      <p style="font-size:0.95rem;color:#555;font-weight:500;line-height:1.7;margin-bottom:16px">Already have an account? Sign in to pick up where you left off.</p>
+      <button class="btn-secondary" style="padding:14px 32px;font-size:0.95rem" onclick="openAuthModal('login')">Sign In</button>
+    </div>
+
     <!-- Footer -->
     <div class="landing-footer">
       <p>Fearless Job Search &middot; A product of <a href="https://liveforyourselfconsulting.com" target="_blank">Live for Yourself Consulting</a> &middot; Dr. Benjamin Ritter</p>
