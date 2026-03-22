@@ -2625,6 +2625,7 @@
         } else {
           var planNames = { free: 'Free', starter: 'Starter', pro: 'Pro', accelerate: 'Accelerate', accelerate_monthly: 'Accelerate', accelerate_yearly: 'Accelerate' };
           document.getElementById('accountPlan').textContent = planNames[usage.plan] || 'Free';
+          state.plan = usage.plan || 'free';
           var used = usage.searches_used != null ? usage.searches_used : 0;
           var limit = usage.searches_limit != null ? usage.searches_limit : 0;
           document.getElementById('accountSearches').textContent = used + ' / ' + limit;
@@ -2705,7 +2706,8 @@
       searchMode: 'jobs',
       outreach: {},
       companyTargetTitles: [],
-      jobsPerSearch: 10
+      jobsPerSearch: 10,
+      plan: 'free'
     };
 
     // ── Session persistence (survives page refresh, clears on tab close) ──
@@ -2905,6 +2907,10 @@
     function setSearchMode(mode) {
       state.searchMode = mode;
       document.querySelectorAll('.search-mode-btn').forEach(btn => btn.classList.remove('active'));
+      // Remove any existing company mode warning
+      var existingWarn = document.getElementById('companyModeWarning');
+      if (existingWarn) existingWarn.remove();
+
       if (mode === 'jobs') {
         document.querySelectorAll('.search-mode-btn')[0].classList.add('active');
         document.getElementById('titlesGroup').style.display = '';
@@ -2925,6 +2931,19 @@
         document.getElementById('locationHintJobs').style.display = 'none';
         document.getElementById('locationHintCompany').style.display = '';
         document.getElementById('searchBtn').textContent = 'Find Decision-Makers';
+        // Show warning for users without company target (free + starter)
+        var hasCompanyTarget = ADMIN_EMAILS.includes(state.userEmail) ||
+          ['pro', 'accelerate_monthly', 'accelerate_yearly'].includes(state.plan);
+        if (!hasCompanyTarget) {
+          var companyGroup = document.getElementById('companiesGroup');
+          if (companyGroup && !document.getElementById('companyModeWarning')) {
+            var warn = document.createElement('div');
+            warn.id = 'companyModeWarning';
+            warn.style.cssText = 'margin-bottom:16px;padding:12px 16px;background:rgba(184,134,11,0.08);border:1px solid rgba(184,134,11,0.2);border-radius:8px;font-size:0.85rem;color:#B8860B;font-weight:500';
+            warn.innerHTML = 'Company Target mode is available on Pro and above. <a href="#" onclick="event.preventDefault();openUpgradeModal(\'Company Target mode is available on Pro and above.\')" style="color:#B8A88A;font-weight:600;text-decoration:underline">Upgrade to unlock</a>';
+            companyGroup.insertBefore(warn, companyGroup.firstChild);
+          }
+        }
       }
       validateSearch();
     }
