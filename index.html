@@ -2647,6 +2647,26 @@
     var _cachedToken = null;
     var _cachedTokenExpiry = 0;
 
+    // State — declared here so showApp() can reference it during quick restore
+    var state = {
+      titles: [],
+      companies: [],
+      locations: [],
+      anchors: [],
+      resumeText: '',
+      jobs: [],
+      selectedJobs: [],
+      favorites: [],
+      contacts: {},
+      sequences: [],
+      pipeline: [],
+      currentStep: 1,
+      hasPaid: false,
+      userEmail: '',
+      userId: '',
+      searchMode: 'jobs'
+    };
+
     // Check existing session on load
     (async () => {
       // Check for password recovery token in URL hash
@@ -2766,24 +2786,7 @@
     }
 
     // ── State ──
-    const state = {
-      titles: [],
-      companies: [],
-      locations: [],
-      anchors: [],
-      resumeText: '',
-      jobs: [],
-      selectedJobs: [],
-      favorites: [],
-      contacts: {},
-      sequences: [],
-      pipeline: [],
-      currentStep: 1,
-      hasPaid: false,
-      userEmail: '',
-      userId: '',
-      searchMode: 'jobs'
-    };
+    // state already declared above session restore
 
     // ── Tag input ──
     const titlesField = document.getElementById('titlesField');
