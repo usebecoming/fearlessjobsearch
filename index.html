@@ -2173,6 +2173,7 @@
     // ── Reset State ──
     function resetToInitialState() {
       console.log('🔄 Resetting to initial state');
+      clearSession();
       sessionCache.clear();
       state.jobs = [];
       state.allJobs = [];
@@ -2215,6 +2216,7 @@
 
     var isSigningOut = false;
     function doSignOut() {
+      clearSession();
       isSigningOut = true;
       // Hide app immediately (don't wait for Supabase)
       document.getElementById('landingPage').classList.remove('hidden');
@@ -2625,6 +2627,9 @@
         }
       }).catch(function(err) { console.warn('⚠️ check-usage failed:', err.message); document.getElementById('accountSearches').textContent = '—'; });
       }).catch(function(err) { console.warn('⚠️ Auth headers failed for check-usage:', err.message); document.getElementById('accountSearches').textContent = '—'; });
+
+      // Restore previous session if exists (delayed to let DOM render)
+      setTimeout(function() { restoreSession(); }, 300);
     }
 
     // Listen for auth changes
@@ -2671,8 +2676,80 @@
       hasPaid: false,
       userEmail: '',
       userId: '',
-      searchMode: 'jobs'
+      searchMode: 'jobs',
+      outreach: {},
+      companyTargetTitles: []
     };
+
+    // ── Session persistence (survives page refresh, clears on tab close) ──
+    function saveSession() {
+      try {
+        var data = {
+          step: state.currentStep,
+          titles: state.titles,
+          locations: state.locations,
+          resumeText: state.resumeText || '',
+          searchMode: state.searchMode || 'jobs',
+          companies: state.companies || [],
+          companyTargetTitles: state.companyTargetTitles || [],
+          jobs: state.jobs || [],
+          selectedJobIds: (state.selectedJobs || []).map(function(j) { return typeof j === 'string' ? j : j.id || j.job_id; }),
+          contacts: state.contacts || {},
+          outreach: state.outreach || {}
+        };
+        sessionStorage.setItem('fjs_session', JSON.stringify(data));
+      } catch(e) { console.warn('Session save failed:', e.message); }
+    }
+
+    function clearSession() {
+      try { sessionStorage.removeItem('fjs_session'); } catch(e) {}
+    }
+
+    function restoreSession() {
+      try {
+        var raw = sessionStorage.getItem('fjs_session');
+        if (!raw) return false;
+        var data = JSON.parse(raw);
+        if (!data || !data.step || data.step < 2) return false;
+        if (!data.jobs || data.jobs.length === 0) return false;
+
+        state.titles = data.titles || [];
+        state.locations = data.locations || [];
+        state.resumeText = data.resumeText || '';
+        state.searchMode = data.searchMode || 'jobs';
+        state.companies = data.companies || [];
+        state.companyTargetTitles = data.companyTargetTitles || [];
+        state.jobs = data.jobs || [];
+        state.contacts = data.contacts || {};
+        state.outreach = data.outreach || {};
+
+        // Restore selections
+        if (data.selectedJobIds && data.selectedJobIds.length) {
+          state.selectedJobs = data.selectedJobIds;
+        }
+
+        // Restore tags
+        if (typeof renderTags === 'function') renderTags();
+        if (typeof renderLocationTags === 'function') renderLocationTags();
+
+        // Navigate to saved step and render
+        goToStep(data.step);
+        if (data.step >= 2) renderJobs();
+        if (data.step >= 3 && data.contacts && Object.keys(data.contacts).length > 0) {
+          renderContacts(data.contacts);
+        }
+        if (data.step >= 4 && data.outreach && Object.keys(data.outreach).length > 0) {
+          renderOutreach(data.outreach);
+        }
+
+        console.log('⚡ Session restored — step ' + data.step);
+        return true;
+      } catch(e) {
+        console.warn('Session restore failed:', e.message);
+        clearSession();
+        return false;
+      }
+    }
 
     var ADMIN_EMAILS = ['ritterbenjamin@gmail.com'];
 
@@ -3196,6 +3273,7 @@
         }
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      saveSession();
     }
 
     // ── API Call Helper ──
@@ -3799,6 +3877,7 @@ Return a JSON array with one object per job:
 
       document.getElementById('selectionBar').style.display = 'flex';
       updateSelectionCount();
+      saveSession();
     }
 
     async function toggleJobSelection(id) {
@@ -4367,6 +4446,7 @@ Return a JSON array with one object per job:
       }
 
       updateContactSelectionCount();
+      saveSession();
     }
 
     function toggleContact(cId) {
@@ -4606,6 +4686,7 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
         div.innerHTML = html;
         container.appendChild(div);
       });
+      saveSession();
     }
 
     // ── Supabase Data Sync ──
