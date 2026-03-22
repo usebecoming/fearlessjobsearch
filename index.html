@@ -4583,6 +4583,7 @@ Return a JSON array with one object per job:
               </div>
               <div class="contact-title">${esc(c.title)}</div>
               <div class="contact-note">${esc(c.note)}</div>
+              <p style="font-size:0.72rem;color:#999;margin:4px 0 8px 0;font-style:italic">Verify current role on LinkedIn before reaching out</p>
               <div class="contact-actions" onclick="event.stopPropagation()">
                 <a href="${c.linkedin && c.linkedin.startsWith('http') ? esc(c.linkedin) : 'https://' + esc(c.linkedin)}" target="_blank" class="btn-primary" style="text-decoration:none;padding:8px 18px;font-size:0.82rem;display:inline-flex">View on LinkedIn &#8599;</a>
                 <button class="btn-copy" onclick="copyText('${c.linkedin && c.linkedin.startsWith('http') ? esc(c.linkedin) : 'https://' + esc(c.linkedin)}', this)">Copy Link</button>

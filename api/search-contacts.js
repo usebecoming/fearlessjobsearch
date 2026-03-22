@@ -385,6 +385,9 @@ These may be assigned Skip-Level if they are genuinely executive level (VP+, Dir
 
 CEO, President, COO, CHRO, VP of People, Talent Acquisition Manager should NEVER be rejected for a People/HR role. These are the most valuable contacts.
 
+EMPLOYMENT RECENCY — critical:
+Reject any contact where the snippet mentions a date range ending before 2024 (e.g. '2019-2023'), uses past tense about their role ('led', 'managed', 'built' with no present tense), says 'former', 'previously', 'retired', 'left', 'departed', or mentions they joined a different company recently. When in doubt, set confidence to 'low' rather than rejecting.
+
 Contacts:
 ${JSON.stringify(toPassToClaude.slice(0, 20), null, 2)}
 
@@ -1439,6 +1442,15 @@ function preQualifyContact(url, snippet, companyName, pageTitle) {
   const pastSignals = ['formerly', 'previously', 'ex-', 'alumni', 'former ', 'left ', 'worked at'];
   const hasPastTense = pastSignals.some(s => snippetLower.includes(s));
 
+  // Extended past-tense patterns checked via regex
+  const pastPatterns = [
+    /\bpast\b.*\bat\b/i, /\bused to\b/i, /\bleft\b.*\bafter\b/i,
+    /\buntil\b/i, /\bended\b/i, /\bno longer\b/i, /\bdeparted\b/i,
+    /\bstepped down\b/i, /\btransitioned\b/i, /\bprevious role\b/i,
+    /\b20(1[0-9]|2[0-3])\s*[-–]\s*20(2[0-3])\b/  // date ranges ending before 2024
+  ];
+  const hasPastPattern = pastPatterns.some(p => p.test(snippetLower));
+
   // Also check page_title for former indicators
   const pageTitleLower = (pageTitle || '').toLowerCase();
   const titleHasFormer = /\bformer\b|\bex-|\bretired\b|\bemeritus\b/i.test(snippetLower + ' ' + pageTitleLower);
@@ -1450,7 +1462,7 @@ function preQualifyContact(url, snippet, companyName, pageTitle) {
   }
 
   // Decision
-  if ((hasPastTense || titleHasFormer) && !hasCurrentSignal) {
+  if ((hasPastTense || hasPastPattern || titleHasFormer) && !hasCurrentSignal) {
     return { accepted: false, reason: 'past tense employment' };
   }
   if (hasCsuite) {
