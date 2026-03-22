@@ -2609,9 +2609,16 @@
           if (usage.plan !== 'free') {
             state.hasPaid = true;
             document.getElementById('navUpgradeBtn').style.display = 'none';
-            document.getElementById('upgradeBanner').style.display = 'none';
             document.getElementById('manageBillingRow').style.display = '';
             document.getElementById('managePlanSection').style.display = '';
+            // Show upgrade banner if paid user has used all searches
+            var banner = document.getElementById('upgradeBanner');
+            if (used >= limit && limit > 0) {
+              banner.querySelector('p').innerHTML = '<strong>You\'ve used your searches for this month.</strong> Upgrade your plan for more searches. Resets ' + document.getElementById('accountResetDate').textContent + '.';
+              banner.style.display = '';
+            } else {
+              banner.style.display = 'none';
+            }
           } else {
             document.getElementById('upgradeBanner').style.display = '';
           }
