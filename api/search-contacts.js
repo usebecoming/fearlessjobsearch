@@ -664,7 +664,7 @@ function deriveAll(jobTitle) {
   const hmSet = new Set(hmTitles.map(t => t.toLowerCase()));
   slTitles = slTitles.filter(t => !hmSet.has(t.toLowerCase()));
 
-  console.log(`✅ Function detected: ${func} for "${jobTitle}"`);
+  console.log(`✅ Function: ${func} | Level: ${level} for "${jobTitle}"`);
   return { func, level, hmTitles, slTitles, recTerms };
 }
 
