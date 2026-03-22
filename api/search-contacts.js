@@ -710,8 +710,7 @@ function deriveFunction(jobTitle) {
         'employee experience', 'employee relations',
         'people partner', 'people lead', 'people business partner',
         'hr business partner', 'hr generalist', 'hr manager',
-        'culture partner', 'dei', 'diversity', 'inclusion',
-        'total rewards', 'compensation', 'benefits',
+        'culture partner', 'total rewards',
         'succession planning', 'performance management',
         'change management', 'organizational design',
         'capability development', 'capability building',
@@ -723,27 +722,31 @@ function deriveFunction(jobTitle) {
         'people', 'culture', 'engagement', 'coaching',
         'organizational', 'workforce', 'employee',
         'recruiting', 'recruiter', 'recruitment',
-        'onboarding', 'retention',
+        'onboarding', 'retention', 'dei', 'diversity', 'inclusion',
+        'compensation', 'benefits', 'capability',
         'performance', 'feedback',
         'leadership', 'team effectiveness'
       ],
       low: [
         'partner', 'advisor', 'strategist', 'architect',
         'consultant', 'specialist', 'generalist',
-        'impact', 'effectiveness', 'capability'
+        'impact', 'effectiveness'
       ]
     },
     'Engineering': {
       high: [
         'software engineer', 'software developer', 'frontend', 'backend',
         'full stack', 'fullstack', 'devops', 'sre', 'platform engineer',
-        'machine learning', 'ml engineer', 'data engineer',
-        'security engineer', 'cloud engineer', 'infrastructure engineer'
+        'machine learning', 'ml engineer', 'data engineer', 'data engineering',
+        'security engineer', 'cloud engineer', 'infrastructure engineer',
+        'ai engineer', 'ai researcher'
       ],
       medium: [
         'engineering', 'developer', 'programmer',
         'technical', 'infrastructure', 'cloud',
-        'platform', 'api', 'microservices'
+        'platform', 'api', 'microservices',
+        'architecture', 'transformation',
+        'ai', 'devops'
       ],
       low: ['tech', 'technology', 'systems']
     },
@@ -752,24 +755,28 @@ function deriveFunction(jobTitle) {
         'demand generation', 'demand gen', 'growth marketing',
         'performance marketing', 'brand marketing', 'content marketing',
         'product marketing', 'field marketing', 'email marketing',
-        'seo', 'sem', 'paid media', 'paid social',
-        'marketing operations', 'marketing analytics'
+        'digital marketing', 'seo', 'sem', 'paid media', 'paid social',
+        'marketing operations', 'marketing analytics',
+        'customer insights', 'consumer insights', 'market research',
+        'go-to-market'
       ],
       medium: [
         'marketing', 'brand', 'growth', 'content', 'creative',
-        'communications', 'pr', 'public relations', 'campaign'
+        'communications', 'pr', 'public relations', 'campaign',
+        'insights', 'analytics', 'gtm'
       ],
-      low: ['awareness', 'messaging', 'positioning', 'go-to-market', 'gtm']
+      low: ['awareness', 'messaging', 'positioning']
     },
     'Product': {
       high: [
         'product manager', 'product management', 'product owner',
         'product designer', 'ux designer', 'ui designer',
-        'user researcher', 'ux researcher', 'product analyst'
+        'user researcher', 'ux researcher', 'product analyst',
+        'product strategy', 'product operations', 'product led'
       ],
       medium: [
         'product', 'ux', 'ui', 'user experience', 'user research',
-        'design', 'roadmap', 'agile', 'scrum'
+        'design', 'roadmap', 'agile', 'scrum', 'platform', 'plg'
       ],
       low: ['feature', 'launch', 'mvp']
     },
@@ -779,11 +786,13 @@ function deriveFunction(jobTitle) {
         'business development', 'bdr', 'sdr', 'sales development',
         'enterprise sales', 'inside sales', 'field sales',
         'revenue operations', 'revops', 'sales operations',
-        'customer success', 'client success', 'relationship manager'
+        'customer success', 'client success', 'relationship manager',
+        'sales enablement', 'account management'
       ],
       medium: [
         'sales', 'revenue', 'quota', 'pipeline',
-        'account', 'client', 'customer', 'partnerships', 'commercial'
+        'account', 'client', 'customer', 'partnerships', 'commercial',
+        'alliances'
       ],
       low: ['prospecting', 'negotiation', 'deal']
     },
@@ -792,11 +801,12 @@ function deriveFunction(jobTitle) {
         'financial planning', 'fp&a', 'financial analyst',
         'controller', 'comptroller', 'treasurer', 'cfo',
         'accounting manager', 'tax manager', 'audit manager',
-        'corporate finance'
+        'corporate finance', 'corporate development',
+        'investor relations', 'm&a'
       ],
       medium: [
         'finance', 'financial', 'accounting', 'treasury',
-        'budget', 'forecast', 'audit', 'tax', 'payroll'
+        'budget', 'forecast', 'audit', 'tax', 'payroll', 'risk'
       ],
       low: ['cost', 'variance']
     },
@@ -805,11 +815,12 @@ function deriveFunction(jobTitle) {
         'supply chain manager', 'logistics manager', 'operations manager',
         'chief operating officer', 'vp operations',
         'procurement manager', 'vendor management',
-        'business operations', 'biz ops'
+        'business operations', 'biz ops',
+        'continuous improvement'
       ],
       medium: [
         'operations', 'ops', 'supply chain', 'logistics',
-        'procurement', 'vendor', 'fulfillment',
+        'procurement', 'vendor', 'fulfillment', 'facilities',
         'process improvement', 'lean', 'six sigma'
       ],
       low: ['efficiency', 'optimization', 'workflow']
@@ -831,7 +842,8 @@ function deriveFunction(jobTitle) {
       high: [
         'data scientist', 'data engineer', 'data analyst',
         'business intelligence', 'bi engineer', 'bi analyst',
-        'analytics engineer', 'data architect'
+        'analytics engineer', 'data architect',
+        'data science', 'data strategy', 'customer analytics'
       ],
       medium: [
         'data', 'analytics', 'insights',
@@ -952,6 +964,7 @@ function getCsuiteForFunction(func) {
     'Customer Success': ['CCO', 'Chief Customer Officer'],
     'Revenue': ['CRO', 'Chief Revenue Officer'],
     'Communications': ['CCO', 'Chief Communications Officer'],
+    'Data': ['CDO', 'Chief Data Officer', 'CTO', 'VP of Analytics', 'VP of Data'],
   };
   return map[func] || ['COO', 'Chief Operating Officer'];
 }
