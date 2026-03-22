@@ -2678,7 +2678,8 @@
       userId: '',
       searchMode: 'jobs',
       outreach: {},
-      companyTargetTitles: []
+      companyTargetTitles: [],
+      jobsPerSearch: 10
     };
 
     // ── Session persistence (survives page refresh, clears on tab close) ──
@@ -3475,6 +3476,8 @@
             openUpgradeModal(msg);
             return false;
           }
+          // Store plan limits for use in rendering
+          if (data.jobs_per_search) state.jobsPerSearch = data.jobs_per_search;
         }
         return true;
       } catch (err) {
@@ -3733,7 +3736,8 @@ Return a JSON array with one object per job:
             console.error('Pipeline filter error:', pipeErr);
             pipelineResult = { filtered: sortedJobs, removedCount: 0 };
           }
-          state.jobs = pipelineResult.filtered.slice(0, 10);
+          var jobLimit = state.jobsPerSearch || 10;
+          state.jobs = pipelineResult.filtered.slice(0, jobLimit);
           state.allJobs = sortedJobs; // keep unfiltered for "show all"
           console.log('🏆 TOP SCORED JOBS (' + state.jobs.length + '):');
           state.jobs.forEach(function(job, i) {
