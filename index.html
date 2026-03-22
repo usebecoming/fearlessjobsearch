@@ -4300,26 +4300,14 @@ Return a JSON array with one object per job:
         };
       });
 
-      // Cap total contacts to prevent timeout — 6 contacts max per Claude call
-      const MAX_OUTREACH_CONTACTS = 6;
-      let totalContacts = targets.reduce((sum, t) => sum + t.contacts.length, 0);
-      if (totalContacts > MAX_OUTREACH_CONTACTS) {
-        console.log(`⚠️ Capping outreach contacts from ${totalContacts} to ${MAX_OUTREACH_CONTACTS}`);
-        let remaining = MAX_OUTREACH_CONTACTS;
-        targets.forEach(t => {
-          if (remaining <= 0) { t.contacts = []; return; }
-          if (t.contacts.length > remaining) t.contacts = t.contacts.slice(0, remaining);
-          remaining -= t.contacts.length;
-        });
-        totalContacts = MAX_OUTREACH_CONTACTS;
-      }
-
+      const totalContacts = targets.reduce((sum, t) => sum + t.contacts.length, 0);
       const outreachEstimate = Math.max(20, totalContacts * 5);
-      showProgress(container, 'Writing your outreach strategy...', outreachEstimate);
+      showProgress(container, `Writing outreach for ${totalContacts} contacts...`, outreachEstimate);
 
       const systemPrompt = 'You are a senior executive outreach copywriter. Respond ONLY with a JSON object. No markdown, no explanation.';
-      const hasNoListingRoles = targets.some(t => t.job_title && (t.job_title.includes('No active') || t.fitScore === 0));
-      const userPrompt = `Write personalized 4-message outreach sequences for each contact below. Two tracks:
+
+      function buildOutreachPrompt(batchTargets) {
+        return `Write personalized 4-message outreach sequences for each contact below. Two tracks:
 - Recruiter / TA track: position-focused, efficient, direct
 - Hiring Manager / Skip-Level track: team and business impact focused, warm but professional
 
@@ -4340,7 +4328,7 @@ If a role has "No active listing" or is a relationship-building opportunity (no 
 NEVER use these phrases: "I hope this message finds you well", "I'm reaching out because", "I wanted to connect", "synergy", "leverage", "touch base", "pick your brain"
 
 Targets:
-${JSON.stringify(targets, null, 2)}
+${JSON.stringify(batchTargets, null, 2)}
 
 ${resumeSummary ? 'Candidate resume:\n' + resumeSummary : 'No resume provided. Use generic leadership value statements.'}
 
@@ -4361,14 +4349,45 @@ Return a JSON object with a "sequences" array. Each sequence:
     }
   ]
 }`;
+      }
 
       try {
-        const data = await callClaude(systemPrompt, userPrompt);
+        // Batch contacts — max 4 per Claude call to stay within 60s timeout
+        const BATCH_SIZE = 4;
+        const allSequences = [];
+
+        // Flatten targets into individual contact entries
+        const flatContacts = [];
+        targets.forEach(t => {
+          t.contacts.forEach(c => {
+            flatContacts.push({
+              job_id: t.job_id, company: t.company, job_title: t.job_title,
+              posted: t.posted, has_active_listing: t.has_active_listing,
+              contacts: [c]
+            });
+          });
+        });
+
+        const totalBatches = Math.ceil(flatContacts.length / BATCH_SIZE);
+        console.log(`✍️ Generating outreach in ${totalBatches} batch(es) for ${flatContacts.length} contacts`);
+
+        for (let i = 0; i < flatContacts.length; i += BATCH_SIZE) {
+          const batch = flatContacts.slice(i, i + BATCH_SIZE);
+          const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+          showProgress(container, `Writing outreach batch ${batchNum} of ${totalBatches}...`, outreachEstimate);
+
+          const data = await callClaude(systemPrompt, buildOutreachPrompt(batch));
+          if (data && data.sequences) {
+            allSequences.push(...data.sequences);
+          }
+        }
+
+        const combinedData = { sequences: allSequences };
         stopProgress();
-        state.sequences = data;
-        sessionCache.setOutreach(data);
-        renderOutreach(data);
-        logUsage('outreach_generated', { sequences: (data.sequences || []).length });
+        state.sequences = combinedData;
+        sessionCache.setOutreach(combinedData);
+        renderOutreach(combinedData);
+        logUsage('outreach_generated', { sequences: allSequences.length });
         // Update pipeline status in background
         for (const p of state.pipeline) {
           if (state.selectedJobs.includes(p.jobId)) {
