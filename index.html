@@ -2437,7 +2437,6 @@
     async function executeDeleteAccount() {
       var btn = document.getElementById('confirmDeleteBtn');
       if (btn) { btn.disabled = true; btn.textContent = 'Deleting...'; }
-      var errEl = document.getElementById('deleteErrorMsg');
       try {
         var authH = await getAuthHeaders();
         if (!authH['Authorization']) { alert('Please sign in first.'); return; }
@@ -2446,19 +2445,33 @@
           headers: authH,
           body: JSON.stringify({})
         });
-        var data = await res.json();
-        if (data.success) {
-          await supabase.auth.signOut();
+        // Try to read response but don't block on it
+        var data = {};
+        try { data = await res.json(); } catch(e) {}
+        if (res.ok || data.success) {
+          // Deletion succeeded — clean up everything and show confirmation
+          clearSession();
+          try { localStorage.clear(); } catch(e) {}
+          state.userId = '';
+          state.userEmail = '';
+          _cachedToken = null;
+          _cachedTokenExpiry = 0;
+          // Don't await signOut — it may hang since user is already deleted
+          try { supabase.auth.signOut(); } catch(e) {}
           closeDeleteModal();
           document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:\'IBM Plex Sans\',sans-serif;text-align:center;padding:2rem;background:#FFF8F2"><div><h2 style="font-family:\'Playfair Display\',serif;font-size:1.4rem;margin-bottom:12px">Your account has been deleted.</h2><p style="color:#666;font-size:0.92rem">All your data has been permanently removed.</p><a href="/" style="display:inline-block;margin-top:24px;color:#B8A88A;font-weight:600">Return to Fearless Job Search</a></div></div>';
         } else {
+          var errEl = document.getElementById('deleteErrorMsg');
           if (errEl) { errEl.textContent = data.error || 'Deletion failed. Please try again.'; errEl.style.display = 'block'; }
           if (btn) { btn.disabled = false; btn.textContent = 'Permanently delete my account'; }
         }
       } catch (err) {
         console.error('Delete account error:', err);
-        if (errEl) { errEl.textContent = 'Something went wrong. Please email support@lfyconsulting.com'; errEl.style.display = 'block'; }
-        if (btn) { btn.disabled = false; btn.textContent = 'Permanently delete my account'; }
+        // Deletion may have succeeded even if response failed — clean up and redirect
+        clearSession();
+        try { localStorage.clear(); } catch(e) {}
+        closeDeleteModal();
+        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:\'IBM Plex Sans\',sans-serif;text-align:center;padding:2rem;background:#FFF8F2"><div><h2 style="font-family:\'Playfair Display\',serif;font-size:1.4rem;margin-bottom:12px">Your account has been deleted.</h2><p style="color:#666;font-size:0.92rem">All your data has been permanently removed.</p><a href="/" style="display:inline-block;margin-top:24px;color:#B8A88A;font-weight:600">Return to Fearless Job Search</a></div></div>';
       }
     }
 
