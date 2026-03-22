@@ -2656,6 +2656,27 @@
         return;
       }
 
+      // Quick check: if we have a token in localStorage, show app immediately
+      // This prevents the landing page flash while getSession() resolves
+      var hasStoredSession = false;
+      try {
+        var storedKeys = Object.keys(localStorage).filter(function(k) { return k.startsWith('sb-'); });
+        if (storedKeys.length > 0) {
+          var stored = localStorage.getItem(storedKeys[0]);
+          if (stored) {
+            var parsed = JSON.parse(stored);
+            var storedUser = parsed?.user || parsed?.currentSession?.user;
+            if (storedUser) {
+              hasStoredSession = true;
+              // Show app skeleton immediately with stored user data
+              showApp(storedUser);
+              console.log('⚡ Quick restore from localStorage');
+            }
+          }
+        }
+      } catch (e) { /* localStorage parse failed, fall through to getSession */ }
+
+      // Now properly restore session via Supabase (validates token, refreshes if needed)
       try {
         const sessionResult = await Promise.race([
           supabase.auth.getSession(),
@@ -2663,22 +2684,39 @@
         ]);
         const session = sessionResult?.data?.session;
         if (session?.user) {
-          showApp(session.user);
+          if (!hasStoredSession) showApp(session.user);
+          _cachedToken = session.access_token;
+          _cachedTokenExpiry = session.expires_at ? session.expires_at * 1000 : Date.now() + 3600000;
           await loadUserData();
-        } else {
-          // Try refresh if no session
+        } else if (!hasStoredSession) {
+          // No stored session and getSession returned nothing — try refresh
           const refreshResult = await Promise.race([
             supabase.auth.refreshSession(),
             new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Refresh timeout')); }, 8000); })
           ]);
           if (refreshResult?.data?.session?.user) {
             showApp(refreshResult.data.session.user);
+            _cachedToken = refreshResult.data.session.access_token;
+            _cachedTokenExpiry = refreshResult.data.session.expires_at ? refreshResult.data.session.expires_at * 1000 : Date.now() + 3600000;
             await loadUserData();
           }
+        } else {
+          // Had stored session but getSession failed — try refresh
+          try {
+            const refreshResult = await Promise.race([
+              supabase.auth.refreshSession(),
+              new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Refresh timeout')); }, 5000); })
+            ]);
+            if (refreshResult?.data?.session) {
+              _cachedToken = refreshResult.data.session.access_token;
+              _cachedTokenExpiry = refreshResult.data.session.expires_at ? refreshResult.data.session.expires_at * 1000 : Date.now() + 3600000;
+            }
+          } catch(e) { console.warn('⚠️ Token refresh failed:', e.message); }
+          await loadUserData();
         }
       } catch (e) {
         console.warn('⚠️ Session restore failed:', e.message);
-        // onAuthStateChange will handle it if the session comes back later
+        if (hasStoredSession) await loadUserData();
       }
       validateSearch();
       loadSearchProfiles();
