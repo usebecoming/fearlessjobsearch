@@ -247,6 +247,22 @@ This means:
 - Auth modal closing accidentally on mobile: removed overlay click-to-close
 - Coaching checkout hanging: bypass getSession timeout, use cached token
 - getAuthHeaders 3s timeout too aggressive: increased to 8s with refresh fallback
+- Page refresh signing out: onAuthStateChange doesn't fire INITIAL_SESSION — read token from localStorage directly
+- Session restore variable order: _cachedToken, state, ADMIN_EMAILS must be declared BEFORE session restore code
+- Upgrade banner flashing: hidden by default (display:none), shown only after plan check confirms free tier
+- Search count not displaying: check-usage fallback responses missing searches_used/searches_limit fields
+- Upgrade modal not explaining why: checkGate now passes reason message to openUpgradeModal()
+- Coaching checkout stalling: getSession hangs during checkout — use cached token with 8s timeout bypass
+- Outreach 504 timeout: batched 4 contacts per Claude call instead of all at once
+- Pipeline table name wrong: was 'pipeline', corrected to 'pipeline_jobs' everywhere
+
+## Critical Architecture Notes — DO NOT CHANGE
+- Session restore reads from localStorage directly — do NOT use getSession() on page load, it hangs
+- _cachedToken, _cachedTokenExpiry, state, and ADMIN_EMAILS must be declared BEFORE the session restore IIFE
+- These are `var` not `const` — const causes temporal dead zone errors when referenced before declaration
+- getAuthHeaders() uses cached token first, only falls back to getSession() if cache expired
+- Token expiry on localStorage restore is set to max(stored_expiry, now+5min) to prevent immediate fallback to getSession()
+- onAuthStateChange handles fresh logins (SIGNED_IN) — localStorage restore handles page reloads
 
 ## Development Rules
 - Universal logic only — no hardcoded company names, titles, or edge cases
