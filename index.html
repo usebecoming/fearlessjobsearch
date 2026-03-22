@@ -4016,8 +4016,11 @@ Return a JSON array with one object per job:
       profiles.push({
         id: String(Date.now()),
         name: name,
+        searchMode: state.searchMode || 'jobs',
         titles: state.titles || [],
         locations: state.locations || [],
+        companies: state.companies || [],
+        companyTargetTitles: state.companyTargetTitles || [],
         work_types: (function(){ try { return [...document.querySelectorAll('.work-type-option input:checked')].map(function(cb){return cb.value}); } catch(e){ return []; } })(),
         salary_min: (document.getElementById('salaryMin') || {}).value || '',
         salary_max: (document.getElementById('salaryMax') || {}).value || '',
@@ -4077,6 +4080,11 @@ Return a JSON array with one object per job:
       if (!opt || !opt.dataset.profile) return;
       const p = JSON.parse(opt.dataset.profile);
 
+      // Restore search mode
+      if (p.searchMode && typeof setSearchMode === 'function') {
+        setSearchMode(p.searchMode);
+      }
+
       // Restore titles
       state.titles = p.titles || [];
       renderTags();
@@ -4084,6 +4092,18 @@ Return a JSON array with one object per job:
       // Restore locations
       state.locations = p.locations || [];
       renderLocationTags();
+
+      // Restore companies (for company target mode)
+      if (p.companies && p.companies.length) {
+        state.companies = p.companies;
+        if (typeof renderCompanyTags === 'function') renderCompanyTags();
+      }
+
+      // Restore company target titles
+      if (p.companyTargetTitles && p.companyTargetTitles.length) {
+        state.companyTargetTitles = p.companyTargetTitles;
+        if (typeof renderCompanyTargetTitleTags === 'function') renderCompanyTargetTitleTags();
+      }
 
       // Restore work types
       document.querySelectorAll('.work-type-option input').forEach(cb => {
