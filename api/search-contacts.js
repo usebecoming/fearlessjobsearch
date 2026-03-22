@@ -477,10 +477,14 @@ Return JSON array only — accepted contacts only:
         // Flag contacts whose title mentions a different major company
         verifiedContacts = verifiedContacts.map(c => {
           if (titleMentionsDifferentCompany(c.title, company)) {
+            if (/\b(ceo|founder|co-founder)\b/i.test(c.title)) {
+              console.log(`  ❌ CEO/Founder mismatch rejected: ${c.name} — "${c.title}"`);
+              return null;
+            }
             return { ...c, confidence: 'medium', note: (c.note || '') + ' (Title may reference previous employer — verify profile)' };
           }
           return c;
-        });
+        }).filter(Boolean);
       }
 
       // Post-Claude founder search if too few verified
@@ -1321,7 +1325,6 @@ function isTooJunior(contactTitle, jobTitle) {
   var juniorPatterns = [
     /^hr coordinator/i, /^hr assistant/i, /^hr administrator/i,
     /^recruiting coordinator/i, /^talent coordinator/i,
-    /^hr specialist(?!\s+senior)/i, /^human resources specialist(?!\s+senior)/i,
     /^hr generalist(?!\s+senior)/i, /^human resources coordinator/i,
     /^people coordinator/i, /^people assistant/i
   ];
