@@ -95,7 +95,7 @@ function emailWelcomeStarter(firstName) {
       <p>You're set up. No more scrolling through listings built for people searching below your level. Fearless Job Search scores every role for seniority fit \u2014 what you see at the top is worth your time.</p>
       <p>Here's how to turn this into real conversations.</p>
       ${stepBlock('Step 1 \u2014 Run your search',
-        'Enter your target title, industry, and location. The tool pulls live listings and ranks them by fit. Your one included search is ready \u2014 use it on the role you\'re most serious about right now.')}
+        'Enter your target title, industry, and location. The tool pulls live listings and ranks them by fit. Your 3 included searches are ready \u2014 use the first on the role you\'re most serious about right now.')}
       ${stepBlock('Step 2 \u2014 Find the decision-makers',
         'Pick a role. Hit "Find Decision-Makers." You\'ll get the real contacts at that company \u2014 not HR, not a black hole. The people who actually influence the hire.')}
       ${stepBlock('Step 3 \u2014 Generate your outreach and send it',
@@ -104,7 +104,7 @@ function emailWelcomeStarter(firstName) {
         'Export your matched jobs and contacts. Put them somewhere you\'ll see every day. Send the messages. Follow up. Book the calls. That\'s what moves this forward \u2014 not the list sitting in a tab.')}
       <p>If you hit a wall, reply here. I read these.</p>
       ${planBox('What\'s included in Starter', [
-        '1 search per month',
+        '3 searches per month',
         'Up to 10 matched job listings per search',
         'Decision-maker contact discovery',
         'AI-generated personalized outreach messages',
@@ -117,13 +117,13 @@ function emailWelcomePro(firstName) {
   return `
     <div style="font-family:sans-serif;font-size:14px;line-height:1.8;color:#222;max-width:600px;">
       <p>${firstName},</p>
-      <p>Four searches a month is enough to run a serious multi-track campaign \u2014 different titles, different industries, and the specific companies you already know you want. Most people using Pro have active conversations within two weeks. Here's the approach that works.</p>
+      <p>Six searches a month is enough to run a serious multi-track campaign \u2014 different titles, different industries, and the specific companies you already know you want. Most people using Pro have active conversations within two weeks. Here's the approach that works.</p>
       ${stepBlock('Step 1 \u2014 Deploy your searches across tracks',
-        'Don\'t use all four on the same title. One for your primary target role. One for adjacent titles. One by industry. One in Company Target Mode on the companies you actually want. Four searches pointed in different directions = a full pipeline by end of week one.')}
+        'Don\'t use all six on the same title. One for your primary target role. One for adjacent titles. One by industry. Two in Company Target Mode on the companies you actually want. One held in reserve. Six searches pointed in different directions = a full pipeline by end of week one.')}
       ${stepBlock('Step 2 \u2014 Use Company Target Mode',
         'Skip the job board entirely for companies you already have in mind. Enter the company, get current openings scored for your fit, and surface the right contacts \u2014 all in one shot. Use this on your top 3\u20135 targets first.')}
       ${stepBlock('Step 3 \u2014 Generate outreach and send it this week',
-        'For each search, generate outreach for your top contacts and send it. Not next week \u2014 this week. Follow up the week after. Four searches gives you the volume to stay consistent without burning out on copy.')}
+        'For each search, generate outreach for your top contacts and send it. Not next week \u2014 this week. Follow up the week after. Six searches gives you the volume to stay consistent without burning out on copy.')}
       ${stepBlock('Step 4 \u2014 Download your pipeline and work it daily',
         'Export your jobs and contacts. Review it every day. The goal isn\'t to track applications \u2014 it\'s to book conversations. Treat every contact like a warm lead, not a form submission.')}
       <p>If you hit a wall, reply here. I read these.</p>
@@ -142,7 +142,7 @@ function emailWelcomeAccelerate(firstName) {
   return `
     <div style="font-family:sans-serif;font-size:14px;line-height:1.8;color:#222;max-width:600px;">
       <p>${firstName},</p>
-      <p>You've got the full toolkit \u2014 10 searches per month, 20 roles per search, Company Target Mode, contact discovery, outreach generation, and priority support.</p>
+      <p>You've got the full toolkit \u2014 15 searches per month, 20 roles per search, Company Target Mode, contact discovery, outreach generation, and priority support.</p>
       <p>Here's how to use it well.</p>
       ${stepBlock('Start with a focused target list',
         'Before running searches, write down the 5\u201310 companies you\'d actually want to work at and the 2\u20133 titles that represent your next move. Focused targeting beats scattered volume every time.')}
@@ -152,7 +152,7 @@ function emailWelcomeAccelerate(firstName) {
         'Flag the roles you\'re serious about. Generate outreach for those contacts. Download the list and keep it in front of you. Send the messages. Follow up. Book the calls. The pipeline only moves if you\'re working it.')}
       <p>If you hit a wall \u2014 outreach isn't landing, you're not sure which companies to target, something feels off \u2014 reply here. I read these.</p>
       ${planBox('What\'s included in Accelerate', [
-        '10 searches per month',
+        '15 searches per month',
         'Up to 20 matched job listings per search',
         'Company Target Mode \u2014 search by company, not just keyword',
         'Decision-maker contact discovery',

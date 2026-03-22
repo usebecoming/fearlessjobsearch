@@ -12,7 +12,7 @@ export const PLANS = {
   starter: {
     name: 'Starter',
     price: 29,
-    searches_per_month: 1,
+    searches_per_month: 3,
     jobs_per_search: 10,
     contacts_enabled: true,
     outreach_enabled: true,
@@ -22,7 +22,7 @@ export const PLANS = {
   pro: {
     name: 'Pro',
     price: 59,
-    searches_per_month: 4,
+    searches_per_month: 6,
     jobs_per_search: 10,
     contacts_enabled: true,
     outreach_enabled: true,
@@ -32,7 +32,7 @@ export const PLANS = {
   accelerate_monthly: {
     name: 'Accelerate',
     price: 99,
-    searches_per_month: 10,
+    searches_per_month: 15,
     jobs_per_search: 20,
     contacts_enabled: true,
     outreach_enabled: true,
@@ -42,7 +42,7 @@ export const PLANS = {
   accelerate_yearly: {
     name: 'Accelerate (Annual)',
     price: 999,
-    searches_per_month: 10,
+    searches_per_month: 15,
     jobs_per_search: 20,
     contacts_enabled: true,
     outreach_enabled: true,
