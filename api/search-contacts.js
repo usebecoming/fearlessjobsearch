@@ -460,7 +460,7 @@ Return JSON array only — accepted contacts only:
             console.log(`  ❌ Former employee rejected: ${c.name} — "${c.title}"`);
             return false;
           }
-          if (isTooJunior(c.title, jobTitle)) {
+          if (isTooJunior(c.title, jobTitle, derived.func)) {
             console.log(`  ❌ Too junior: ${c.name} — "${c.title}"`);
             return false;
           }
@@ -1316,19 +1316,30 @@ function nameContainsCompanyWord(name, companyName) {
   return companyWords.some(w => nameParts.some(np => np === w));
 }
 
-function isTooJunior(contactTitle, jobTitle) {
+function isTooJunior(contactTitle, jobTitle, jobFunction) {
   if (!contactTitle || !jobTitle) return false;
-  const ct = contactTitle.toLowerCase();
-  const jt = jobTitle.toLowerCase();
+  var ct = contactTitle.toLowerCase();
+  var jt = jobTitle.toLowerCase();
   var isDirectorSearch = /director|vp|vice president|head of|chief|svp|evp|managing/i.test(jt);
   if (!isDirectorSearch) return false;
+
+  // Universal junior patterns — too junior for any director+ search
   var juniorPatterns = [
     /^hr coordinator/i, /^hr assistant/i, /^hr administrator/i,
     /^recruiting coordinator/i, /^talent coordinator/i,
     /^hr generalist(?!\s+senior)/i, /^human resources coordinator/i,
     /^people coordinator/i, /^people assistant/i
   ];
-  return juniorPatterns.some(function(p) { return p.test(ct); });
+  if (juniorPatterns.some(function(p) { return p.test(ct); })) return true;
+
+  // Function-aware: recruiter titles are junior for People searches only
+  if (jobFunction === 'People') {
+    if (/^hr recruiter$/i.test(ct)) return true;
+    if (/^recruiter$/i.test(ct)) return true;
+    if (/^talent recruiter$/i.test(ct)) return true;
+  }
+
+  return false;
 }
 
 function preQualifyContact(url, snippet, companyName, pageTitle) {

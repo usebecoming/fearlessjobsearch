@@ -162,7 +162,10 @@ export default async function handler(req, res) {
     const seenCompanyTitle = new Set();
     const dedupedJobs = allJobs.filter(job => {
       const company = (job.employer_name || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
-      const title = (job.job_title || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+      const title = (job.job_title || '').toLowerCase()
+        .replace(/\s+\d{1,2}[-\/]\d{1,2}([-\/]\d{2,4})?\s*$/, '')  // trailing dates like "10-26" or "02/15/2025"
+        .replace(/\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}\s*$/i, '') // "February 2015"
+        .replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
       const key = `${company}||${title}`;
       if (seenCompanyTitle.has(key)) return false;
       seenCompanyTitle.add(key);
@@ -367,7 +370,7 @@ export default async function handler(req, res) {
     // Relevance filter — remove titles unrelated to search function
     let relevanceRemoved = 0;
     const relevanceFiltered = finalFiltered.filter(job => {
-      if (isTitleRelevant(job.job_title || '', titles)) return true;
+      if (isTitleRelevant(job.job_title || '', titles, searchFunc)) return true;
       console.log(`  ❌ Not relevant to ${searchFunc}: ${job.job_title} at ${job.employer_name}`);
       relevanceRemoved++;
       return false;
@@ -421,7 +424,7 @@ export default async function handler(req, res) {
   }
 }
 
-function isTitleRelevant(jobTitle, searchTitles) {
+function isTitleRelevant(jobTitle, searchTitles, searchFunc) {
   const normalized = jobTitle.toLowerCase();
 
   const termSets = {
@@ -449,6 +452,22 @@ function isTitleRelevant(jobTitle, searchTitles) {
   const seniorGeneralist = ['ceo', 'president', 'chief of staff', 'managing director', 'general manager', 'vp ', 'vice president', 'svp', 'evp', 'director', 'chro', 'cpo', 'head of'];
   const isSenior = seniorGeneralist.some(t => normalized.includes(t));
   const hasFunction = matchedTerms.some(kw => normalized.includes(kw));
+
+  // "Development" context check — the word means different things in different functions
+  if (hasFunction && /\bdevelopment\b/i.test(normalized)) {
+    var goodDevForPeople = /talent|leadership|learning|people|hr|human resources|organizational|workforce|capability|employee|career|professional|staff|team/i;
+    var badDevForPeople = /land|property|real estate|software|product|market|business|sales|channel|warranty|insurance|financial|web|app|game|content/i;
+
+    if (searchFunc === 'People' && badDevForPeople.test(normalized) && !goodDevForPeople.test(normalized)) {
+      return false;
+    }
+    if (searchFunc === 'Finance' && /talent development|leadership development|learning and development/i.test(normalized)) {
+      return false;
+    }
+    if (searchFunc === 'Engineering' && /talent development|hr|human resources/i.test(normalized) && !/engineering|technical|software/i.test(normalized)) {
+      return false;
+    }
+  }
 
   return hasFunction || isSenior;
 }
