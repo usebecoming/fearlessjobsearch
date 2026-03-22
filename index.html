@@ -4548,12 +4548,13 @@ Return a JSON array with one object per job:
         div.className = 'contacts-group fade-up';
         div.style.animationDelay = `${gi * 0.1}s`;
 
+        var displayCompany = cleanDisplayCompany(group.company);
         const isCompanyMode = (group.job_id || '').startsWith('company_');
         let html = isCompanyMode
-          ? `<h3 class="contacts-group-header">${esc(group.company)}</h3>
+          ? `<h3 class="contacts-group-header">${esc(displayCompany)}</h3>
              <p class="contacts-group-sub">Target company — people worth connecting with</p>`
           : `<h3 class="contacts-group-header">${esc(group.job_title)}</h3>
-             <p class="contacts-group-sub">${esc(group.company)}</p>`;
+             <p class="contacts-group-sub">${esc(displayCompany)}</p>`;
 
         // Render contact cards
         (group.contacts || []).forEach(c => {
@@ -4584,21 +4585,21 @@ Return a JSON array with one object per job:
         // Use keyword-based search (company name in quotes) — currentCompany parameter requires numeric IDs
         const slug = group.linkedin_slug || '';
         const hasContacts = group.contacts && group.contacts.length > 0;
-        const coQuoted = encodeURIComponent('"' + group.company + '"');
+        const coQuoted = encodeURIComponent('"' + displayCompany + '"');
         // Add location to keyword search to scope results geographically
         const locCity = (group.location || '').replace(/,.*$/, '').trim();
         const locParam = locCity ? '+' + encodeURIComponent('"' + locCity + '"') : '';
         const liBase = 'https://www.linkedin.com/search/results/people/?keywords=';
         const liOrigin = '&origin=GLOBAL_SEARCH_HEADER';
 
-        if (group.company && group.company !== 'Unknown') {
+        if (displayCompany && displayCompany !== 'Unknown') {
           html += `<div style="background:#F9F6F1;border:1px solid #E5E4E2;border-radius:10px;padding:14px 18px;margin-top:${hasContacts ? '12' : '0'}px;margin-bottom:16px">
-            <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:8px">${hasContacts ? 'Find more people at ' + esc(group.company) + ':' : 'Start a conversation at ' + esc(group.company) + ' — search LinkedIn directly:'}</p>
+            <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:8px">${hasContacts ? 'Find more people at ' + esc(displayCompany) + ':' : 'Start a conversation at ' + esc(displayCompany) + ' — search LinkedIn directly:'}</p>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <a href="${liBase}${coQuoted}${locParam}+${encodeURIComponent('"VP" OR "CHRO" OR "CPO" OR "Director" OR "Head of"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">HR Leaders at ${esc(group.company)} &#8599;</a>
-              <a href="${liBase}${coQuoted}${locParam}+${encodeURIComponent('"recruiter" OR "talent acquisition" OR "recruiting"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters at ${esc(group.company)} &#8599;</a>
-              <a href="${liBase}${coQuoted}${locParam}+${encodeURIComponent('"CEO" OR "COO" OR "President" OR "Chief"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives at ${esc(group.company)} &#8599;</a>
-              ${slug ? `<a href="https://www.linkedin.com/company/${esc(slug)}/people/" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">All ${esc(group.company)} employees &#8599;</a>` : ''}
+              <a href="${liBase}${coQuoted}${locParam}+${encodeURIComponent('"VP" OR "CHRO" OR "CPO" OR "Director" OR "Head of"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">HR Leaders at ${esc(displayCompany)} &#8599;</a>
+              <a href="${liBase}${coQuoted}${locParam}+${encodeURIComponent('"recruiter" OR "talent acquisition" OR "recruiting"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Recruiters at ${esc(displayCompany)} &#8599;</a>
+              <a href="${liBase}${coQuoted}${locParam}+${encodeURIComponent('"CEO" OR "COO" OR "President" OR "Chief"')}${liOrigin}" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">Executives at ${esc(displayCompany)} &#8599;</a>
+              ${slug ? `<a href="https://www.linkedin.com/company/${esc(slug)}/people/" target="_blank" class="job-view-btn secondary" style="margin:0;font-size:0.82rem;padding:6px 12px">All ${esc(displayCompany)} employees &#8599;</a>` : ''}
             </div>
             <p style="font-size:0.78rem;color:#999;margin-top:8px;margin-bottom:0">Links search LinkedIn by keyword${locCity ? ' in ' + esc(locCity) : ''}. Login required.</p>
           </div>`;
@@ -5157,6 +5158,32 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
       const div = document.createElement('div');
       div.textContent = String(s);
       return div.innerHTML;
+    }
+
+    function cleanDisplayCompany(name) {
+      if (!name) return name;
+      var c = name.trim();
+      // Remove parenthetical
+      c = c.replace(/\s*\([^)]+\)\s*$/, '').trim();
+      // Remove subsidiary codes: "SMITH & NEPHEW SNATS INC" → "SMITH & NEPHEW"
+      c = c.replace(/^(.+\s+\S+)\s+([A-Z]{2,8})\s+(INC|LLC|CORP|LTD|CO|PLC)\.?\s*$/i, function(m, real, code) {
+        if (/^[A-Z]+$/.test(code) && code.length <= 6) return real.trim();
+        return (real + ' ' + code).trim();
+      });
+      // Remove legal suffixes
+      c = c.replace(/[,\s]+(INC\.?|LLC\.?|CORP\.?|LTD\.?|CO\.?|PLC\.?|INCORPORATED|LIMITED|CORPORATION)(\s+|$)/gi, ' ').trim();
+      // Remove regional suffixes
+      c = c.replace(/\s+[-–—]?\s*(US|USA|EMEA|APAC|LATAM|NA|EU|UK)\s*$/i, '').trim();
+      // Clean punctuation and whitespace
+      c = c.replace(/[,;:.]+$/, '').replace(/\s+/g, ' ').trim();
+      // Title case if all caps
+      if (c === c.toUpperCase() && c.length > 3) {
+        c = c.split(/\s+/).map(function(w) {
+          if (w.length <= 3 && /^[A-Z]+$/.test(w)) return w; // keep acronyms like IBM, HR
+          return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+        }).join(' ');
+      }
+      return c || name;
     }
 
     function copyText(text, btn) {
