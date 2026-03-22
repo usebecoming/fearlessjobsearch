@@ -4147,10 +4147,10 @@ Return a JSON array with one object per job:
         addedAt: new Date().toISOString().split('T')[0],
         status: 'Outreach Ready'
       };
-      // Upsert to prevent duplicates
-      if (supabase && state.userId) {
+      // Use REST API directly — Supabase JS client hangs on upsert
+      if (state.userId && _cachedToken) {
         try {
-          const { data } = await supabase.from('pipeline_jobs').upsert({
+          var body = {
             user_id: state.userId,
             job_id: job.id || '',
             job_title: job.title,
@@ -4160,11 +4160,27 @@ Return a JSON array with one object per job:
             salary: job.salary || '',
             job_url: job.url || '',
             status: 'Outreach Ready'
-          }, { onConflict: 'user_id,job_title,company', ignoreDuplicates: true }).select().single();
-          if (data) item.dbId = data.id;
-          console.log('✅ Pipeline:', job.title, 'at', job.company);
+          };
+          var res = await fetch('https://tgicomrycbhrinobvnlr.supabase.co/rest/v1/pipeline_jobs', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnaWNvbXJ5Y2Jocmlub2J2bmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NzcwOTMsImV4cCI6MjA4OTU1MzA5M30.nmC38E3meTH6mS0yjhyXaSYlwLc28mxqxLNf5e1KSdg',
+              'Authorization': 'Bearer ' + _cachedToken,
+              'Prefer': 'resolution=merge-duplicates,return=representation'
+            },
+            body: JSON.stringify(body)
+          });
+          if (res.ok) {
+            var data = await res.json();
+            if (data && data[0]) item.dbId = data[0].id;
+            console.log('✅ Pipeline:', job.title, 'at', job.company);
+          } else {
+            var errText = await res.text();
+            console.log('Pipeline save error:', res.status, errText);
+          }
         } catch (e) {
-          console.log('Pipeline upsert error:', e.message);
+          console.log('Pipeline save error:', e.message);
         }
       }
       // Only add to local state if not already there
