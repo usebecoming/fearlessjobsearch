@@ -4306,33 +4306,34 @@ Return a JSON array with one object per job:
       const outreachEstimate = Math.max(20, totalContacts * 5);
       showProgress(container, `Writing ${totalContacts * 4} personalized messages for ${totalContacts} contacts. This takes ${timeEstimate} — each message is written from your resume.`, outreachEstimate);
 
-      const systemPrompt = 'You are a senior executive outreach copywriter. Respond ONLY with a JSON object. No markdown, no explanation.';
+      const systemPrompt = `You are an expert at writing senior executive LinkedIn outreach. Write in a direct, confident, peer-level tone. No flattery. No desperation. No corporate speak. Respond ONLY with a JSON object. No markdown, no explanation.
+
+RULES:
+- Message 1 (Connection Request): HARD LIMIT 200 characters including spaces. This is a LinkedIn character limit — never exceed it. 2-3 sentences MAX. Name the specific role or function. Lead with ONE specific credential (number, scope, or outcome from resume). End with "Would value connecting." No ask.
+  Example (184 chars): "Hi Rachel, your team is hiring for VP of Marketing. I've scaled B2B SaaS marketing orgs to $180M pipeline. Would value connecting."
+
+- Message 2 (Thanks for connecting, Day 2): 2-3 sentences. Add ONE new specific credential or context not in message 1. End with a soft offer to connect briefly if relevant — not a hard ask.
+
+- Message 3 (Re-engage, Day 8): 2 sentences. Bring it back to the top of their inbox. Ask ONE open question about their current priorities or challenges — make it about them, not you.
+
+- Message 4 (Friendly close, Day 14): 2-3 sentences. Acknowledge the connection regardless of response. Leave the door open. No pressure. Warm and confident.
+
+CRITICAL RULES:
+- Never use "I wanted to reach out", "I hope this message finds you well", "I'd love to pick your brain", "circling back", "bumping this"
+- Never ask for a job in any message
+- Always use the candidate's ACTUAL numbers, team sizes, domains, and outcomes from their resume — never generic descriptions like "large teams" or "various industries"
+- Keep every message under 75 words (message 1 under 200 CHARACTERS)
+- All channels are LinkedIn only
+- Write at peer level — executive to executive
+- If no active listing exists for a role, do NOT reference a job posting — focus on genuine interest in the company`;
 
       function buildOutreachPrompt(batchTargets) {
-        return `Write personalized 4-message outreach sequences for each contact below. Two tracks:
-- Recruiter / TA track: position-focused, efficient, direct
-- Hiring Manager / Skip-Level track: team and business impact focused, warm but professional
-
-MESSAGING RULES:
-1. ALWAYS address the contact by their first name in the connection request (e.g. "Hi Sarah," or "Sarah,")
-2. Do NOT sign off with the sender's name or initials on any message. Just end the message naturally.
-3. Tone should be warm, personable, and peer-level. You're starting a conversation, not pitching. Think "someone I'd want to grab coffee with" not "cold sales email."
-4. Each message should include one specific achievement or value statement from the resume, woven in naturally.
-5. Connection request must be under 300 characters.
-6. Be conversational. Use "I" not "we." Ask genuine questions. Show real curiosity about their work.
-
-If a role has "No active listing" or is a relationship-building opportunity (no current opening):
-- Do NOT reference a specific open role or active job posting
-- Focus on genuine interest in the company and exploring future possibilities
-- Frame it as wanting to connect and stay on their radar
-- Be curious, not transactional
-
-NEVER use these phrases: "I hope this message finds you well", "I'm reaching out because", "I wanted to connect", "synergy", "leverage", "touch base", "pick your brain"
+        return `Write personalized 4-message LinkedIn outreach sequences for each contact below.
 
 Targets:
 ${JSON.stringify(batchTargets, null, 2)}
 
-${resumeSummary ? 'Candidate resume:\n' + resumeSummary : 'No resume provided. Use generic leadership value statements.'}
+${resumeSummary ? 'Candidate resume (use SPECIFIC numbers, domains, and outcomes from this):\n' + resumeSummary : 'No resume provided. Use generic leadership value statements.'}
 
 Return a JSON object with a "sequences" array. Each sequence:
 {
@@ -4347,10 +4348,13 @@ Return a JSON object with a "sequences" array. Each sequence:
       "step": "Connection Request" | "Follow-Up" | "Re-Engage" | "Final Circle Back",
       "channel": "LinkedIn" | "LinkedIn DM",
       "timing": "Day 1" | "Day 2" | "Day 8" | "Day 14",
-      "body": "string"
+      "body": "string",
+      "char_count": number
     }
   ]
-}`;
+}
+
+IMPORTANT: For the Connection Request message, include char_count with the exact character count. It MUST be under 200.`;
       }
 
       try {
@@ -4454,6 +4458,11 @@ Return a JSON object with a "sequences" array. Each sequence:
                 </div>
               </div>
               <div class="message-body">${esc(msg.body)}</div>
+              ${msg.step === 'Connection Request' ? (() => {
+                const chars = (msg.body || '').length;
+                const over = chars > 200;
+                return '<div style="font-size:11px;margin-top:4px;color:' + (over ? '#C94444' : '#999') + '">' + chars + ' / 200 characters' + (over ? ' — <strong>over LinkedIn limit, edit before sending</strong>' : '') + '</div>';
+              })() : ''}
             </div>`;
         });
 
