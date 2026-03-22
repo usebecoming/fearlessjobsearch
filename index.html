@@ -3626,7 +3626,7 @@ Return a JSON array with one object per job:
           // Merge scores into real jobs
           const scoredJobs = realJobs.map(job => {
             if (!resumeSummary) {
-              return { ...job, fitScore: -1, fitReason: 'No resume uploaded. Add your resume for fit scoring.' };
+              return { ...job, fitScore: -1, fitReason: '' };
             }
             const score = (scores || []).find(s => s.id === job.id);
             return {
@@ -3776,7 +3776,7 @@ Return a JSON array with one object per job:
             ${job.source ? `<span class="mono" style="color:#777777">${esc(job.source)}</span>` : ''}
           </div>
           ${job.highlights ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${job.highlights.map(h => `<span style="font-size:0.85rem;color:#555555;background:#F9F6F1;padding:3px 8px;border-radius:4px;border:1px solid #EEEEED;font-weight:500">${esc(h)}</span>`).join('')}</div>` : ''}
-          <div class="fit-reason">"${esc(job.fitReason)}"</div>
+          ${job.fitReason ? `<div class="fit-reason">"${esc(job.fitReason)}"</div>` : ''}
           ${stretchNote}
           ${agencyNote}
           ${noListingNote}
