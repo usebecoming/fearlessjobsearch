@@ -448,7 +448,7 @@ Return JSON array only — accepted contacts only:
             console.log(`  ❌ Vague company-name title rejected: ${c.name} — "${c.title}"`);
             return false;
           }
-          if (isSportsTeamFalsePositive(c.title, c.note, company)) {
+          if (isWrongEntityFalsePositive(c.title, c.note, company)) {
             console.log(`  ❌ Sports team false positive: ${c.name} — "${c.title}"`);
             return false;
           }
@@ -1524,19 +1524,44 @@ function isTitleJustCompanyName(title, companyName) {
 }
 
 // Vague title check - generous, only rejects truly empty titles
-function isSportsTeamFalsePositive(title, note, companyName) {
-  var text = ((title || '') + ' ' + (note || '')).toLowerCase();
-  var company = (companyName || '').toLowerCase();
-  var sportsIndicators = [
-    'new york red bulls', 'rb leipzig', 'red bull salzburg', 'red bull racing',
-    'fc ', ' fc', ' united', ' city fc', ' athletics',
-    ' stadium', ' arena', 'major league soccer', ' mls', ' nfl', ' nba', ' nhl',
-    ' league', ' club', 'premier league', 'bundesliga', 'la liga', 'serie a',
-    'formula 1', 'f1 ', ' f1'
-  ];
-  if (!company.includes('sport') && !company.includes(' fc') && !company.includes('athletic')) {
-    return sportsIndicators.some(function(s) { return text.includes(s); });
+function isWrongEntityFalsePositive(title, note, companyName) {
+  if (!title) return false;
+  var titleLower = title.toLowerCase();
+  var companyLower = (companyName || '').toLowerCase();
+
+  // Check if title mentions "at [Different Company]"
+  var atOrgMatch = titleLower.match(/(?:at|@|for|with)\s+([a-z][a-z0-9\s&]{2,40}?)(?:\s*[,|·]|$)/);
+  if (atOrgMatch) {
+    var orgInTitle = atOrgMatch[1].trim();
+    if (orgInTitle.length > 3 &&
+        !orgInTitle.includes(companyLower) &&
+        !companyLower.includes(orgInTitle)) {
+      console.log('  ❌ Wrong entity: ' + title + ' (searching: ' + companyName + ')');
+      return true;
+    }
   }
+
+  // Check for sub-entity patterns where title contains all company words
+  // plus extra words suggesting a different entity
+  var companyWords = companyLower.split(/\s+/).filter(function(w) { return w.length > 2; });
+  var hasCompanyWords = companyWords.every(function(w) { return titleLower.includes(w); });
+
+  if (hasCompanyWords) {
+    var subEntityIndicators = [
+      'fc', 'united', 'city', 'athletic', 'athletics',
+      'racing', 'motorsport', 'f1', 'nfl', 'nba', 'nhl',
+      'mls', 'mlb', 'premier league', 'bundesliga',
+      'salzburg', 'leipzig', 'brasil', 'mexico',
+      'media', 'records', 'films', 'studios', 'content house',
+      'stadium', 'arena', 'park', 'field'
+    ];
+    var hasSubEntity = subEntityIndicators.some(function(s) { return titleLower.includes(s); });
+    if (hasSubEntity) {
+      console.log('  ❌ Sub-entity false positive: "' + title + '" (searching: ' + companyName + ')');
+      return true;
+    }
+  }
+
   return false;
 }
 
