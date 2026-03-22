@@ -4300,7 +4300,20 @@ Return a JSON array with one object per job:
         };
       });
 
-      const totalContacts = targets.reduce((sum, t) => sum + t.contacts.length, 0);
+      // Cap total contacts to prevent timeout — 6 contacts max per Claude call
+      const MAX_OUTREACH_CONTACTS = 6;
+      let totalContacts = targets.reduce((sum, t) => sum + t.contacts.length, 0);
+      if (totalContacts > MAX_OUTREACH_CONTACTS) {
+        console.log(`⚠️ Capping outreach contacts from ${totalContacts} to ${MAX_OUTREACH_CONTACTS}`);
+        let remaining = MAX_OUTREACH_CONTACTS;
+        targets.forEach(t => {
+          if (remaining <= 0) { t.contacts = []; return; }
+          if (t.contacts.length > remaining) t.contacts = t.contacts.slice(0, remaining);
+          remaining -= t.contacts.length;
+        });
+        totalContacts = MAX_OUTREACH_CONTACTS;
+      }
+
       const outreachEstimate = Math.max(20, totalContacts * 5);
       showProgress(container, 'Writing your outreach strategy...', outreachEstimate);
 
