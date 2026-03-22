@@ -3932,17 +3932,17 @@ Return a JSON array with one object per job:
       // Upsert to prevent duplicates
       if (supabase && state.userId) {
         try {
-          const { data } = await supabase.from('pipeline').upsert({
+          const { data } = await supabase.from('pipeline_jobs').upsert({
             user_id: state.userId,
             job_id: job.id || '',
-            title: job.title,
+            job_title: job.title,
             company: job.company,
             location: job.location || '',
             fit_score: job.fitScore || 0,
             salary: job.salary || '',
             job_url: job.url || '',
             status: 'Outreach Ready'
-          }, { onConflict: 'user_id,title,company', ignoreDuplicates: true }).select().single();
+          }, { onConflict: 'user_id,job_title,company', ignoreDuplicates: true }).select().single();
           if (data) item.dbId = data.id;
           console.log('✅ Pipeline:', job.title, 'at', job.company);
         } catch (e) {
