@@ -2638,10 +2638,29 @@
         return;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        showApp(session.user);
-        await loadUserData();
+      try {
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Session load timeout')); }, 8000); })
+        ]);
+        const session = sessionResult?.data?.session;
+        if (session?.user) {
+          showApp(session.user);
+          await loadUserData();
+        } else {
+          // Try refresh if no session
+          const refreshResult = await Promise.race([
+            supabase.auth.refreshSession(),
+            new Promise(function(_, reject) { setTimeout(function() { reject(new Error('Refresh timeout')); }, 8000); })
+          ]);
+          if (refreshResult?.data?.session?.user) {
+            showApp(refreshResult.data.session.user);
+            await loadUserData();
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ Session restore failed:', e.message);
+        // onAuthStateChange will handle it if the session comes back later
       }
       validateSearch();
       loadSearchProfiles();
