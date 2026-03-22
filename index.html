@@ -366,12 +366,18 @@
     .contact-card {
       background: #FFFFFF; border: 1px solid #D1D0CE;
       border-radius: 12px; padding: 24px; margin-bottom: 24px;
-      transition: all 0.25s;
+      transition: all 0.2s ease;
       box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.03);
+      cursor: pointer;
     }
     .contact-card:hover {
       border-color: #B8A88A; transform: translateY(-1px);
       box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    }
+    .contact-card:active { transform: scale(0.98); }
+    .contact-card.selected {
+      border-color: #B8A88A; background: #FDFBF8;
+      box-shadow: 0 0 0 2px rgba(184,168,138,0.2), 0 4px 12px rgba(0,0,0,0.04);
     }
     .contact-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .contact-name { font-weight: 600; font-size: 0.95rem; color: #111111; }
@@ -4624,13 +4630,15 @@ Return a JSON array with one object per job:
       const check = document.getElementById(cId + '-check');
       if (state.selectedContacts.has(cId)) {
         state.selectedContacts.delete(cId);
-        card.style.borderColor = '#E5E4E2';
+        card.classList.remove('selected');
+        card.style.borderColor = '';
         check.style.background = '#FFFFFF';
         check.style.color = 'transparent';
         check.style.borderColor = '#E5E4E2';
       } else {
         state.selectedContacts.add(cId);
-        card.style.borderColor = '#B8A88A';
+        card.classList.add('selected');
+        card.style.borderColor = '';
         check.style.background = '#111';
         check.style.color = '#fff';
         check.style.borderColor = '#111';
