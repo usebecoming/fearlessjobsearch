@@ -256,6 +256,13 @@ export default async function handler(req, res) {
       const desc = (job.job_description || '').substring(0, 300).toLowerCase();
       const company = (job.employer_name || '').toLowerCase().trim();
 
+      // Confidential/undisclosed companies — no value for networking
+      if (/^confidential$|^undisclosed|^company confidential|^hiring company|^not disclosed/.test(company)) {
+        console.log(`  ❌ Confidential company: ${job.job_title} at ${job.employer_name}`);
+        irrelevantRemoved++;
+        return false;
+      }
+
       // Agency removal
       if (agencyKeywords.some(kw => company.includes(kw))) {
         console.log(`  ❌ Agency: ${job.job_title} at ${job.employer_name}`);
