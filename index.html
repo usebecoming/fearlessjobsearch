@@ -2626,6 +2626,7 @@
           var planNames = { free: 'Free', starter: 'Starter', pro: 'Pro', accelerate: 'Accelerate', accelerate_monthly: 'Accelerate', accelerate_yearly: 'Accelerate' };
           document.getElementById('accountPlan').textContent = planNames[usage.plan] || 'Free';
           state.plan = usage.plan || 'free';
+          try { sessionStorage.setItem('fjs_plan', state.plan); } catch(e) {}
           var used = usage.searches_used != null ? usage.searches_used : 0;
           var limit = usage.searches_limit != null ? usage.searches_limit : 0;
           document.getElementById('accountSearches').textContent = used + ' / ' + limit;
@@ -2819,6 +2820,18 @@
             showApp(parsed.user);
             loadUserData();
             console.log('🔑 Session restored from localStorage:', parsed.user.email);
+            // Quick plan check from sessionStorage to show/hide banner instantly
+            try {
+              var cachedPlan = sessionStorage.getItem('fjs_plan');
+              if (cachedPlan && cachedPlan !== 'free') {
+                state.hasPaid = true;
+                state.plan = cachedPlan;
+                document.getElementById('upgradeBanner').style.display = 'none';
+                document.getElementById('navUpgradeBtn').style.display = 'none';
+              } else if (cachedPlan === 'free') {
+                document.getElementById('upgradeBanner').style.display = '';
+              }
+            } catch(e) {}
           }
         }
       } catch (e) { console.warn('Session restore error:', e.message); }
