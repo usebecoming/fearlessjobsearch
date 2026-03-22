@@ -1137,6 +1137,7 @@
 
       /* Upgrade modal */
       .upgrade-modal-content { width: 96%; margin: 1rem; max-height: 90vh; overflow-y: auto; }
+      #upgradeModal .modal > div:nth-child(2) { grid-template-columns: 1fr !important; }
     }
 
     /* ── Very small phones ── */
@@ -2017,56 +2018,65 @@
 
   <!-- ── Upgrade Modal ── -->
   <div class="modal-overlay" id="upgradeModal">
-    <div class="modal" style="max-width:820px;padding:0;overflow-y:auto">
-      <div style="background:linear-gradient(135deg,#111 0%,#2a2520 100%);padding:32px 36px 24px;position:relative">
-        <button class="modal-close" onclick="closeUpgradeModal()" style="color:#fff;opacity:0.6;position:absolute;top:16px;right:20px;font-size:1.3rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center">&#10005;</button>
-        <h2 style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:800;color:#fff;margin-bottom:6px">Unlock Your Full Potential</h2>
-        <p style="font-size:0.92rem;color:rgba(255,255,255,0.7);font-weight:500">AI-matched roles, verified contacts, and personalized outreach — all in minutes.</p>
-        <p id="upgradeReasonMsg" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.1);border-radius:8px;font-size:0.88rem;color:#F5C869;font-weight:600"></p>
+    <div class="modal" style="max-width:860px;padding:0;overflow-y:auto;max-height:92vh">
+      <div style="background:linear-gradient(135deg,#111 0%,#2a2520 100%);padding:28px 32px 20px;position:relative">
+        <button class="modal-close" onclick="closeUpgradeModal()" style="color:#fff;opacity:0.6;position:absolute;top:14px;right:18px;font-size:1.3rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center">&#10005;</button>
+        <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:4px">Unlock Your Full Potential</h2>
+        <p style="font-size:0.85rem;color:rgba(255,255,255,0.6);font-weight:500">Free accounts see 3 jobs per search with no contacts or outreach. Upgrade to unlock the full pipeline.</p>
+        <p id="upgradeReasonMsg" style="display:none;margin-top:10px;padding:8px 12px;background:rgba(255,255,255,0.1);border-radius:8px;font-size:0.85rem;color:#F5C869;font-weight:600"></p>
       </div>
-      <div style="padding:28px 36px 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px">
-        <div style="border:1px solid #E5E4E2;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#777777;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Starter</div>
-          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$29<span style="font-size:1rem;color:#777777;font-weight:400">/mo</span></div>
-          <ul style="list-style:none;margin:16px 0;font-size:0.88rem;color:#555;font-weight:500">
-            <li style="padding:4px 0">3 searches, 30 AI-matched roles</li>
-            <li style="padding:4px 0">90 verified contacts</li>
-            <li style="padding:4px 0">Personalized outreach sequences</li>
+      <div style="padding:20px 28px 24px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        <div style="border:1px solid #E5E4E2;border-radius:12px;padding:20px;display:flex;flex-direction:column">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:600;color:#777;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Starter</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:800;color:#111">$29<span style="font-size:0.9rem;color:#777;font-weight:400">/mo</span></div>
+          <ul style="list-style:none;margin:12px 0;font-size:0.82rem;color:#555;font-weight:500;flex:1">
+            <li style="padding:3px 0">✓ 3 searches per month</li>
+            <li style="padding:3px 0">✓ 10 AI-matched roles per search</li>
+            <li style="padding:3px 0">✓ Up to 90 verified contacts</li>
+            <li style="padding:3px 0">✓ Personalized outreach sequences</li>
+            <li style="padding:3px 0">✓ Pipeline tracking</li>
+            <li style="padding:3px 0">✓ Resume fit scoring</li>
           </ul>
-          <button class="btn-secondary" style="width:100%;justify-content:center;padding:12px" onclick="startCheckout('starter')">Select</button>
+          <button class="btn-secondary" style="width:100%;justify-content:center;padding:10px;font-size:0.85rem" onclick="startCheckout('starter')">Get Started</button>
         </div>
-        <div style="border:2px solid #B8A88A;border-radius:12px;padding:24px;box-shadow:0 4px 16px rgba(184,168,138,0.12)">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Pro</div>
-          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$59<span style="font-size:1rem;color:#777777;font-weight:400">/mo</span></div>
-          <ul style="list-style:none;margin:16px 0;font-size:0.88rem;color:#555;font-weight:500">
-            <li style="padding:4px 0">6 searches, 60 AI-matched roles</li>
-            <li style="padding:4px 0">180 verified contacts</li>
-            <li style="padding:4px 0">Target companies directly</li>
+        <div style="border:2px solid #B8A88A;border-radius:12px;padding:20px;display:flex;flex-direction:column;position:relative">
+          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:600;color:#fff;background:#B8A88A;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px">Most Popular</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:600;color:#B8A88A;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Pro</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:800;color:#111">$59<span style="font-size:0.9rem;color:#777;font-weight:400">/mo</span></div>
+          <ul style="list-style:none;margin:12px 0;font-size:0.82rem;color:#555;font-weight:500;flex:1">
+            <li style="padding:3px 0">✓ 6 searches per month</li>
+            <li style="padding:3px 0">✓ 10 AI-matched roles per search</li>
+            <li style="padding:3px 0">✓ Up to 180 verified contacts</li>
+            <li style="padding:3px 0">✓ Personalized outreach sequences</li>
+            <li style="padding:3px 0">✓ Pipeline tracking</li>
+            <li style="padding:3px 0">✓ Resume fit scoring</li>
+            <li style="padding:3px 0">✓ Company target mode</li>
+            <li style="padding:3px 0">✓ Saved search profiles</li>
           </ul>
-          <button class="btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="startCheckout('pro')">Select</button>
+          <button class="btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:0.85rem" onclick="startCheckout('pro')">Start Pro</button>
         </div>
-        <div style="border:2px solid #111;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Accelerate</div>
-          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:#111">$99<span style="font-size:1rem;color:#777777;font-weight:400">/mo</span></div>
-          <ul style="list-style:none;margin:16px 0;font-size:0.88rem;color:#555;font-weight:500">
-            <li style="padding:4px 0">15 searches, 300 roles per month</li>
-            <li style="padding:4px 0">450 verified contacts</li>
-            <li style="padding:4px 0">Everything in Pro + priority support</li>
+        <div style="border:2px solid #111;border-radius:12px;padding:20px;display:flex;flex-direction:column">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:600;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Accelerate</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:800;color:#111">$99<span style="font-size:0.9rem;color:#777;font-weight:400">/mo</span></div>
+          <ul style="list-style:none;margin:12px 0;font-size:0.82rem;color:#555;font-weight:500;flex:1">
+            <li style="padding:3px 0">✓ 15 searches per month</li>
+            <li style="padding:3px 0">✓ 20 AI-matched roles per search</li>
+            <li style="padding:3px 0">✓ Up to 450 verified contacts</li>
+            <li style="padding:3px 0">✓ Personalized outreach sequences</li>
+            <li style="padding:3px 0">✓ Pipeline tracking</li>
+            <li style="padding:3px 0">✓ Resume fit scoring</li>
+            <li style="padding:3px 0">✓ Company target mode</li>
+            <li style="padding:3px 0">✓ Saved search profiles</li>
+            <li style="padding:3px 0">✓ Priority support</li>
           </ul>
-          <button class="btn-primary" style="width:100%;justify-content:center;padding:10px;background:#111" onclick="startCheckout('accelerate_monthly')">Select</button>
-          <div style="text-align:center;margin-top:8px"><a href="#" onclick="event.preventDefault();startCheckout('accelerate_yearly')" style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem">$999/year (save $189)</a></div>
+          <button class="btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:0.85rem;background:#111" onclick="startCheckout('accelerate_monthly')">Accelerate</button>
+          <div style="text-align:center;margin-top:6px"><a href="#" onclick="event.preventDefault();startCheckout('accelerate_yearly')" style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#B8A88A">$999/year (save $189)</a></div>
         </div>
       </div>
       <!-- Manage Plan (shown for paid users) -->
-      <div id="managePlanSection" style="display:none;margin-top:16px;text-align:center;padding:14px;border-top:1px solid #E5E4E2">
-        <p style="font-size:0.85rem;color:#777;margin-bottom:10px">Already subscribed? Upgrade, downgrade, or cancel anytime.</p>
-        <button class="btn-secondary" style="padding:10px 24px" onclick="manageBilling()">Manage My Plan</button>
-      </div>
-      <!-- Coaching Upsell -->
-      <div style="margin-top:20px;background:rgba(184,168,138,0.06);border:1px solid rgba(184,168,138,0.2);border-radius:12px;padding:20px;text-align:center">
-        <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:#111;margin-bottom:8px">Want one-on-one help from the expert who built this tool?</div>
-        <p style="font-size:0.85rem;color:#555;font-weight:500;margin-bottom:12px">Work directly with Dr. Benjamin Ritter for resume rewrites, LinkedIn positioning, and more.</p>
-        <button class="btn-secondary" style="padding:10px 24px" onclick="closeUpgradeModal();openBookingModal()">Resume &amp; LinkedIn Help</button>
+      <div id="managePlanSection" style="display:none;text-align:center;padding:12px 28px;border-top:1px solid #E5E4E2">
+        <p style="font-size:0.82rem;color:#777;margin-bottom:8px">Already subscribed? Upgrade, downgrade, or cancel anytime.</p>
+        <button class="btn-secondary" style="padding:8px 20px;font-size:0.85rem" onclick="manageBilling()">Manage My Plan</button>
       </div>
     </div>
   </div>
