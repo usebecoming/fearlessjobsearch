@@ -468,6 +468,14 @@ Return JSON array only — accepted contacts only:
             console.log(`  ❌ Wrong entity false positive: ${c.name} — "${c.title}"`);
             return false;
           }
+          if (isSubEntityFalsePositive(c.note, c.title, company)) {
+            console.log(`  ❌ Sub-entity false positive: ${c.name} — "${c.title}"`);
+            return false;
+          }
+          if (isFamousExecFalsePositive(c, company)) {
+            console.log(`  ❌ Famous exec false positive: ${c.name} — "${c.title}"`);
+            return false;
+          }
           if (isFranchiseOwner(c.title, company)) {
             console.log(`  ❌ Franchise owner rejected: ${c.name} — "${c.title}"`);
             return false;
@@ -1586,6 +1594,41 @@ function isTitleJustCompanyName(title, companyName) {
 }
 
 // Vague title check - generous, only rejects truly empty titles
+function isSubEntityFalsePositive(note, title, searchCompany) {
+  if (!note && !title) return false;
+  var text = ((note || '') + ' ' + (title || '')).toLowerCase();
+  var searchLower = searchCompany.toLowerCase().trim();
+  var qualifiers = [
+    'financial', 'consulting', 'development', 'solutions', 'services',
+    'technology', 'technologies', 'group', 'partners', 'ventures',
+    'capital', 'management', 'international', 'global', 'digital',
+    'health', 'healthcare', 'media', 'studio', 'studios', 'labs',
+    'systems', 'software', 'gmbh', 'llc', 'inc', 'ltd', 'corp',
+    'app', 'platform'
+  ];
+  var escapedSearch = searchLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  for (var i = 0; i < qualifiers.length; i++) {
+    var pattern = new RegExp(escapedSearch + '\\s+' + qualifiers[i] + '\\b', 'i');
+    if (pattern.test(text)) return true;
+  }
+  return false;
+}
+
+function isFamousExecFalsePositive(contact, searchCompany) {
+  var title = contact.title || '';
+  var note = contact.note || '';
+  if (!title) return false;
+  var isCsuite = /(^|\s)(cmo|ceo|coo|cto|cfo|cro|chro|cpo|chief\s)/i.test(title);
+  if (!isCsuite) return false;
+  var noteLower = note.toLowerCase();
+  var companyLower = searchCompany.toLowerCase().trim();
+  // Check if note confirms the search company
+  var companyWords = companyLower.split(/\s+/).filter(function(w) { return w.length > 2; });
+  var noteConfirms = companyWords.some(function(w) { return noteLower.includes(w); });
+  if (!noteConfirms) return true;
+  return false;
+}
+
 function isFranchiseOwner(title, company) {
   var t = (title || '').toLowerCase();
   var c = (company || '').toLowerCase();
