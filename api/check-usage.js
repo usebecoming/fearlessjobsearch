@@ -46,14 +46,15 @@ export default async function handler(req, res) {
 
     if (!profileRes.ok) {
       console.error('Profile fetch error:', profileRes.status);
-      return res.status(200).json({ allowed: true, plan: 'free', searches_remaining: 0 });
+      return res.status(200).json({ allowed: true, plan: 'free', searches_remaining: 0, searches_used: 0, searches_limit: 0 });
     }
 
     const profiles = await profileRes.json();
     const profile = profiles[0];
 
     if (!profile) {
-      return res.status(200).json({ allowed: false, plan: 'free', searches_remaining: 0, reason: 'No profile found' });
+      console.log('⚠️ No profile found for user:', user_id);
+      return res.status(200).json({ allowed: false, plan: 'free', searches_remaining: 0, searches_used: 0, searches_limit: 0, reason: 'No profile found' });
     }
 
     let planKey = profile.plan || 'free';
@@ -105,6 +106,8 @@ export default async function handler(req, res) {
       );
     }
 
+    console.log(`📊 Usage check: plan=${planKey}, used=${searchCount}, limit=${plan.searches_per_month}, action=${action}`);
+
     // Action-based gating
     switch (action) {
       case 'search_jobs':
@@ -114,8 +117,11 @@ export default async function handler(req, res) {
             reason: 'search_limit_reached',
             limit: plan.searches_per_month,
             used: searchCount,
+            searches_used: searchCount,
+            searches_limit: plan.searches_per_month,
             plan: planKey,
-            upgrade_required: true
+            upgrade_required: true,
+            resets_at: resetDate ? resetDate.toISOString() : null
           });
         }
         return res.status(200).json({
@@ -180,6 +186,6 @@ export default async function handler(req, res) {
     }
   } catch (err) {
     console.error('Check usage error:', err);
-    return res.status(200).json({ allowed: true, plan: 'free', searches_remaining: 0 });
+    return res.status(200).json({ allowed: true, plan: 'free', searches_remaining: 0, searches_used: 0, searches_limit: 0 });
   }
 }
