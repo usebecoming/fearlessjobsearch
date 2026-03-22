@@ -380,7 +380,9 @@
       border-radius: 14px 14px 0 0; padding: 20px 24px;
       box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
-    .sequence-contact { font-weight: 600; font-size: 1rem; color: #111111; }
+    .sequence-contact { font-weight: 700; font-size: 1.1rem; color: #111111; }
+    .sequence-title { font-size: 0.88rem; color: #4A4A4A; font-weight: 500; margin-top: 4px; }
+    .sequence-company { font-size: 0.82rem; color: #9A8B6E; font-weight: 500; margin-top: 2px; }
     .sequence-track {
       font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
       color: #777777; margin-top: 4px;
@@ -4399,7 +4401,7 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
           if (state.selectedJobs.includes(p.jobId)) {
             p.status = 'Outreach Ready';
             if (p.dbId && supabase) {
-              supabase.from('pipeline').update({ status: 'Outreach Ready' }).eq('id', p.dbId).catch(() => {});
+              supabase.from('pipeline_jobs').update({ status: 'Outreach Ready' }).eq('id', p.dbId).catch(() => {});
             }
           }
         }
@@ -4438,7 +4440,8 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div>
                 <div class="sequence-contact">${esc(seq.contact_name)}</div>
-                <div class="sequence-track">${esc(seq.job_title)} · ${esc(seq.company)}</div>
+                <div class="sequence-title">${esc(seq.job_title)}</div>
+                <div class="sequence-company">${esc(seq.company)}</div>
               </div>
               <div style="display:flex;gap:8px;align-items:center">
                 ${linkedinUrl ? `<a href="${esc(linkedinUrl)}" target="_blank" class="job-view-btn" style="margin:0;padding:6px 14px;font-size:0.82rem">LinkedIn &#8599;</a>` : ''}
@@ -4479,7 +4482,7 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
 
       // Load pipeline
       const { data: pipelineData } = await supabase
-        .from('pipeline')
+        .from('pipeline_jobs')
         .select('*')
         .order('created_at', { ascending: false });
       if (pipelineData) {
@@ -4597,7 +4600,7 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
     async function updatePipelineStatus(i, val) {
       state.pipeline[i].status = val;
       if (state.pipeline[i].dbId) {
-        await supabase.from('pipeline').update({ status: val }).eq('id', state.pipeline[i].dbId);
+        await supabase.from('pipeline_jobs').update({ status: val }).eq('id', state.pipeline[i].dbId);
       }
     }
 
@@ -4605,7 +4608,7 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
       const item = state.pipeline[i];
       state.pipeline.splice(i, 1);
       if (item.dbId) {
-        await supabase.from('pipeline').delete().eq('id', item.dbId);
+        await supabase.from('pipeline_jobs').delete().eq('id', item.dbId);
       }
       renderPipelineTable();
     }
