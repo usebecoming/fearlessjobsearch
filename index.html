@@ -23,10 +23,10 @@
     ::-webkit-scrollbar-thumb { background: rgba(184,168,138,0.3); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(184,168,138,0.5); }
     * { scrollbar-width: thin; scrollbar-color: rgba(184,168,138,0.3) transparent; }
-    #upgradeModal .modal { scrollbar-color: rgba(184,168,138,0.4) rgba(42,37,32,0.3); }
-    #upgradeModal .modal::-webkit-scrollbar-track { background: rgba(42,37,32,0.3); }
-    #upgradeModal .modal::-webkit-scrollbar-thumb { background: rgba(184,168,138,0.5); border-radius: 3px; }
-    #upgradeModal .modal::-webkit-scrollbar-thumb:hover { background: rgba(184,168,138,0.7); }
+    #upgradeModal .modal { scrollbar-color: rgba(184,168,138,0.15) transparent; }
+    #upgradeModal .modal::-webkit-scrollbar-track { background: transparent; }
+    #upgradeModal .modal::-webkit-scrollbar-thumb { background: rgba(184,168,138,0.15); border-radius: 3px; }
+    #upgradeModal .modal::-webkit-scrollbar-thumb:hover { background: rgba(184,168,138,0.3); }
     body {
       font-family: 'IBM Plex Sans', sans-serif;
       font-weight: 500;
@@ -2623,6 +2623,7 @@
     // Listen for auth changes
     if (supabase) {
       supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('🔐 Auth event:', event, 'session:', !!session);
         if (isSigningOut) return;
         if (event === 'SIGNED_OUT') {
           _cachedToken = null;
@@ -2630,7 +2631,6 @@
           return;
         }
         if (session?.access_token) {
-          // Cache token immediately from auth state change — no getSession() needed
           _cachedToken = session.access_token;
           _cachedTokenExpiry = session.expires_at ? session.expires_at * 1000 : Date.now() + 3600000;
           console.log('🔑 Token cached from auth state change');
