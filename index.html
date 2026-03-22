@@ -4759,7 +4759,7 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div>
                 <div class="sequence-contact">${esc(seq.contact_name)}</div>
-                <div class="sequence-title">${esc(seq.job_title)}</div>
+                <div class="sequence-title">${esc(seq.contact_role || seq.track)}</div>
                 <div class="sequence-company">${esc(seq.company)}</div>
               </div>
               <div style="display:flex;gap:8px;align-items:center">
