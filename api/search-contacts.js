@@ -439,13 +439,16 @@ Return JSON array only — accepted contacts only:
         verifiedContacts = verifiedContacts.filter(c => {
           const roleType = c.role || c.role_type || '';
           if (isTitleJustCompanyName(c.title, company)) {
-            // Only keep vague company-name titles for Skip-Level contacts
-            if (roleType === 'Skip-Level') {
-              console.log(`  🔶 Title is company name — keeping Skip-Level: ${c.name} — "${c.title}"`);
+            // Only keep if there's a C-suite signal in note or LinkedIn URL
+            var hasCsuiteSignal = /(ceo|coo|cto|cmo|cfo|chro|cpo|president|founder|co-founder|chairman)/i.test(
+              (c.note || '') + ' ' + (c.linkedin || '')
+            );
+            if (hasCsuiteSignal) {
+              console.log(`  🔶 Keeping C-suite with vague title: ${c.name} — "${c.title}"`);
               c.titleVerified = false;
               return true;
             }
-            console.log(`  ❌ Vague company-name title rejected: ${c.name} — "${c.title}"`);
+            console.log(`  ❌ Vague title rejected (no C-suite signal): ${c.name} — "${c.title}"`);
             return false;
           }
           if (isWrongEntityFalsePositive(c.title, c.note, company)) {
@@ -1660,9 +1663,17 @@ function isFunctionRelevant(title, jobFunction, roleType) {
 
   // Only reject if clearly wrong industry/function with no ambiguity
   const clearlyWrong = {
-    'People': [/\bchef\b/i, /\bcook\b/i, /\bdriver\b/i, /\bmechanic\b/i, /\belectrician\b/i, /\bplumber\b/i, /\bjanitor\b/i, /\bnurse\b/i, /\bphysician\b/i, /\bdoctor\b/i, /\bsurgeon\b/i, /\blifeguard\b/i, /\bsecurity guard\b/i],
-    'Marketing': [/\bnurse\b/i, /\bphysician\b/i, /\bsoftware engineer\b/i],
-    'Engineering': [/\bnurse\b/i, /\bmarketing manager\b/i, /\battorney\b/i]
+    'People': [
+      /\bchef\b/i, /\bcook\b/i, /\bdriver\b/i, /\bmechanic\b/i, /\belectrician\b/i, /\bplumber\b/i,
+      /\bjanitor\b/i, /\bnurse\b/i, /\bphysician\b/i, /\bdoctor\b/i, /\bsurgeon\b/i, /\blifeguard\b/i, /\bsecurity guard\b/i,
+      /^engineering (leader|manager|director|vp)/i, /^software (engineer|developer|architect)/i,
+      /^(senior |staff |principal )?engineer$/i, /^(vp|director|head) of engineering$/i, /^cto$/i,
+      /^(frontend|backend|fullstack|full.stack) (engineer|developer)/i,
+      /^data (scientist|engineer|analyst)$/i, /^devops/i, /^sre\b/i,
+      /\bentrepreneur\b/i
+    ],
+    'Marketing': [/\bnurse\b/i, /\bphysician\b/i, /\bsoftware engineer\b/i, /\bentrepreneur\b/i],
+    'Engineering': [/\bnurse\b/i, /\bmarketing manager\b/i, /\battorney\b/i, /\bentrepreneur\b/i]
   };
 
   const wrongPatterns = clearlyWrong[jobFunction] || [];
