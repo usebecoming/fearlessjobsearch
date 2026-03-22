@@ -373,8 +373,8 @@ export default async function handler(req, res) {
       return false;
     });
 
-    // Cap at 20 for Claude scoring
-    const jobs = relevanceFiltered.slice(0, 20);
+    // Cap at 30 for Claude scoring — gives Accelerate (20 display) buffer for pipeline dedup
+    const jobs = relevanceFiltered.slice(0, 30);
 
     // Flag staffing agencies
     const filtered = jobs.map((job, i) => {
@@ -414,7 +414,7 @@ export default async function handler(req, res) {
       console.log(`  ${i+1}. ${job.title} at ${job.company}${job.isAgency ? ' [AGENCY]' : ''} — ${job.location}`);
     });
 
-    return res.status(200).json({ jobs: filtered.slice(0, 20) });
+    return res.status(200).json({ jobs: filtered.slice(0, 30) });
   } catch (err) {
     console.error('Search error:', err);
     return res.status(500).json({ error: 'Something went wrong searching for jobs. Please try again.' });
