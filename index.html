@@ -1139,9 +1139,10 @@
       .upgrade-modal-content { width: 96%; margin: 1rem; max-height: 90vh; overflow-y: auto; }
       #upgradeModal .modal > div:nth-child(2) { grid-template-columns: 1fr !important; }
 
-      /* Landing nav — hide Start Free/Sign In, use hamburger */
-      #landingPage .nav-right a,
-      #landingPage .nav-right button { font-size: 0.82rem; padding: 8px 14px; }
+      /* Landing nav — compact on mobile */
+      #landingPage nav { padding: 10px 12px; }
+      #landingPage .nav-brand span { font-size: 0.7rem; letter-spacing: 0.5px; }
+      #landingPage .nav-right a { font-size: 0.78rem !important; padding: 7px 14px !important; margin-right: 8px !important; }
 
       /* Testimonial stats stack on mobile */
       .stats-grid { grid-template-columns: 1fr !important; }
@@ -1185,6 +1186,10 @@
       .form-label { font-size: 0.82rem; }
 
       .landing-footer { padding: 32px 12px; font-size: 0.78rem; }
+
+      /* Landing nav — very small */
+      #landingPage .nav-brand span { display: none; }
+      #landingPage .nav-right a { font-size: 0.75rem !important; padding: 6px 12px !important; margin-right: 6px !important; }
     }
   </style>
 </head>
