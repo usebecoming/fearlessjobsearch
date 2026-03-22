@@ -1888,15 +1888,16 @@
       <!-- Resume -->
       <div class="form-group">
         <label class="form-label">Resume</label>
+        <p style="font-size:0.82rem;color:#9A8B6E;font-weight:500;margin-bottom:8px">Required for AI fit scoring and personalized outreach</p>
         <!-- Upload state -->
         <div id="resumeUploadState">
           <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('resumeFile').click()">
-            <p>Drop a file here or click to upload</p>
-            <p style="font-size:0.82rem;color:#777777;margin-top:4px">TXT, PDF, or DOCX</p>
+            <p>Drop your resume here or click to upload</p>
+            <p style="font-size:0.82rem;color:#777777;margin-top:4px">TXT, PDF, or DOCX — used to score job fit and write outreach in your voice</p>
             <input type="file" id="resumeFile" accept=".txt,.pdf,.docx">
           </div>
           <p style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#777777;text-align:center;margin-bottom:8px">or paste your resume below</p>
-          <textarea class="form-input" id="resumeText" placeholder="Paste your resume text here..."></textarea>
+          <textarea class="form-input" id="resumeText" placeholder="Paste your resume here — the more detail, the better your job matches and outreach messages"></textarea>
         </div>
         <!-- Loaded state -->
         <div id="resumeLoadedState" style="display:none">
