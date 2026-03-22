@@ -1766,7 +1766,7 @@
   <div class="app-wrapper">
     <div class="section active" id="section-1">
       <!-- Upgrade Banner -->
-      <div class="upgrade-banner" id="upgradeBanner">
+      <div class="upgrade-banner" id="upgradeBanner" style="display:none">
         <p><strong>Want more searches?</strong> Upgrade your plan for more AI-matched roles, contacts, and outreach.</p>
         <button class="btn-primary" style="padding:12px 24px;font-size:0.94rem;white-space:nowrap" onclick="openUpgradeModal()">View Plans</button>
       </div>
@@ -2612,6 +2612,8 @@
             document.getElementById('upgradeBanner').style.display = 'none';
             document.getElementById('manageBillingRow').style.display = '';
             document.getElementById('managePlanSection').style.display = '';
+          } else {
+            document.getElementById('upgradeBanner').style.display = '';
           }
         }
       }).catch(function(err) { console.warn('⚠️ check-usage failed:', err.message); document.getElementById('accountSearches').textContent = '—'; });
@@ -2669,16 +2671,21 @@
           var stored = localStorage.getItem(storedKeys[0]);
           if (stored) {
             var parsed = JSON.parse(stored);
-            var storedUser = parsed?.user || parsed?.currentSession?.user;
-            if (storedUser) {
+            var storedUser = parsed.user;
+            if (storedUser && storedUser.email) {
               hasStoredSession = true;
+              // Cache the token immediately so API calls work
+              if (parsed.access_token) {
+                _cachedToken = parsed.access_token;
+                _cachedTokenExpiry = parsed.expires_at ? parsed.expires_at * 1000 : Date.now() + 3600000;
+              }
               // Show app skeleton immediately with stored user data
               showApp(storedUser);
-              console.log('⚡ Quick restore from localStorage');
+              console.log('⚡ Quick restore from localStorage:', storedUser.email);
             }
           }
         }
-      } catch (e) { /* localStorage parse failed, fall through to getSession */ }
+      } catch (e) { console.warn('⚠️ localStorage restore error:', e.message); }
 
       // Now properly restore session via Supabase (validates token, refreshes if needed)
       try {
