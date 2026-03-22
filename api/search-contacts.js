@@ -635,6 +635,7 @@ Return JSON array only — accepted contacts only:
 function deriveAll(jobTitle) {
   const func = deriveFunction(jobTitle);
   const level = deriveLevel(jobTitle);
+  console.log(`🔎 deriveLevel input: "${jobTitle}" → level: ${level}`);
   let hmTitles, slTitles, recTerms;
 
   // Special handling for People function with level-aware titles
@@ -899,7 +900,9 @@ function deriveFunction(jobTitle) {
 function deriveLevel(jobTitle) {
   const t = jobTitle.toLowerCase();
   if (t.includes('ceo') || t.includes('president') || t.includes('founder')) return 'ceo';
-  if (t.includes('chief') || t.includes('cmo') || t.includes('cto') || t.includes('cfo') || t.includes('cpo') || t.includes('cro') || t.includes('coo') || t.includes('chro')) return 'csuite';
+  // Check C-suite abbreviations with word boundaries to avoid false matches
+  // e.g. "generation" should not match "cto", "director" should not match "cro"
+  if (t.includes('chief') || /\bcmo\b/.test(t) || /\bcto\b/.test(t) || /\bcfo\b/.test(t) || /\bcpo\b/.test(t) || /\bcro\b/.test(t) || /\bcoo\b/.test(t) || /\bchro\b/.test(t)) return 'csuite';
   if (t.includes('svp') || t.includes('senior vice president') || t.includes('evp') || t.includes('executive vice president')) return 'svp';
   if (t.includes('vp') || t.includes('vice president')) return 'vp';
   if (t.includes('senior director') || t.includes('executive director')) return 'senior_director';
