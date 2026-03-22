@@ -4301,8 +4301,10 @@ Return a JSON array with one object per job:
       });
 
       const totalContacts = targets.reduce((sum, t) => sum + t.contacts.length, 0);
+      const totalBatchesEst = Math.ceil(totalContacts / 4);
+      const timeEstimate = totalBatchesEst <= 1 ? 'about 30 seconds' : `about ${totalBatchesEst} minutes`;
       const outreachEstimate = Math.max(20, totalContacts * 5);
-      showProgress(container, `Writing outreach for ${totalContacts} contacts...`, outreachEstimate);
+      showProgress(container, `Writing ${totalContacts * 4} personalized messages for ${totalContacts} contacts. This takes ${timeEstimate} — each message is written from your resume.`, outreachEstimate);
 
       const systemPrompt = 'You are a senior executive outreach copywriter. Respond ONLY with a JSON object. No markdown, no explanation.';
 
