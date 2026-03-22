@@ -38,9 +38,10 @@ export default async function handler(req, res) {
 
     const profiles = await getRes.json();
     const currentCount = profiles[0]?.search_count_month || 0;
+    console.log(`📊 Increment: ${user_id} current=${currentCount} → ${currentCount + 1}`);
 
     // Increment
-    await fetch(
+    const patchRes = await fetch(
       `${supabaseUrl}/rest/v1/profiles?id=eq.${user_id}`,
       {
         method: 'PATCH',
@@ -55,6 +56,7 @@ export default async function handler(req, res) {
         })
       }
     );
+    console.log(`📊 Increment PATCH status: ${patchRes.status}`);
 
     return res.status(200).json({ ok: true, count: currentCount + 1 });
   } catch (err) {
