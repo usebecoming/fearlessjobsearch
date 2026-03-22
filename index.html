@@ -3724,8 +3724,8 @@ Return a JSON array with one object per job:
           });
 
           stopProgress();
-          var sortedJobs = scoredJobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0)).slice(0, 10);
-          // Filter out jobs already in pipeline
+          var sortedJobs = scoredJobs.sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0)).slice(0, 20);
+          // Filter out jobs already in pipeline, then take top 10
           var pipelineResult;
           try {
             pipelineResult = await filterOutPipelineJobs(sortedJobs);
@@ -3733,7 +3733,7 @@ Return a JSON array with one object per job:
             console.error('Pipeline filter error:', pipeErr);
             pipelineResult = { filtered: sortedJobs, removedCount: 0 };
           }
-          state.jobs = pipelineResult.filtered;
+          state.jobs = pipelineResult.filtered.slice(0, 10);
           state.allJobs = sortedJobs; // keep unfiltered for "show all"
           console.log('🏆 TOP SCORED JOBS (' + state.jobs.length + '):');
           state.jobs.forEach(function(job, i) {
