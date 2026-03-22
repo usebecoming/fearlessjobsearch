@@ -2668,7 +2668,6 @@
     };
 
     // Check existing session on load
-    // onAuthStateChange handles session restore — no manual getSession() needed
     (async () => {
       // Check for password recovery token in URL hash
       var hashParams = new URLSearchParams(window.location.hash.slice(1));
@@ -2686,6 +2685,23 @@
         showSetNewPasswordForm();
         return;
       }
+
+      // Restore session from localStorage directly
+      // onAuthStateChange doesn't fire INITIAL_SESSION in this Supabase version
+      // and getSession() hangs — so read the token ourselves
+      try {
+        var storedKey = Object.keys(localStorage).find(function(k) { return k.startsWith('sb-') && k.endsWith('-auth-token'); });
+        if (storedKey) {
+          var parsed = JSON.parse(localStorage.getItem(storedKey));
+          if (parsed && parsed.user && parsed.access_token) {
+            _cachedToken = parsed.access_token;
+            _cachedTokenExpiry = parsed.expires_at ? parsed.expires_at * 1000 : Date.now() + 3600000;
+            showApp(parsed.user);
+            loadUserData();
+            console.log('🔑 Session restored from localStorage:', parsed.user.email);
+          }
+        }
+      } catch (e) { console.warn('Session restore error:', e.message); }
 
       validateSearch();
       loadSearchProfiles();
