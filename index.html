@@ -1888,7 +1888,7 @@
       <!-- Resume -->
       <div class="form-group">
         <label class="form-label">Resume</label>
-        <p style="font-size:0.82rem;color:#9A8B6E;font-weight:500;margin-bottom:8px">Required for AI fit scoring and personalized outreach</p>
+        <p style="font-size:0.88rem;color:#B8860B;font-weight:600;margin-bottom:8px;padding:8px 12px;background:rgba(184,134,11,0.08);border:1px solid rgba(184,134,11,0.2);border-radius:8px">Upload your resume for AI fit scoring and personalized outreach</p>
         <!-- Upload state -->
         <div id="resumeUploadState">
           <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('resumeFile').click()">
@@ -3499,6 +3499,13 @@
         document.getElementById('companiesField').value = '';
       }
       validateSearch();
+
+      // Warn if no resume uploaded
+      if (!state.resumeText || state.resumeText.trim().length < 100) {
+        if (!confirm('No resume uploaded.\n\nWithout your resume, job results won\'t be scored for fit and outreach messages can\'t be personalized.\n\nContinue without resume?')) {
+          return;
+        }
+      }
 
       // Immediate visual feedback — before any async work
       const searchBtn = document.getElementById('searchBtn');
