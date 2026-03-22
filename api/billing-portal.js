@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const rl = rateLimit(req, { maxRequests: 3, windowMs: 60000 });
+  const rl = rateLimit(req, { maxRequests: 10, windowMs: 60000 });
   if (!rl.allowed) {
     return res.status(429).json({ error: 'Too many requests' });
   }
