@@ -2948,13 +2948,13 @@
         var hasCompanyTarget = ADMIN_EMAILS.includes(state.userEmail) ||
           ['pro', 'accelerate_monthly', 'accelerate_yearly'].includes(state.plan);
         if (!hasCompanyTarget) {
-          var companyGroup = document.getElementById('companiesGroup');
-          if (companyGroup && !document.getElementById('companyModeWarning')) {
+          var companyInstructions = document.getElementById('companyModeInstructions');
+          if (companyInstructions && !document.getElementById('companyModeWarning')) {
             var warn = document.createElement('div');
             warn.id = 'companyModeWarning';
             warn.style.cssText = 'margin-bottom:16px;padding:12px 16px;background:rgba(184,134,11,0.08);border:1px solid rgba(184,134,11,0.2);border-radius:8px;font-size:0.85rem;color:#B8860B;font-weight:500';
             warn.innerHTML = 'Company Target mode is available on Pro and above. <a href="#" onclick="event.preventDefault();openUpgradeModal(\'Company Target mode is available on Pro and above.\')" style="color:#B8A88A;font-weight:600;text-decoration:underline">Upgrade to unlock</a>';
-            companyGroup.insertBefore(warn, companyGroup.firstChild);
+            companyInstructions.parentNode.insertBefore(warn, companyInstructions);
           }
         }
       }
