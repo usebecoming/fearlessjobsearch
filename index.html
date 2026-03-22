@@ -4556,11 +4556,15 @@ Return a JSON array with one object per job:
 
         var displayCompany = cleanDisplayCompany(group.company);
         const isCompanyMode = (group.job_id || '').startsWith('company_');
+        const coverage = group.coverage_signal || (group.contacts && group.contacts.length >= 6 ? 'good' : group.contacts && group.contacts.length >= 3 ? 'limited' : 'poor');
         let html = isCompanyMode
           ? `<h3 class="contacts-group-header">${esc(displayCompany)}</h3>
              <p class="contacts-group-sub">Target company — people worth connecting with</p>`
           : `<h3 class="contacts-group-header">${esc(group.job_title)}</h3>
              <p class="contacts-group-sub">${esc(displayCompany)}</p>`;
+        if (coverage === 'poor' || coverage === 'limited') {
+          html += `<div style="margin:8px 0 12px;padding:8px 12px;background:rgba(184,134,11,0.06);border:1px solid rgba(184,134,11,0.15);border-radius:8px;font-size:0.82rem;color:#B8860B;font-weight:500">Limited results — this company has fewer publicly indexed LinkedIn profiles. Use the search links below to find additional contacts.</div>`;
+        }
 
         // Render contact cards
         (group.contacts || []).forEach(c => {

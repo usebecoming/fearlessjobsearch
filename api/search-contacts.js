@@ -133,7 +133,8 @@ export default async function handler(req, res) {
         const slug = await getLinkedInCompanySlug(company, braveKey);
         group.result = {
           company, derived: {}, contacts: [],
-          linkedin_slug: slug, geo_urn: getGeoUrn(representativeJob.location)
+          linkedin_slug: slug, geo_urn: getGeoUrn(representativeJob.location),
+          coverage_signal: 'poor'
         };
         return;
       }
@@ -173,7 +174,8 @@ export default async function handler(req, res) {
             linkedin_slug: cached.companySlug,
             geo_urn: geoUrn,
             is_professional_services: false,
-            fromCache: true
+            fromCache: true,
+            coverage_signal: cleanedCached.length >= 6 ? 'good' : cleanedCached.length >= 3 ? 'limited' : 'poor'
           };
           return;
         }
@@ -528,7 +530,8 @@ Return JSON array only — accepted contacts only:
         contacts: verifiedContacts,
         linkedin_slug: companySlug,
         geo_urn: geoUrn,
-        is_professional_services: isProfServices
+        is_professional_services: isProfServices,
+        coverage_signal: verifiedContacts.length >= 6 ? 'good' : verifiedContacts.length >= 3 ? 'limited' : 'poor'
       };
 
       // Save to persistent cache — fire and forget
