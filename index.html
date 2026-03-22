@@ -1430,7 +1430,7 @@
       </div>
       <!-- Outreach Disclaimer (landing page) -->
       <div style="margin-top:24px;background:rgba(184,168,138,0.08);border:1px solid rgba(184,168,138,0.2);border-radius:10px;padding:14px 20px;font-size:0.82rem;color:#7A6C52;font-family:'IBM Plex Mono',monospace;line-height:1.6">
-        Fearless Job Search writes the outreach. You send it. Reach out directly through LinkedIn and email. We do the writing. You do the connecting.
+        Fearless Job Search writes the outreach. You send it through LinkedIn. We do the writing. You do the connecting.
       </div>
     </div>
 
@@ -1910,12 +1910,12 @@
       <div class="back-row"><button class="btn-back" onclick="goToStep(3)">← Back to contacts</button><button class="btn-back" onclick="resetToInitialState()" style="margin-left:8px;color:#B8A88A">New Search</button></div>
       <h2 class="section-title">Outreach Sequences</h2>
       <p class="section-sub">Personalized 4-message sequences for each contact. Copy, paste, start conversations.</p>
-      <div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;margin-bottom:14px;font-size:0.88rem;color:#555;font-weight:500">Each contact gets a full outreach sequence across 14 days. Click "Copy" on any message to copy it to your clipboard, then paste it into LinkedIn or email.</div>
+      <div style="background:#F9F6F1;border-radius:10px;padding:14px 18px;margin-bottom:14px;font-size:0.88rem;color:#555;font-weight:500">Each contact gets a full outreach sequence across 14 days. Click "Copy" on any message to copy it to your clipboard, then paste it into LinkedIn. Optimized for LinkedIn responses — expect around 30% connection acceptance on the first message, with another 20% responding by the 3rd or 4th touchpoint.</div>
       <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
         <button class="btn-secondary btn-small" onclick="exportOutreachCSV()">Export to Spreadsheet</button>
       </div>
       <div class="outreach-info-box">
-        Fearless Job Search writes your messages. You send them. Reach out directly through LinkedIn and email. The tool does the thinking. You do the connecting.
+        Fearless Job Search writes your messages. You send them through LinkedIn. The tool does the thinking. You do the connecting.
       </div>
       <div id="outreachContainer"></div>
     </div>
@@ -4345,7 +4345,7 @@ Return a JSON object with a "sequences" array. Each sequence:
   "messages": [
     {
       "step": "Connection Request" | "Follow-Up" | "Re-Engage" | "Final Circle Back",
-      "channel": "LinkedIn" | "LinkedIn DM" | "Email",
+      "channel": "LinkedIn" | "LinkedIn DM",
       "timing": "Day 1" | "Day 2" | "Day 8" | "Day 14",
       "body": "string"
     }
