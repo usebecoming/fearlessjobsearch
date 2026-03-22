@@ -1612,6 +1612,23 @@ function titleMentionsDifferentCompany(title, expectedCompany) {
   if (!title || !expectedCompany) return false;
   const t = title.toLowerCase();
   const company = expectedCompany.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+
+  // CEO/Founder title mismatch — if they claim CEO/Founder of a different company, flag it
+  if (/\b(ceo|founder|co-founder|president)\b/i.test(t)) {
+    var ceoCompanyMatch = t.match(
+      /(?:ceo|founder|co-founder|president)\s+(?:at|of|@|,|-|&)\s+(.+?)(?:\s*[,|·]|$)/i
+    );
+    if (ceoCompanyMatch) {
+      var claimedCompany = ceoCompanyMatch[1].toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+      if (claimedCompany.length > 2 &&
+          !claimedCompany.includes(company) &&
+          !company.includes(claimedCompany)) {
+        console.log(`⚠️ CEO/Founder title mismatch: "${title}" (searching: ${expectedCompany})`);
+        return true;
+      }
+    }
+  }
+
   const majorCompanies = [
     'google', 'microsoft', 'apple', 'amazon', 'meta', 'facebook',
     'netflix', 'salesforce', 'oracle', 'sap', 'ibm', 'intel',
