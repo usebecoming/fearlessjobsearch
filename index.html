@@ -1831,7 +1831,7 @@
       <div class="form-group" style="position:relative">
         <label class="form-label">Locations <span style="color:#777777;font-weight:300">(up to 5)</span></label>
         <div class="tag-input-wrap" id="locationsWrap">
-          <input type="text" class="tag-field" id="locationField" placeholder="Start typing a city..." autocomplete="off">
+          <input type="text" class="tag-field" id="locationField" placeholder="City, state, or country..." autocomplete="off">
         </div>
         <div class="location-suggestions" id="locationSuggestions"></div>
         <p style="font-size:0.82rem;color:#999;margin-top:6px" id="locationHintJobs">Remote is an option — adding it to your locations often surfaces roles not listed locally.</p>
@@ -3008,6 +3008,22 @@
     // ── Location autocomplete ──
     const LOCATIONS = [
       'Remote',
+      // Countries
+      'United States', 'Canada', 'United Kingdom', 'Germany', 'France', 'Australia',
+      'Netherlands', 'Ireland', 'Singapore', 'India', 'Japan', 'Brazil', 'Mexico',
+      'Spain', 'Italy', 'Sweden', 'Switzerland', 'Israel', 'South Korea',
+      'United Arab Emirates', 'South Africa', 'New Zealand',
+      // US States / Regions
+      'California', 'Texas', 'New York State', 'Florida', 'Illinois', 'Pennsylvania',
+      'Ohio', 'Georgia', 'North Carolina', 'Michigan', 'New Jersey', 'Virginia',
+      'Washington State', 'Arizona', 'Massachusetts', 'Tennessee', 'Indiana',
+      'Missouri', 'Maryland', 'Wisconsin', 'Minnesota', 'Colorado', 'Oregon',
+      'Connecticut', 'Utah', 'Nevada', 'South Carolina', 'Alabama', 'Louisiana',
+      'Kentucky', 'Oklahoma', 'Iowa', 'Mississippi', 'Kansas', 'Arkansas',
+      'Nebraska', 'Idaho', 'New Mexico', 'Hawaii', 'Montana', 'Delaware',
+      'Rhode Island', 'New Hampshire', 'Maine', 'Vermont', 'Wyoming',
+      'North Dakota', 'South Dakota', 'Alaska', 'West Virginia',
+      // US Cities
       'New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX', 'Phoenix, AZ',
       'Philadelphia, PA', 'San Antonio, TX', 'San Diego, CA', 'Dallas, TX', 'Austin, TX',
       'San Jose, CA', 'San Francisco, CA', 'Jacksonville, FL', 'Columbus, OH', 'Indianapolis, IN',
@@ -3024,8 +3040,14 @@
       'Honolulu, HI', 'Anchorage, AK', 'Birmingham, AL', 'Memphis, TN', 'Louisville, KY',
       'Oklahoma City, OK', 'Hartford, CT', 'Providence, RI', 'Charleston, SC', 'Savannah, GA',
       'New Orleans, LA', 'Albuquerque, NM', 'Tucson, AZ', 'Sacramento, CA', 'Wilmington, DE',
-      'Toronto, Canada', 'Vancouver, Canada', 'London, UK', 'Berlin, Germany', 'Singapore',
-      'Sydney, Australia', 'Dublin, Ireland', 'Amsterdam, Netherlands', 'Paris, France'
+      // International cities
+      'Toronto, Canada', 'Vancouver, Canada', 'Montreal, Canada', 'Calgary, Canada',
+      'London, UK', 'Manchester, UK', 'Edinburgh, UK', 'Berlin, Germany', 'Munich, Germany',
+      'Paris, France', 'Amsterdam, Netherlands', 'Dublin, Ireland', 'Sydney, Australia',
+      'Melbourne, Australia', 'Singapore', 'Tokyo, Japan', 'Mumbai, India', 'Bangalore, India',
+      'Tel Aviv, Israel', 'Dubai, UAE', 'Sao Paulo, Brazil', 'Mexico City, Mexico',
+      'Stockholm, Sweden', 'Zurich, Switzerland', 'Seoul, South Korea',
+      'Cape Town, South Africa', 'Auckland, New Zealand'
     ];
 
     const locationField = document.getElementById('locationField');
