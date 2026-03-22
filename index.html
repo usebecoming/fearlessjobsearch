@@ -2643,6 +2643,10 @@
       });
     }
 
+    // Token cache — declared here so session restore can use them
+    var _cachedToken = null;
+    var _cachedTokenExpiry = 0;
+
     // Check existing session on load
     (async () => {
       // Check for password recovery token in URL hash
@@ -3345,8 +3349,7 @@
 
     // ── Universal gate checker ──
     // Get auth headers for API calls — passes JWT for server-side verification
-    var _cachedToken = null;
-    var _cachedTokenExpiry = 0;
+    // _cachedToken and _cachedTokenExpiry declared earlier near session restore
 
     async function getAuthHeaders() {
       var headers = { 'Content-Type': 'application/json' };
