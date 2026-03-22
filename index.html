@@ -135,6 +135,8 @@
       background: #3A8A5C; color: #fff; border-color: #3A8A5C;
       box-shadow: 0 2px 8px rgba(58,138,92,0.2);
     }
+    .step-dot.skipped { background: #E5E4E2; color: #bbb; border-color: #E5E4E2; opacity: 0.5; }
+    .step-label.skipped { color: #ccc; opacity: 0.5; }
     .step-line { width: 60px; height: 2px; background: #E5E4E2; transition: background 0.3s; }
     .step-line.completed { background: #3A8A5C; }
     .step-labels {
@@ -3273,13 +3275,22 @@
       }
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById(`section-${n}`).classList.add('active');
+      var isCompanyMode = state.searchMode === 'companies';
       for (let i = 1; i <= 4; i++) {
         const dot = document.getElementById(`dot-${i}`);
         const label = document.getElementById(`label-${i}`);
         dot.className = 'step-dot';
         label.className = 'step-label';
-        if (i < n) dot.classList.add('completed');
-        if (i === n) { dot.classList.add('active'); label.classList.add('active'); }
+        // In company mode, grey out step 2 (Jobs) — it's skipped
+        if (isCompanyMode && i === 2) {
+          dot.classList.add('skipped');
+          label.classList.add('skipped');
+          label.textContent = 'Jobs';
+        } else {
+          label.textContent = ['', 'Search', 'Jobs', 'Contacts', 'Outreach'][i];
+          if (i < n) dot.classList.add('completed');
+          if (i === n) { dot.classList.add('active'); label.classList.add('active'); }
+        }
         if (i <= 3) {
           document.getElementById(`line-${i}`).className = 'step-line' + (i < n ? ' completed' : '');
         }
