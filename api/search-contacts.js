@@ -373,6 +373,14 @@ NEVER use the job title from the search query as a contact's title — do not bo
 
 IMPORTANT: Return ONLY accepted contacts in the JSON array. Do NOT include rejected contacts. Do NOT use "Rejected" as a role value. Valid roles are ONLY: "Hiring Manager", "Skip-Level", "Recruiter / TA". If you would reject a contact, simply omit them from the array.
 
+CRITICAL — Hiring Manager assignment:
+Only assign role "Hiring Manager" if the contact's title contains HR, People, Talent, Learning, Culture, Workforce, Organizational, HRBP, or similar People function keywords.
+Do NOT assign Hiring Manager to:
+- Administrative titles (supervisor, coordinator, assistant, liaison, specialist in non-HR fields)
+- Operations titles (director of intake, director of programs, case manager, services supervisor, supportive services)
+- Support titles (executive assistant, admin, community liaison)
+These may be assigned Skip-Level if they are genuinely executive level (VP+, Director+, C-suite). Otherwise omit them entirely.
+
 CEO, President, COO, CHRO, VP of People, Talent Acquisition Manager should NEVER be rejected for a People/HR role. These are the most valuable contacts.
 
 Contacts:
@@ -1258,7 +1266,9 @@ const KNOWN_FALSE_POSITIVES = new Set([
   'chris-plonsky-9700165',        // Athletics at UFCU - wrong function
   'prakash-ilango-8962541b',      // Dell - no title signal
   'sridhar-gurram-b5905011',      // Dell - no title signal
-  'kirk-scott-562a7b74'           // Dell - no title signal
+  'kirk-scott-562a7b74',          // Dell - no title signal
+  'patwadors',                    // Pat Wadors — LinkedIn influencer, appears for many companies
+  'mark-hidle'                    // Appears across multiple company searches
 ]);
 
 // City/name words that cause false positives in slugs
