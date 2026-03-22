@@ -4834,13 +4834,16 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
         </tr></thead><tbody>`;
 
       state.pipeline.forEach((p, i) => {
-        const fitBadge = p.fitScore >= 80 ? 'badge-green' :
+        const noResume = p.fitScore === -1 || p.fitScore === 0;
+        const fitBadge = noResume ? 'badge-gold' :
+                         p.fitScore >= 80 ? 'badge-green' :
                          p.fitScore >= 60 ? 'badge-gold' : 'badge-red';
+        const fitDisplay = noResume ? 'N/A' : p.fitScore;
         html += `<tr>
           <td>${esc(p.title)}</td>
           <td style="color:#B8A88A">${esc(p.company)}</td>
           <td style="color:#777777">${esc(p.location)}</td>
-          <td><span class="badge ${fitBadge}">${p.fitScore}</span></td>
+          <td><span class="badge ${fitBadge}">${fitDisplay}</span></td>
           <td class="mono" style="color:#777777;font-size:0.85rem">${esc(p.addedAt)}</td>
           <td>
             <select class="pipeline-status-select" onchange="updatePipelineStatus(${i}, this.value)">
