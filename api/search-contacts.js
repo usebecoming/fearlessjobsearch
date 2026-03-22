@@ -462,7 +462,11 @@ Return JSON array only — accepted contacts only:
             return false;
           }
           if (isWrongEntityFalsePositive(c.title, c.note, company)) {
-            console.log(`  ❌ Sports team false positive: ${c.name} — "${c.title}"`);
+            console.log(`  ❌ Wrong entity false positive: ${c.name} — "${c.title}"`);
+            return false;
+          }
+          if (isFranchiseOwner(c.title, company)) {
+            console.log(`  ❌ Franchise owner rejected: ${c.name} — "${c.title}"`);
             return false;
           }
           if (isTitleTooVague(c.title, roleType)) {
@@ -1554,6 +1558,16 @@ function isTitleJustCompanyName(title, companyName) {
 }
 
 // Vague title check - generous, only rejects truly empty titles
+function isFranchiseOwner(title, company) {
+  var t = (title || '').toLowerCase();
+  var c = (company || '').toLowerCase();
+  if (/(support center|headquarters|hq|corporate)/i.test(c)) {
+    if (/\bowner\b/i.test(t) && !/\bco-owner\b/i.test(t)) return true;
+    if (/\bfranchise\b/i.test(t) && !/\bvp\b|director|head of|chief/i.test(t)) return true;
+  }
+  return false;
+}
+
 function isWrongEntityFalsePositive(title, note, companyName) {
   if (!title) return false;
   var titleLower = title.toLowerCase();
