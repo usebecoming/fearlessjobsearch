@@ -168,7 +168,28 @@ export default async function handler(req, res) {
             minimum_plan: 'pro'
           });
         }
-        return res.status(200).json({ allowed: true, plan: planKey });
+        // Company target also counts against search limit
+        if (searchCount >= plan.searches_per_month) {
+          return res.status(200).json({
+            allowed: false,
+            reason: 'search_limit_reached',
+            limit: plan.searches_per_month,
+            used: searchCount,
+            searches_used: searchCount,
+            searches_limit: plan.searches_per_month,
+            plan: planKey,
+            upgrade_required: true,
+            resets_at: resetDate ? resetDate.toISOString() : null
+          });
+        }
+        return res.status(200).json({
+          allowed: true,
+          plan: planKey,
+          searches_used: searchCount,
+          searches_limit: plan.searches_per_month,
+          jobs_per_search: plan.jobs_per_search,
+          resets_at: resetDate ? resetDate.toISOString() : null
+        });
 
       default:
         // Default: check search limit (backwards compat)

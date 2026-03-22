@@ -3642,6 +3642,12 @@
           sessionCache.setContacts(cacheKey, contactData);
           renderContacts(contactData);
           logUsage('contact_search', { mode: 'company_target', companies: state.companies, contacts: (contactData.results || []).reduce(function(s,r){ return s + (r.contacts||[]).length; }, 0) });
+          // Increment search count for company target
+          getAuthHeaders().then(function(h) {
+            if (h['Authorization']) {
+              fetch('/api/increment-usage', { method: 'POST', headers: h, body: JSON.stringify({}) }).catch(function(){});
+            }
+          }).catch(function(){});
         } catch (err) {
           stopProgress();
           contactContainer.innerHTML = '<div class="error-box">Something went wrong: ' + esc(err.message) + '<br><button class="btn-secondary btn-small" style="margin-top:10px" onclick="goToStep(1)">Try again</button></div>';
