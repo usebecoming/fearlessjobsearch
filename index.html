@@ -3806,7 +3806,12 @@ Return a JSON array with one object per job:
 
       // Empty state when all jobs are in pipeline
       if (state.jobs.length === 0 && state.pipelineFilteredCount > 0) {
-        container.innerHTML += '<div style="text-align:center;padding:40px 20px"><p style="font-size:0.95rem;color:#555;font-weight:500;margin-bottom:12px">All matching jobs are already in your pipeline.</p><p style="font-size:0.85rem;color:#999">Try different titles or locations for fresh opportunities.</p></div>';
+        container.innerHTML += '<div style="text-align:center;padding:3rem 2rem;color:#666">' +
+          '<p style="font-size:1rem;font-weight:500;color:#1a1a1a;margin-bottom:8px">No new opportunities found</p>' +
+          '<p style="font-size:0.875rem;line-height:1.6">All matching roles for this search are already in your pipeline. Try adjusting your titles, location, or salary range to surface new results.</p>' +
+          '</div>';
+        var btn = document.getElementById('searchBtn');
+        if (btn) { btn.disabled = false; btn.textContent = 'Find Opportunities'; btn.classList.remove('loading'); }
         return;
       }
 
