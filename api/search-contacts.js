@@ -1320,13 +1320,6 @@ function isTooJunior(contactTitle, jobTitle) {
   return juniorPatterns.some(function(p) { return p.test(ct); });
 }
 
-function isSuspiciousLinkedInUrl(url) {
-  var s = url.replace(/.*linkedin\.com\/in\//, '').replace(/[\?#].*$/, '').replace(/\/+$/, '');
-  if (/^.+-[a-f0-9]{6,}$/i.test(s)) return true;
-  if (/^.+-\d{7,}$/.test(s)) return true;
-  return false;
-}
-
 function preQualifyContact(url, snippet, companyName, pageTitle) {
   const slug = url.toLowerCase();
   const snippetLower = (snippet || '').toLowerCase();
@@ -1344,11 +1337,6 @@ function preQualifyContact(url, snippet, companyName, pageTitle) {
       console.log(`  🚫 Known false positive BLOCKED (partial): ${slugClean} matches ${fp}`);
       return { accepted: false, reason: 'known false positive profile (partial match)' };
     }
-  }
-
-  // Suspicious LinkedIn URL pattern — hex/numeric suffix often means low-quality profile
-  if (isSuspiciousLinkedInUrl(url)) {
-    return { accepted: 'claude_decide', confidence: 'low', reason: 'suspicious URL pattern — may be auto-generated profile' };
   }
 
   // Check city/name false positives - universal safe approach
