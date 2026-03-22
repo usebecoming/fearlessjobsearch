@@ -355,6 +355,8 @@ export default async function handler(req, res) {
                   stripe_customer_id: stripeCustomerId || '',
                   subscription_status: 'active',
                   subscription_id: session.subscription || '',
+                  search_count_month: 0,
+                  search_reset_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
                   updated_at: new Date().toISOString()
                 })
               }
