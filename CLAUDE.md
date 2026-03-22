@@ -255,6 +255,15 @@ This means:
 - Coaching checkout stalling: getSession hangs during checkout — use cached token with 8s timeout bypass
 - Outreach 504 timeout: batched 4 contacts per Claude call instead of all at once
 - Pipeline table name wrong: was 'pipeline', corrected to 'pipeline_jobs' everywhere
+- deriveLevel 'director' matching 'cto' substring: changed C-suite checks to word-boundary regex
+- Multi-entity false positives: isSubEntityFalsePositive catches 'Innergy Financial' vs 'INNERGY'
+- Famous exec false positives: isFamousExecFalsePositive catches CMOs from other companies surfaced by Brave
+- Franchise owner filter: rejects franchise owners when searching corporate/support center
+- Wrong function contacts: Engineering titles blocked for People searches, Entrepreneur blocked everywhere
+- Contact quality: vague company-name titles rejected unless C-suite signal in note/URL
+- Past employment detection: 11 additional patterns (stepped down, date ranges, departed, etc.)
+- Function scoring expanded: added keywords for all 9 functions (customer insights, M&A, PLG, etc.)
+- HM title hierarchy fixed: Director-level searches for VP/CMO, not CEO/President
 
 ## Critical Architecture Notes — DO NOT CHANGE
 - Session restore reads from localStorage directly — do NOT use getSession() on page load, it hangs
@@ -263,6 +272,8 @@ This means:
 - getAuthHeaders() uses cached token first, only falls back to getSession() if cache expired
 - Token expiry on localStorage restore is set to max(stored_expiry, now+5min) to prevent immediate fallback to getSession()
 - onAuthStateChange handles fresh logins (SIGNED_IN) — localStorage restore handles page reloads
+- deriveLevel must use word-boundary regex for C-suite abbreviations — t.includes('cto') matches 'director'
+- Post-Claude filters run in order: vague title → wrong entity → sub-entity → famous exec → franchise → too junior → wrong function → former employee → CEO mismatch
 
 ## Development Rules
 - Universal logic only — no hardcoded company names, titles, or edge cases
