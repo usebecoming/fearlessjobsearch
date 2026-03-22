@@ -220,11 +220,16 @@ export default async function handler(req, res) {
       const recQuery = derived.recTerms.map(t => `"${t}"`).join(' OR ');
       const slQuery = derived.slTitles.map(t => `"${t}"`).join(' OR ');
 
-      await Promise.all([
+      var searches = [
         searchAndFilter(co => `site:linkedin.com/in "${co}" (${hmQuery})`, 'Hiring Manager'),
         searchAndFilter(co => `site:linkedin.com/in "${co}" (${recQuery})`, 'Recruiter / TA'),
         searchAndFilter(co => `site:linkedin.com/in "${co}" (${slQuery})`, 'Skip-Level')
-      ]);
+      ];
+      // Company mode: add function-specific search upfront for better coverage
+      if (isCompanyMode && derived.func !== 'General') {
+        searches.push(searchAndFilter(co => `site:linkedin.com/in "${co}" (${getDeptSearchTerms(derived.func)}) (Director OR VP OR Head OR Senior OR Lead)`, 'Hiring Manager'));
+      }
+      await Promise.all(searches);
 
       // Fallback: broader HM if few results
       if (allContacts.filter(c => c.searchRole === 'Hiring Manager').length < 3) {
@@ -429,9 +434,14 @@ Return JSON array only — accepted contacts only:
         verifiedContacts = verifiedContacts.filter(c => {
           const roleType = c.role || c.role_type || '';
           if (isTitleJustCompanyName(c.title, company)) {
-            console.log(`  🔶 Title is company name — keeping: ${c.name} — "${c.title}"`);
-            c.titleVerified = false;
-            return true;
+            // Only keep vague company-name titles for Skip-Level contacts
+            if (roleType === 'Skip-Level') {
+              console.log(`  🔶 Title is company name — keeping Skip-Level: ${c.name} — "${c.title}"`);
+              c.titleVerified = false;
+              return true;
+            }
+            console.log(`  ❌ Vague company-name title rejected: ${c.name} — "${c.title}"`);
+            return false;
           }
           if (isTitleTooVague(c.title, roleType)) {
             console.log(`  ❌ Vague title rejected: ${c.name} — "${c.title}"`);
