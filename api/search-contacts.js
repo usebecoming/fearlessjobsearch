@@ -441,6 +441,10 @@ Return JSON array only — accepted contacts only:
             console.log(`  ❌ Former employee rejected: ${c.name} — "${c.title}"`);
             return false;
           }
+          if (isTooJunior(c.title, jobTitle)) {
+            console.log(`  ❌ Too junior: ${c.name} — "${c.title}"`);
+            return false;
+          }
           if (!isFunctionRelevant(c.title, derived.func, roleType)) {
             console.log(`  ❌ Wrong function rejected: ${c.name} — "${c.title}" not relevant to ${derived.func}`);
             return false;
@@ -1276,6 +1280,35 @@ const COMMON_NAME_WORDS = new Set([
   'pluralsight', 'skillsoft'
 ]);
 
+function nameContainsCompanyWord(name, companyName) {
+  if (!name || !companyName) return false;
+  const genericWords = new Set(['industries', 'technologies', 'solutions', 'services',
+    'group', 'company', 'corporation', 'international', 'global', 'national',
+    'consulting', 'associates', 'partners', 'holdings', 'enterprises']);
+  const companyWords = companyName.toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length > 4)
+    .filter(w => !genericWords.has(w));
+  const nameParts = name.toLowerCase().split(/\s+/);
+  return companyWords.some(w => nameParts.some(np => np === w));
+}
+
+function isTooJunior(contactTitle, jobTitle) {
+  if (!contactTitle || !jobTitle) return false;
+  const ct = contactTitle.toLowerCase();
+  const jt = jobTitle.toLowerCase();
+  var isDirectorSearch = /director|vp|vice president|head of|chief|svp|evp|managing/i.test(jt);
+  if (!isDirectorSearch) return false;
+  var juniorPatterns = [
+    /^hr coordinator/i, /^hr assistant/i, /^hr administrator/i,
+    /^recruiting coordinator/i, /^talent coordinator/i,
+    /^hr specialist(?!\s+senior)/i, /^human resources specialist(?!\s+senior)/i,
+    /^hr generalist(?!\s+senior)/i, /^human resources coordinator/i,
+    /^people coordinator/i, /^people assistant/i
+  ];
+  return juniorPatterns.some(function(p) { return p.test(ct); });
+}
+
 function preQualifyContact(url, snippet, companyName, pageTitle) {
   const slug = url.toLowerCase();
   const snippetLower = (snippet || '').toLowerCase();
@@ -1343,6 +1376,12 @@ function preQualifyContact(url, snippet, companyName, pageTitle) {
   // Also check page_title for former indicators
   const pageTitleLower = (pageTitle || '').toLowerCase();
   const titleHasFormer = /\bformer\b|\bex-|\bretired\b|\bemeritus\b/i.test(snippetLower + ' ' + pageTitleLower);
+
+  // Surname false positive check — name contains company word
+  const contactName = extractNameFromUrl(url);
+  if (nameContainsCompanyWord(contactName, companyName) && !hasCurrentSignal) {
+    return { accepted: 'claude_decide', confidence: 'low', reason: 'name contains company word — possible surname FP' };
+  }
 
   // Decision
   if ((hasPastTense || titleHasFormer) && !hasCurrentSignal) {
