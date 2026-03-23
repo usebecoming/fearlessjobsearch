@@ -38,7 +38,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 8192,
+        max_tokens: 4096,
         ...(typeof temperature === 'number' ? { temperature } : {}),
         system: system || '',
         messages

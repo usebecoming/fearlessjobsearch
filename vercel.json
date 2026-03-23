@@ -28,6 +28,20 @@
       "maxDuration": 10
     }
   },
+  "headers": [
+    {
+      "source": "/",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, s-maxage=60, stale-while-revalidate=300" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, s-maxage=60, stale-while-revalidate=300" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/:path*" },
     { "source": "/policies", "destination": "/policies.html" },
