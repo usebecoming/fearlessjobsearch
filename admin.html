@@ -151,13 +151,27 @@
     })();
 
     async function loadData() {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      // Fetch all data via admin API (uses service key, bypasses RLS)
+      const { data: { session } } = await sb.auth.getSession();
+      const token = session?.access_token;
+      let adminData;
+      try {
+        const res = await fetch('/api/admin-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          }
+        });
+        if (!res.ok) throw new Error('Admin API returned ' + res.status);
+        adminData = await res.json();
+      } catch (err) {
+        console.error('Failed to load admin data:', err);
+        return;
+      }
 
-      // Get usage logs
-      const { data: logs } = await sb.from('usage_log').select('*').gte('created_at', thirtyDaysAgo).order('created_at', { ascending: false });
-
-      // Get profiles (users)
-      const { data: profiles } = await sb.from('profiles').select('*');
+      const logs = adminData.logs || [];
+      const profiles = adminData.profiles || [];
 
       // Stats
       const searches = (logs || []).filter(l => l.action === 'job_search').length;
@@ -222,9 +236,11 @@
         utbody.innerHTML = profiles.map(p => {
           const searches = userSearches[p.id] || 0;
           const lastActive = userLastActive[p.id] ? new Date(userLastActive[p.id]).toLocaleDateString() : 'Never';
-          const joined = new Date(p.created_at).toLocaleDateString();
+          const joined = new Date(p.signup_date || p.created_at).toLocaleDateString();
+          const planBadge = p.plan === 'free' ? 'badge-search' : p.plan === 'pro' ? 'badge-contacts' : 'badge-outreach';
           return `<tr>
-            <td>${p.id.substring(0, 8)}...</td>
+            <td style="font-size:0.82rem">${p.email || p.id.substring(0, 8) + '...'}</td>
+            <td><span class="badge ${planBadge}">${p.plan || 'free'}</span></td>
             <td style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem">${joined}</td>
             <td>${searches}</td>
             <td style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem">${lastActive}</td>
