@@ -4725,17 +4725,24 @@ Return a JSON array with one object per job:
       const container = document.getElementById('outreachContainer');
 
       const resumeSummary = sanitizeInput(state.resumeText, 5000);
+      // Only include contacts that are actually selected
+      const selectedIds = state.selectedContacts;
       const targets = (state.contacts.results || []).map(g => {
         const job = state.jobs.find(j => j.id === g.job_id);
+        const selectedForJob = g.contacts.filter(c => {
+          var cId = (c.linkedin || c.linkedin_url || c.name || '').replace(/[^a-zA-Z0-9]/g, '_');
+          return selectedIds.has(cId);
+        });
+        if (selectedForJob.length === 0) return null;
         return {
           job_id: g.job_id,
           company: g.company,
           job_title: g.job_title,
           posted: job ? job.posted : '',
           has_active_listing: job ? (job.fitScore !== 0 && !(job.posted || '').toLowerCase().includes('no active')) : true,
-          contacts: g.contacts.map(c => ({ name: c.name, title: c.title, role: c.role }))
+          contacts: selectedForJob.map(c => ({ name: c.name, title: c.title, role: c.role }))
         };
-      });
+      }).filter(Boolean);
 
       const totalContacts = targets.reduce((sum, t) => sum + t.contacts.length, 0);
       const totalBatchesEst = Math.ceil(totalContacts / 4);
