@@ -264,6 +264,15 @@ This means:
 - Past employment detection: 11 additional patterns (stepped down, date ranges, departed, etc.)
 - Function scoring expanded: added keywords for all 9 functions (customer insights, M&A, PLG, etc.)
 - HM title hierarchy fixed: Director-level searches for VP/CMO, not CEO/President
+- Claude JSON trailing commas: strip ,} and ,] before parsing
+- Claude truncated JSON: auto-close missing brackets/braces, extract valid array as fallback
+- Outreach batch resilience: failed batches skip instead of killing all outreach
+- Outreach only for selected contacts: was generating for all contacts regardless of selection
+- Contact cap priority: C-suite/VP contacts sent to Claude first, generic employees last
+- Universal company mismatch detection: pattern-based "at [Company]" detection replaces hardcoded list
+- Outreach cache invalidation: tracks selected contact IDs, regenerates when selection changes
+- Limited results threshold: lowered from 6 to 4 contacts for "good" coverage
+- Outreach prompt: enforced first-person "I've" for credentials, warmer friendly close
 
 ## Critical Architecture Notes — DO NOT CHANGE
 - Session restore reads from localStorage directly — do NOT use getSession() on page load, it hangs
@@ -274,6 +283,10 @@ This means:
 - onAuthStateChange handles fresh logins (SIGNED_IN) — localStorage restore handles page reloads
 - deriveLevel must use word-boundary regex for C-suite abbreviations — t.includes('cto') matches 'director'
 - Post-Claude filters run in order: vague title → wrong entity → sub-entity → famous exec → franchise → too junior → wrong function → former employee → CEO mismatch
+- Contact cap sorts by title signal priority before slicing to 10 — C-suite first, generic last
+- titleMentionsDifferentCompany uses universal "at/- [Company]" pattern detection, not hardcoded list
+- Outreach cache keys include selected contact IDs — changing selection invalidates cache
+- callClaude strips trailing commas, closes missing brackets, extracts arrays as fallback
 
 ## Development Rules
 - Universal logic only — no hardcoded company names, titles, or edge cases
