@@ -4711,14 +4711,18 @@ Return a JSON array with one object per job:
       const outreachAllowed = await checkGate('generate_outreach');
       if (!outreachAllowed) return;
 
-      // Check session cache first
+      // Check session cache — but only use if same contacts are selected
       var cachedOutreach = sessionCache.getOutreach();
-      if (cachedOutreach) {
-        console.log('⚡ Outreach from session cache');
+      var cachedContactIds = sessionCache._outreachContactIds || '';
+      var currentContactIds = [...state.selectedContacts].sort().join(',');
+      if (cachedOutreach && cachedContactIds === currentContactIds) {
+        console.log('⚡ Outreach from session cache (same contacts selected)');
         goToStep(4);
         state.sequences = cachedOutreach;
         renderOutreach(cachedOutreach);
         return;
+      } else if (cachedOutreach) {
+        console.log('🔄 Contact selection changed — regenerating outreach');
       }
 
       goToStep(4);
@@ -4865,6 +4869,7 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
         stopProgress();
         state.sequences = combinedData;
         sessionCache.setOutreach(combinedData);
+        sessionCache._outreachContactIds = [...state.selectedContacts].sort().join(',');
         renderOutreach(combinedData);
         logUsage('outreach_generated', { sequences: allSequences.length });
         // Update pipeline status in background

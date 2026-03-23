@@ -325,7 +325,24 @@ export default async function handler(req, res) {
       }
 
       // Combine pre-qualified first, then claude-decide, cap at 10
-      const allForClaude = [...preQualified, ...claudeDecide];
+      // Priority: contacts with title signals first, then generic employees last
+      function contactPriority(c) {
+        const slug = (c.linkedin_url || '').toLowerCase();
+        const snip = (c.snippet || '').toLowerCase();
+        const title = (c.inferredTitle || '').toLowerCase();
+        // C-suite signals get highest priority
+        if (/(ceo|coo|cto|cmo|cfo|chro|cpo|president|founder)/i.test(slug + ' ' + snip + ' ' + title)) return 0;
+        // VP/Director signals
+        if (/(vp|vice president|director|head of|svp|evp)/i.test(slug + ' ' + snip + ' ' + title)) return 1;
+        // Function-specific title signals (HR, recruiter, talent, etc.)
+        if (/(recruiter|talent|hr|people|marketing|engineering|sales|finance)/i.test(slug + ' ' + snip + ' ' + title)) return 2;
+        // Has any inferred title from slug
+        if (title && title.length > 3) return 3;
+        // Generic — company confirmed but no title signal
+        return 4;
+      }
+      const allForClaude = [...preQualified, ...claudeDecide]
+        .sort((a, b) => contactPriority(a) - contactPriority(b));
       const toPassToClaude = allForClaude.slice(0, 10);
       if (allForClaude.length > 10) {
         console.log(`📊 Capped: ${allForClaude.length} → ${toPassToClaude.length} contacts for Claude`);
@@ -1802,18 +1819,26 @@ function titleMentionsDifferentCompany(title, expectedCompany) {
     }
   }
 
-  const majorCompanies = [
-    'google', 'microsoft', 'apple', 'amazon', 'meta', 'facebook',
-    'netflix', 'salesforce', 'oracle', 'sap', 'ibm', 'intel',
-    'twitter', 'linkedin', 'uber', 'lyft', 'airbnb', 'spotify',
-    'slack', 'zoom', 'dropbox', 'stripe', 'square', 'paypal',
-    'goldman sachs', 'jpmorgan', 'morgan stanley', 'mckinsey',
-    'deloitte', 'pwc', 'kpmg', 'bain', 'bcg', 'accenture'
+  // Universal: detect "at [Company]", "[Role] - [Company]", "[Role] | [Company]" patterns
+  // This catches any company name in the title, not just a hardcoded list
+  const atCompanyPatterns = [
+    /(?:at|@)\s+([a-z][a-z0-9\s&.]{2,30}?)(?:\s*[,|·(]|$)/i,
+    /\s+[-–—]\s+([a-z][a-z0-9\s&.]{2,30}?)(?:\s*[,|·(]|$)/i,
+    /\|\s+([a-z][a-z0-9\s&.]{2,30}?)(?:\s*[,|·(]|$)/i
   ];
-  for (const co of majorCompanies) {
-    if (t.includes(co) && !company.includes(co)) {
-      console.log(`⚠️ Title may reference previous employer: "${title}" (searching: ${expectedCompany})`);
-      return true;
+
+  for (const pattern of atCompanyPatterns) {
+    const match = t.match(pattern);
+    if (match) {
+      const mentionedCompany = match[1].trim();
+      // Skip generic words that aren't company names
+      if (/^(the|a|an|this|that|my|our|your|large|small|global)$/i.test(mentionedCompany)) continue;
+      if (mentionedCompany.length < 3) continue;
+      // Check if it matches the search company
+      if (!mentionedCompany.includes(company) && !company.includes(mentionedCompany)) {
+        console.log(`⚠️ Title references different company: "${title}" mentions "${mentionedCompany}" (searching: ${expectedCompany})`);
+        return true;
+      }
     }
   }
   return false;
