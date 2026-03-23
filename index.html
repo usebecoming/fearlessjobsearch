@@ -4726,12 +4726,18 @@ Return a JSON array with one object per job:
 
       const resumeSummary = sanitizeInput(state.resumeText, 5000);
       // Only include contacts that are actually selected
+      // Contact IDs are "contact-0", "contact-1", etc. — sequential across all groups
       const selectedIds = state.selectedContacts;
+      var globalIdx = 0;
       const targets = (state.contacts.results || []).map(g => {
         const job = state.jobs.find(j => j.id === g.job_id);
-        const selectedForJob = g.contacts.filter(c => {
-          var cId = (c.linkedin || c.linkedin_url || c.name || '').replace(/[^a-zA-Z0-9]/g, '_');
-          return selectedIds.has(cId);
+        const selectedForJob = [];
+        (g.contacts || []).forEach(c => {
+          var cId = 'contact-' + globalIdx;
+          globalIdx++;
+          if (selectedIds.has(cId)) {
+            selectedForJob.push(c);
+          }
         });
         if (selectedForJob.length === 0) return null;
         return {
