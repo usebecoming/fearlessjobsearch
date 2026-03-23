@@ -3500,10 +3500,12 @@
       console.log(`Claude response: ${text.length} chars, ends with: "${text.slice(-50)}"`);
       // Strip markdown fences
       text = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+      // Fix common Claude JSON issues: trailing commas before } or ]
+      text = text.replace(/,(\s*[}\]])/g, '$1');
       try {
         return JSON.parse(text);
       } catch (e) {
-        console.error('JSON parse failed. Raw text:', text);
+        console.error('JSON parse failed. Raw text:', text.substring(0, 500));
         throw new Error('AI returned an invalid response. Please try again.');
       }
     }
