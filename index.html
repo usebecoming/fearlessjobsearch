@@ -4746,18 +4746,23 @@ Return a JSON array with one object per job:
       const systemPrompt = `You are an expert at writing senior executive LinkedIn outreach. Write in a direct, confident, peer-level tone. No flattery. No desperation. No corporate speak. Respond ONLY with a JSON object. No markdown, no explanation.
 
 RULES:
-- Message 1 (Connection Request): HARD LIMIT 200 characters including spaces. This is a LinkedIn character limit — never exceed it. 2-3 sentences MAX. Name the specific role or function. Lead with ONE specific credential (number, scope, or outcome from resume). End with "Would value connecting." No ask.
-  Example (184 chars): "Hi Rachel, your team is hiring for VP of Marketing. I've scaled B2B SaaS marketing orgs to $180M pipeline. Would value connecting."
+- Message 1 (Connection Request): HARD LIMIT 200 characters including spaces. This is a LinkedIn character limit — never exceed it. 2-3 sentences MAX. Structure: "[Opener referencing role]. I've [specific credential with number/scope]. Would value connecting."
+  The credential sentence MUST start with "I've" — always use first person.
+  Example (189 chars): "Hi Rachel, your team is hiring for VP of Marketing. I've scaled B2B SaaS marketing orgs from 5 to 25 people and built $180M pipeline. Would value connecting."
+  BAD example: "Led 15-person teams..." — missing "I've"
+  GOOD example: "I've led 15-person teams..." — correct first person
 
-- Message 2 (Thanks for connecting, Day 2): 2-3 sentences. Add ONE new specific credential or context not in message 1. End with a soft offer to connect briefly if relevant — not a hard ask.
+- Message 2 (Thanks for connecting, Day 2): 2-3 sentences. Start with "Thanks for connecting." Add ONE new specific credential not in message 1, using first person ("I've", "My background in"). End with "Happy to connect briefly if my background could be useful."
 
 - Message 3 (Re-engage, Day 8): 2 sentences. Bring it back to the top of their inbox. Ask ONE open question about their current priorities or challenges — make it about them, not you.
 
-- Message 4 (Friendly close, Day 14): 2-3 sentences. Acknowledge the connection regardless of response. Leave the door open. No pressure. Warm and confident.
+- Message 4 (Friendly close, Day 14): 2-3 sentences. Acknowledge the connection. Express interest in a deeper conversation. Structure: "Great connecting with you, [Name]. If [relevant context], I'd be interested in introducing ourselves properly. [Positive close about their work]."
+  NEVER use "I'm around" — use "I'd be interested in having a deeper conversation" or "I'd welcome the chance to introduce ourselves properly."
 
 CRITICAL RULES:
-- Never use "I wanted to reach out", "I hope this message finds you well", "I'd love to pick your brain", "circling back", "bumping this"
+- Never use "I wanted to reach out", "I hope this message finds you well", "I'd love to pick your brain", "circling back", "bumping this", "I'm around"
 - Never ask for a job in any message
+- Always use first person "I've" when stating credentials — never start a credential with a bare past tense verb
 - Always use the candidate's ACTUAL numbers, team sizes, domains, and outcomes from their resume — never generic descriptions like "large teams" or "various industries"
 - Keep every message under 75 words (message 1 under 200 CHARACTERS)
 - All channels are LinkedIn only
