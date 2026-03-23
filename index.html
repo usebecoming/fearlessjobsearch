@@ -3502,10 +3502,28 @@
       text = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
       // Fix common Claude JSON issues: trailing commas before } or ]
       text = text.replace(/,(\s*[}\]])/g, '$1');
+      // Fix missing closing brackets (truncated response)
+      var openBraces = (text.match(/\{/g) || []).length;
+      var closeBraces = (text.match(/\}/g) || []).length;
+      var openBrackets = (text.match(/\[/g) || []).length;
+      var closeBrackets = (text.match(/\]/g) || []).length;
+      while (closeBraces < openBraces) { text += '}'; closeBraces++; }
+      while (closeBrackets < openBrackets) { text += ']'; closeBrackets++; }
       try {
-        return JSON.parse(text);
+        var parsed = JSON.parse(text);
+        // Handle non-object/non-array responses
+        if (typeof parsed === 'string') {
+          console.warn('Claude returned plain text instead of JSON');
+          return [];
+        }
+        return parsed;
       } catch (e) {
         console.error('JSON parse failed. Raw text:', text.substring(0, 500));
+        // Last resort: try to extract any valid JSON array from the text
+        var arrayMatch = text.match(/\[[\s\S]*\]/);
+        if (arrayMatch) {
+          try { return JSON.parse(arrayMatch[0].replace(/,(\s*[}\]])/g, '$1')); } catch(e2) {}
+        }
         throw new Error('AI returned an invalid response. Please try again.');
       }
     }
@@ -4794,17 +4812,35 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
         });
 
         const totalBatches = Math.ceil(flatContacts.length / BATCH_SIZE);
-        console.log(`✍️ Generating outreach in ${totalBatches} batch(es) for ${flatContacts.length} contacts`);
+        const estimatedMinutes = Math.ceil(totalBatches * 15 / 60); // ~15s per batch
+        console.log(`✍️ Generating outreach in ${totalBatches} batch(es) for ${flatContacts.length} contacts (~${estimatedMinutes} min)`);
 
+        var batchErrors = 0;
         for (let i = 0; i < flatContacts.length; i += BATCH_SIZE) {
           const batch = flatContacts.slice(i, i + BATCH_SIZE);
           const batchNum = Math.floor(i / BATCH_SIZE) + 1;
-          showProgress(container, `Writing outreach batch ${batchNum} of ${totalBatches}...`, outreachEstimate);
+          const timeNote = totalBatches > 3
+            ? ` (est. ${estimatedMinutes} min total — ${flatContacts.length} contacts)`
+            : '';
+          showProgress(container, `Writing outreach ${batchNum} of ${totalBatches}${timeNote}...`, outreachEstimate);
 
-          const data = await callClaude(systemPrompt, buildOutreachPrompt(batch));
-          if (data && data.sequences) {
-            allSequences.push(...data.sequences);
+          try {
+            const data = await callClaude(systemPrompt, buildOutreachPrompt(batch));
+            if (data && data.sequences) {
+              allSequences.push(...data.sequences);
+            } else if (Array.isArray(data)) {
+              // Claude sometimes returns array directly instead of {sequences:[]}
+              allSequences.push(...data);
+            }
+          } catch (batchErr) {
+            batchErrors++;
+            console.warn(`⚠️ Batch ${batchNum} failed: ${batchErr.message} — continuing with remaining batches`);
+            // Don't throw — skip this batch and continue with the rest
+            // User still gets outreach for the successful batches
           }
+        }
+        if (batchErrors > 0) {
+          console.warn(`⚠️ ${batchErrors} of ${totalBatches} batches failed — ${allSequences.length} sequences generated`);
         }
 
         const combinedData = { sequences: allSequences };
