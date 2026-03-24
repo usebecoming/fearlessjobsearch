@@ -41,10 +41,16 @@ export default async function handler(req, res) {
     }
     titles = [...new Set(splitTitles)]; // dedupe
 
+    console.log(`📍 Locations received: ${JSON.stringify(locations || [])}`);
+
     const physicalLocations = (locations && locations.length > 0)
       ? locations.filter(l => l.toLowerCase() !== 'remote')
       : [];
     const isRemote = locations && locations.some(l => l.toLowerCase() === 'remote');
+
+    if (physicalLocations.length === 0 && !isRemote) {
+      console.log(`⚠️ No location filter — results will be from anywhere`);
+    }
 
     // Build search combinations: each title x each location
     // If no physical locations, search without location filter
