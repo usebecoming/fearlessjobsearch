@@ -23,11 +23,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { titles, locations, workTypes } = req.body;
+    let { titles, locations, workTypes } = req.body;
 
     if (!titles || !Array.isArray(titles) || titles.length === 0) {
       return res.status(400).json({ error: 'At least one job title is required' });
     }
+
+    // Safety net: split comma-separated titles that were entered as one string
+    // e.g. ["VP HR, SVP HR, CHRO"] → ["VP HR", "SVP HR", "CHRO"]
+    const splitTitles = [];
+    for (const t of titles) {
+      if (t.includes(',')) {
+        splitTitles.push(...t.split(',').map(s => s.trim()).filter(s => s.length > 0));
+      } else {
+        splitTitles.push(t.trim());
+      }
+    }
+    titles = [...new Set(splitTitles)]; // dedupe
 
     const physicalLocations = (locations && locations.length > 0)
       ? locations.filter(l => l.toLowerCase() !== 'remote')
