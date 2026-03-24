@@ -3689,6 +3689,24 @@
         renderCompanyTags();
         document.getElementById('companiesField').value = '';
       }
+
+      // Check for uncommitted location text
+      const locationField = document.getElementById('locationField');
+      const uncommittedLocation = locationField?.value.trim();
+      if (uncommittedLocation && state.locations.length === 0) {
+        // Try to match against known locations
+        const match = LOCATIONS.find(l =>
+          l.toLowerCase().startsWith(uncommittedLocation.toLowerCase())
+        );
+        if (match) {
+          addLocation(match);
+          locationField.value = '';
+        } else if (!confirm(`"${uncommittedLocation}" wasn't selected as a location.\n\nSearch results will include jobs from everywhere.\n\nContinue without a location filter?`)) {
+          locationField.focus();
+          return;
+        }
+      }
+
       validateSearch();
 
       // Warn if no resume uploaded
