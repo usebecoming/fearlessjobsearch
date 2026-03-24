@@ -2915,30 +2915,51 @@
     const titlesField = document.getElementById('titlesField');
     const titlesWrap = document.getElementById('titlesWrap');
 
-    titlesField.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const val = titlesField.value.trim();
+    // Helper: add one or more titles (splits on commas)
+    function commitTitle(rawVal) {
+      const parts = rawVal.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      let added = false;
+      for (const val of parts) {
         if (val && !state.titles.includes(val)) {
           state.titles.push(val);
-          renderTags();
-          titlesField.value = '';
+          added = true;
         }
-        validateSearch();
       }
+      if (added) {
+        renderTags();
+        titlesField.value = '';
+      }
+      validateSearch();
+    }
+
+    titlesField.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        commitTitle(titlesField.value);
+      }
+    });
+
+    // Also commit on comma typed mid-input
+    titlesField.addEventListener('input', () => {
+      if (titlesField.value.includes(',')) {
+        commitTitle(titlesField.value);
+      }
+      validateSearch();
+    });
+
+    // Handle paste — split pasted text into separate tags
+    titlesField.addEventListener('paste', e => {
+      setTimeout(() => {
+        if (titlesField.value.includes(',')) {
+          commitTitle(titlesField.value);
+        }
+      }, 0);
     });
 
     titlesField.addEventListener('blur', () => {
       const val = titlesField.value.trim();
-      if (val && !state.titles.includes(val)) {
-        state.titles.push(val);
-        renderTags();
-        titlesField.value = '';
-        validateSearch();
-      }
+      if (val) commitTitle(val);
     });
-
-    titlesField.addEventListener('input', () => validateSearch());
 
     function renderTags() {
       titlesWrap.querySelectorAll('.tag').forEach(t => t.remove());
@@ -3005,30 +3026,48 @@
     const companiesField = document.getElementById('companiesField');
     const companiesWrap = document.getElementById('companiesWrap');
 
-    companiesField.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const val = companiesField.value.trim();
+    function commitCompany(rawVal) {
+      const parts = rawVal.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      let added = false;
+      for (const val of parts) {
         if (val && !state.companies.includes(val)) {
           state.companies.push(val);
-          renderCompanyTags();
-          companiesField.value = '';
+          added = true;
         }
-        validateSearch();
+      }
+      if (added) {
+        renderCompanyTags();
+        companiesField.value = '';
+      }
+      validateSearch();
+    }
+
+    companiesField.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        commitCompany(companiesField.value);
       }
     });
 
     companiesField.addEventListener('blur', () => {
       const val = companiesField.value.trim();
-      if (val && !state.companies.includes(val)) {
-        state.companies.push(val);
-        renderCompanyTags();
-        companiesField.value = '';
-        validateSearch();
-      }
+      if (val) commitCompany(val);
     });
 
-    companiesField.addEventListener('input', () => validateSearch());
+    companiesField.addEventListener('input', () => {
+      if (companiesField.value.includes(',')) {
+        commitCompany(companiesField.value);
+      }
+      validateSearch();
+    });
+
+    companiesField.addEventListener('paste', e => {
+      setTimeout(() => {
+        if (companiesField.value.includes(',')) {
+          commitCompany(companiesField.value);
+        }
+      }, 0);
+    });
 
     function renderCompanyTags() {
       companiesWrap.querySelectorAll('.tag').forEach(t => t.remove());
