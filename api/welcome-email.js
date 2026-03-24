@@ -25,9 +25,10 @@ function emailSig() {
   return `
     <p style="margin:24px 0 0;font-size:13px;color:#666;line-height:1.6;border-top:1px solid #eee;padding-top:16px;">
       — Ben<br>
-      Dr. Benjamin Ritter | Live for Yourself Consulting<br>
+      Dr. Benjamin Ritter | <a href="https://liveforyourselfconsulting.com/" style="color:#666;">Live for Yourself Consulting</a><br>
       Author, <em>Becoming Fearless</em> | ICF PCC<br>
-      benjaminritter@lfyconsulting.com
+      benjaminritter@lfyconsulting.com<br>
+      <a href="https://www.linkedin.com/in/drbenjaminritter-leadershipdevelopment/" style="color:#3b82f6;">Connect on LinkedIn</a>
     </p>`;
 }
 
@@ -47,6 +48,7 @@ function welcomeEmailHtml(firstName) {
         <li style="margin-bottom:6px;">Run a search and see 3 AI-matched roles scored against your resume</li>
         <li style="margin-bottom:6px;">See how the scoring and filtering works for your specific background</li>
       </ul>
+      <p><a href="https://fearlessjobsearch.com/" style="color:#3b82f6;font-weight:500;">Start your first search →</a></p>
 
       <p>When you're ready to go further, that's where the real value is — <strong>80% of senior roles are filled through relationships, not job boards.</strong> With a paid plan you get verified decision-maker contacts at every company, personalized outreach sequences written from your resume, company targeting, and pipeline tracking. Plans start at $29/mo.</p>
 
