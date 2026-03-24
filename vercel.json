@@ -32,8 +32,17 @@
     },
     "api/welcome-email.js": {
       "maxDuration": 10
+    },
+    "api/cron-nudge-email.js": {
+      "maxDuration": 30
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron-nudge-email",
+      "schedule": "0 14 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/",
