@@ -3830,7 +3830,6 @@
             body: JSON.stringify({
               titles: searchTitles,
               locations: state.locations,
-              workTypes,
               resumeKeywords: resumeSummary ? resumeSummary.substring(0, 5000) : ''
             })
           });
@@ -4228,9 +4227,8 @@ Return a JSON array with one object per job:
               name: name,
               titles: state.titles || [],
               locations: state.locations || [],
-              work_types: profiles[profiles.length - 1].work_types,
-              salary_min: profiles[profiles.length - 1].salary_min,
-              salary_max: profiles[profiles.length - 1].salary_max,
+              salary_min: null,
+              salary_max: null,
               anchors: profiles[profiles.length - 1].anchors
             });
             console.log('Supabase save:', sbResult.error ? sbResult.error.message : 'success');
