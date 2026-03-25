@@ -3989,6 +3989,7 @@ Return a JSON array with one object per job:
         const card = document.createElement('div');
         const isStretch = job.fitScore < 87;
         card.className = 'job-card fade-up' + (state.selectedJobs.includes(job.id) ? ' selected' : '') + (isStretch ? ' stretch-role' : '');
+        card.dataset.jobId = job.id;
         card.style.animationDelay = `${i * 0.06}s`;
 
         const isNoListing = job.fitScore === 0 || (job.posted && job.posted.toLowerCase().includes('no active'));
@@ -4072,7 +4073,13 @@ Return a JSON array with one object per job:
       } else {
         state.selectedJobs.splice(idx, 1);
       }
-      renderJobs();
+      // Toggle class on the specific card instead of re-rendering all
+      const card = document.querySelector(`.job-card[data-job-id="${id}"]`);
+      if (card) {
+        card.classList.toggle('selected', idx === -1);
+        const check = card.querySelector('.job-select-check');
+        if (check) check.style.cssText = idx === -1 ? 'background:#111;color:#fff;border-color:#111;' : '';
+      }
       updateSelectionCount();
 
       // Background tasks (don't block UI)
