@@ -2869,7 +2869,11 @@
       const parts = rawVal.split(',').map(s => s.trim()).filter(s => s.length > 0);
       let added = false;
       for (const val of parts) {
-        if (val && !state.titles.includes(val)) {
+        if (!val || val.length < 3) continue;
+        if (val.length > 60) { showToast('Title too long — keep it under 60 characters'); continue; }
+        if (state.titles.length >= 7) { showToast('Maximum 7 titles allowed'); break; }
+        if (/^[^a-zA-Z]*$/.test(val)) continue; // reject non-letter strings
+        if (!state.titles.includes(val)) {
           state.titles.push(val);
           added = true;
         }
@@ -2977,7 +2981,11 @@
       const parts = rawVal.split(',').map(s => s.trim()).filter(s => s.length > 0);
       let added = false;
       for (const val of parts) {
-        if (val && !state.companies.includes(val)) {
+        if (!val || val.length < 2) continue;
+        if (val.length > 80) { showToast('Company name too long — keep it under 80 characters'); continue; }
+        if (state.companies.length >= 10) { showToast('Maximum 10 companies allowed'); break; }
+        if (/^[^a-zA-Z]*$/.test(val)) continue;
+        if (!state.companies.includes(val)) {
           state.companies.push(val);
           added = true;
         }
@@ -3038,11 +3046,22 @@
     const companyTitlesWrap = document.getElementById('companyTitlesWrap');
 
     companyTitlesField.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' || e.key === ',') {
         e.preventDefault();
-        const val = companyTitlesField.value.trim();
-        if (val && !state.companyTargetTitles.includes(val)) {
-          state.companyTargetTitles.push(val);
+        const rawVal = companyTitlesField.value;
+        const parts = rawVal.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        let added = false;
+        for (const val of parts) {
+          if (!val || val.length < 3) continue;
+          if (val.length > 60) { showToast('Title too long — keep it under 60 characters'); continue; }
+          if (state.companyTargetTitles.length >= 7) { showToast('Maximum 7 titles allowed'); break; }
+          if (/^[^a-zA-Z]*$/.test(val)) continue;
+          if (!state.companyTargetTitles.includes(val)) {
+            state.companyTargetTitles.push(val);
+            added = true;
+          }
+        }
+        if (added) {
           renderCompanyTargetTitleTags();
           companyTitlesField.value = '';
         }
