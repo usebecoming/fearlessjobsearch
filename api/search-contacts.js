@@ -1621,7 +1621,9 @@ function isSubEntityFalsePositive(note, title, searchCompany) {
     'capital', 'management', 'international', 'global', 'digital',
     'health', 'healthcare', 'media', 'studio', 'studios', 'labs',
     'systems', 'software', 'gmbh', 'llc', 'inc', 'ltd', 'corp',
-    'app', 'platform'
+    'app', 'platform', 'records', 'music', 'racing', 'motorsport',
+    'foundation', 'academy', 'institute', 'university', 'school',
+    'entertainment', 'productions', 'publishing', 'tv', 'films'
   ];
   var escapedSearch = searchLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   for (var i = 0; i < qualifiers.length; i++) {
@@ -1639,6 +1641,23 @@ function isFamousExecFalsePositive(contact, searchCompany) {
   if (!isCsuite) return false;
   var noteLower = note.toLowerCase();
   var companyLower = searchCompany.toLowerCase().trim();
+  // "CEO & Founder" or "Founder" titles are suspicious — most large companies'
+  // real CEOs don't have "Founder" in their LinkedIn title unless they actually founded it
+  // This catches people like "Alim Isaev - CEO & Founder" who founded a DIFFERENT company
+  // but Brave returned them because they mentioned Red Bull somewhere
+  var isFounderTitle = /\bfounder\b|co-founder/i.test(title);
+  if (isFounderTitle) {
+    // Check if the LinkedIn URL slug contains any company name word
+    var slug = (contact.linkedin || '').toLowerCase();
+    var companyInSlug = companyLower.split(/\s+/)
+      .filter(function(w) { return w.length > 2; })
+      .some(function(w) { return slug.includes(w); });
+    // If company name is NOT in their slug, likely a different company's founder
+    if (!companyInSlug) {
+      console.log('  ❌ Founder title but company not in LinkedIn slug: ' + contact.name);
+      return true;
+    }
+  }
   // Check if note confirms the search company
   var companyWords = companyLower.split(/\s+/).filter(function(w) { return w.length > 2; });
   var noteConfirms = companyWords.some(function(w) { return noteLower.includes(w); });
