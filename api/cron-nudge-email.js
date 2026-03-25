@@ -1,9 +1,35 @@
-import { createClient } from '@supabase/supabase-js';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+async function supabaseQuery(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': options.prefer || 'return=representation',
+      ...options.headers
+    },
+    method: options.method || 'GET',
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+async function supabaseGetUserById(userId) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    }
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
 
 async function sendEmail({ to, subject, html }) {
   const key = process.env.RESEND_API_KEY;
@@ -69,7 +95,7 @@ function nudgeEmailHtml(firstName) {
 }
 
 export default async function handler(req, res) {
-  // Verify this is a cron call (Vercel sends authorization header)
+  // Verify this is a cron call
   const authHeader = req.headers.authorization;
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -82,18 +108,9 @@ export default async function handler(req, res) {
     const tenDaysAgo = new Date();
     tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
 
-    const { data: profiles, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, plan, nudge_email_sent, created_at')
-      .eq('plan', 'free')
-      .eq('nudge_email_sent', false)
-      .lt('created_at', tenDaysAgo.toISOString())
-      .limit(20); // Process max 20 per run to stay within function timeout
-
-    if (profileError) {
-      console.error('Profile query error:', profileError.message);
-      return res.status(500).json({ error: profileError.message });
-    }
+    const profiles = await supabaseQuery(
+      `profiles?plan=eq.free&nudge_email_sent=eq.false&created_at=lt.${tenDaysAgo.toISOString()}&select=id,plan,nudge_email_sent,created_at&limit=20`
+    );
 
     if (!profiles || profiles.length === 0) {
       console.log('✅ No users to nudge');
@@ -108,17 +125,16 @@ export default async function handler(req, res) {
     for (const profile of profiles) {
       try {
         // Get email from auth.users
-        const { data: userData, error: userError } = await supabase
-          .auth.admin.getUserById(profile.id);
+        const userData = await supabaseGetUserById(profile.id);
 
-        if (userError || !userData?.user?.email) {
+        if (!userData?.email) {
           console.warn(`⚠️ Could not get email for user ${profile.id}`);
           failed++;
           continue;
         }
 
-        const email = userData.user.email;
-        const firstName = (userData.user.user_metadata?.full_name || email.split('@')[0] || 'there').split(' ')[0];
+        const email = userData.email;
+        const firstName = (userData.user_metadata?.full_name || email.split('@')[0] || 'there').split(' ')[0];
 
         // Skip admin emails
         if (['ritterbenjamin@gmail.com', 'benjaminritter@lfyconsulting.com'].includes(email.toLowerCase())) {
@@ -134,10 +150,11 @@ export default async function handler(req, res) {
         });
 
         // Mark as sent
-        await supabase
-          .from('profiles')
-          .update({ nudge_email_sent: true })
-          .eq('id', profile.id);
+        await supabaseQuery(`profiles?id=eq.${profile.id}`, {
+          method: 'PATCH',
+          body: { nudge_email_sent: true },
+          prefer: 'return=minimal'
+        });
 
         sent++;
         console.log(`✅ Nudged: ${email}`);
@@ -149,7 +166,6 @@ export default async function handler(req, res) {
     }
 
     console.log(`📊 Nudge complete: ${sent} sent, ${failed} failed`);
-
     return res.json({ sent, failed, total: profiles.length });
 
   } catch (err) {
