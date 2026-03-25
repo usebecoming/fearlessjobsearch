@@ -1916,8 +1916,13 @@
       <div id="jobsPaywall" style="display:none">
         <div style="position:relative;margin-top:-60px;padding-top:60px;background:linear-gradient(to bottom,rgba(255,248,242,0),#FFF8F2 40px)">
           <div style="background:#FFFFFF;border:2px solid #B8A88A;border-radius:14px;padding:32px;text-align:center;box-shadow:0 8px 32px rgba(184,168,138,0.12)">
-            <h3 style="font-size:1.3rem;margin-bottom:8px">7 more matched opportunities available</h3>
-            <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto">Plus decision-maker contacts, personalized outreach sequences, and pipeline tracking.</p>
+            <h3 style="font-size:1.3rem;margin-bottom:8px" id="paywallTitle">7 more matched opportunities available</h3>
+            <p style="font-size:0.92rem;color:#555;font-weight:500;margin-bottom:6px;max-width:440px;margin-left:auto;margin-right:auto">Upgrade to see all matched roles and unlock:</p>
+            <ul style="text-align:left;max-width:360px;margin:0 auto 20px;list-style:none;padding:0;font-size:0.88rem;color:#444">
+              <li style="padding:4px 0">&#10003; &nbsp;Verified decision-maker contacts at every company</li>
+              <li style="padding:4px 0">&#10003; &nbsp;Personalized outreach sequences written from your resume</li>
+              <li style="padding:4px 0">&#10003; &nbsp;Pipeline tracking to manage your campaign</li>
+            </ul>
             <button class="btn-primary" style="padding:14px 32px" onclick="openUpgradeModal()">Unlock Full Access</button>
           </div>
         </div>
@@ -3982,8 +3987,44 @@ Return a JSON array with one object per job:
         return;
       }
 
-      // Show/hide paywall
-      document.getElementById('jobsPaywall').style.display = (isFree && state.jobs.length > FREE_JOB_LIMIT) ? 'block' : 'none';
+      // Show blurred preview cards + paywall for free users
+      const paywallEl = document.getElementById('jobsPaywall');
+      const blurredEl = document.getElementById('blurredPreviews');
+      if (blurredEl) blurredEl.remove();
+
+      if (isFree && state.jobs.length > FREE_JOB_LIMIT) {
+        paywallEl.style.display = 'block';
+        // Update count in paywall
+        const hiddenCount = state.jobs.length - FREE_JOB_LIMIT;
+        const paywallH3 = paywallEl.querySelector('h3');
+        if (paywallH3) paywallH3.textContent = `${hiddenCount} more matched opportunities available`;
+
+        // Add blurred preview cards
+        const blurredContainer = document.createElement('div');
+        blurredContainer.id = 'blurredPreviews';
+        blurredContainer.style.cssText = 'position:relative;margin-top:12px;';
+
+        const hiddenJobs = state.jobs.slice(FREE_JOB_LIMIT, FREE_JOB_LIMIT + 3);
+        hiddenJobs.forEach((job, i) => {
+          const blurCard = document.createElement('div');
+          blurCard.style.cssText = `
+            background:#fff;border:1px solid #E5E4E2;border-radius:14px;
+            padding:20px 24px;margin-bottom:12px;
+            filter:blur(5px);user-select:none;pointer-events:none;
+            opacity:${0.7 - (i * 0.15)};
+          `;
+          blurCard.innerHTML = `
+            <div style="font-size:0.95rem;font-weight:600;color:#1a1a1a;margin-bottom:4px">${job.title || 'Senior Role Title'}</div>
+            <div style="font-size:0.85rem;color:#666">${job.company || 'Company Name'}</div>
+            <div style="font-size:0.8rem;color:#999;margin-top:4px">${job.location || 'Location'} · ${job.posted || 'Recent'}</div>
+          `;
+          blurredContainer.appendChild(blurCard);
+        });
+
+        grid.after(blurredContainer);
+      } else {
+        paywallEl.style.display = 'none';
+      }
 
       visibleJobs.forEach((job, i) => {
         const card = document.createElement('div');
