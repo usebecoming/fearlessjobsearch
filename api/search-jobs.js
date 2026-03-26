@@ -262,6 +262,7 @@ export default async function handler(req, res) {
 
     const agencyKeywords = ['staffing','recruiting','talent agency','manpower','adecco',
       'randstad','robert half','hays','kforce','kelly services','allegis','insight global',
+      'burnett specialists',
       'korn ferry','heidrick','aerotek','tek systems','teksystems','beacon hill',
       'apex group','modis','volt','spherion','express employment','nesco','addison group',
       'brooksource','procom','collabera','cybercoders','dice','jobspring','placement',

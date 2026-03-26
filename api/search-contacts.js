@@ -127,16 +127,30 @@ export default async function handler(req, res) {
       const representativeJob = group.jobs[0];
       const jobTitle = representativeJob.title;
 
-      // Skip very short names that can't be searched safely
+      // Short company names — try the original name or LinkedIn slug instead
       if (searchCompany.length <= 3 && !companyAliases[searchCompany.toLowerCase().trim()]) {
-        console.log(`⚠️ Company name too short: "${searchCompany}" — using LinkedIn fallback`);
-        const slug = await getLinkedInCompanySlug(company, braveKey);
-        group.result = {
-          company, derived: {}, contacts: [],
-          linkedin_slug: slug, geo_urn: getGeoUrn(representativeJob.location),
-          coverage_signal: 'poor'
-        };
-        return;
+        // Use the original (uncleaned) company name if longer
+        if (company.length > searchCompany.length && company.length > 3) {
+          console.log(`⚠️ Short name "${searchCompany}" — using original: "${company}"`);
+          searchCompany = company;
+        } else {
+          // Look up LinkedIn slug and use it as search term
+          var shortSlug = await getLinkedInCompanySlug(company, braveKey);
+          if (shortSlug && shortSlug.length > 3) {
+            // Convert slug to readable name: "nrgenergy" → "NRG Energy"
+            var slugName = shortSlug.replace(/-/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+            console.log(`⚠️ Short name "${searchCompany}" — using slug name: "${slugName}"`);
+            searchCompany = slugName;
+          } else {
+            console.log(`⚠️ Company name too short: "${searchCompany}" — using LinkedIn fallback`);
+            group.result = {
+              company, derived: {}, contacts: [],
+              linkedin_slug: shortSlug, geo_urn: getGeoUrn(representativeJob.location),
+              coverage_signal: 'poor'
+            };
+            return;
+          }
+        }
       }
       if (searchCompany !== company) {
         console.log(`🧹 Cleaned company: "${company}" → "${searchCompany}"`);
