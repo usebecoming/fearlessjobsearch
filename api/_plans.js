@@ -3,11 +3,13 @@ export const PLANS = {
     name: 'Free',
     price: 0,
     searches_per_month: 1,
-    jobs_per_search: 3,
-    contacts_enabled: false,
-    outreach_enabled: false,
-    pipeline_enabled: false,
-    company_target_enabled: false
+    jobs_per_search: 10,
+    contacts_enabled: true,
+    outreach_enabled: true,
+    pipeline_enabled: true,
+    company_target_enabled: false,
+    free_contact_limit: 1,    // 1 company's contacts
+    free_outreach_limit: 1    // 1 contact's outreach
   },
   starter: {
     name: 'Starter',

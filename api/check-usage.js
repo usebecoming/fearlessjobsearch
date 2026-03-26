@@ -144,7 +144,10 @@ export default async function handler(req, res) {
             minimum_plan: 'starter'
           });
         }
-        return res.status(200).json({ allowed: true, plan: planKey });
+        return res.status(200).json({
+          allowed: true, plan: planKey,
+          free_contact_limit: plan.free_contact_limit || null
+        });
 
       case 'generate_outreach':
         if (!plan.outreach_enabled) {
@@ -156,7 +159,10 @@ export default async function handler(req, res) {
             minimum_plan: 'starter'
           });
         }
-        return res.status(200).json({ allowed: true, plan: planKey });
+        return res.status(200).json({
+          allowed: true, plan: planKey,
+          free_outreach_limit: plan.free_outreach_limit || null
+        });
 
       case 'company_target':
         if (!plan.company_target_enabled) {

@@ -3957,8 +3957,6 @@ Return a JSON array with one object per job:
       }
     }
 
-    // Free preview: show 3 jobs, lock the rest
-    const FREE_JOB_LIMIT = 3;
     // ADMIN_EMAILS declared earlier near session restore
     function isFreeTier() {
       if (ADMIN_EMAILS.includes(state.userEmail)) return false;
@@ -3985,7 +3983,7 @@ Return a JSON array with one object per job:
       const grid = document.createElement('div');
       grid.className = 'job-grid';
       const isFree = isFreeTier();
-      const visibleJobs = isFree ? state.jobs.slice(0, FREE_JOB_LIMIT) : state.jobs;
+      const visibleJobs = state.jobs; // Free users now see all jobs
 
       // Empty state when all jobs are in pipeline
       if (state.jobs.length === 0 && state.pipelineFilteredCount > 0) {
@@ -3998,75 +3996,13 @@ Return a JSON array with one object per job:
         return;
       }
 
-      // Show blurred preview cards + paywall for free users
+      // Hide paywall for jobs — free users now see all jobs
       const paywallEl = document.getElementById('jobsPaywall');
       const blurredEl = document.getElementById('blurredPreviews');
       if (blurredEl) blurredEl.remove();
+      if (paywallEl) paywallEl.style.display = 'none';
 
-      if (isFree && state.jobs.length > FREE_JOB_LIMIT) {
-        paywallEl.style.display = 'block';
-        // Update count in paywall
-        const hiddenCount = state.jobs.length - FREE_JOB_LIMIT;
-        const paywallH3 = paywallEl.querySelector('h3');
-        if (paywallH3) paywallH3.textContent = `${hiddenCount} more matched opportunities available`;
-
-        // Build estimated contact teaser from companies in results
-        var contactTeaser = document.getElementById('contactTeaser');
-        var contactTeaserList = document.getElementById('contactTeaserList');
-        if (contactTeaser && contactTeaserList) {
-          var companies = [];
-          var seen = {};
-          state.jobs.forEach(function(j) {
-            var co = (j.company || j.employer_name || '').trim();
-            var key = co.toLowerCase();
-            if (co && !seen[key]) {
-              seen[key] = true;
-              companies.push(co);
-            }
-          });
-          if (companies.length > 0) {
-            var rows = companies.slice(0, 5).map(function(co) {
-              // Estimate contacts based on company name length as proxy for size
-              // Larger/well-known companies tend to have more indexed profiles
-              var est = co.length > 15 ? '5-8' : co.length > 8 ? '6-10' : '8-10';
-              return '<div style="display:flex;justify-content:space-between;padding:3px 0">' +
-                '<span style="color:#333">' + co + '</span>' +
-                '<span style="color:#9A8B6E;font-weight:500">' + est + ' contacts</span></div>';
-            }).join('');
-            if (companies.length > 5) {
-              rows += '<div style="color:#999;font-size:0.8rem;padding-top:4px">+ ' + (companies.length - 5) + ' more companies</div>';
-            }
-            contactTeaserList.innerHTML = rows;
-            contactTeaser.style.display = 'block';
-          }
-        }
-
-        // Add blurred preview cards
-        const blurredContainer = document.createElement('div');
-        blurredContainer.id = 'blurredPreviews';
-        blurredContainer.style.cssText = 'position:relative;margin-top:12px;';
-
-        const hiddenJobs = state.jobs.slice(FREE_JOB_LIMIT, FREE_JOB_LIMIT + 3);
-        hiddenJobs.forEach((job, i) => {
-          const blurCard = document.createElement('div');
-          blurCard.style.cssText = `
-            background:#fff;border:1px solid #E5E4E2;border-radius:14px;
-            padding:20px 24px;margin-bottom:12px;
-            filter:blur(5px);user-select:none;pointer-events:none;
-            opacity:${0.7 - (i * 0.15)};
-          `;
-          blurCard.innerHTML = `
-            <div style="font-size:0.95rem;font-weight:600;color:#1a1a1a;margin-bottom:4px">${job.title || 'Senior Role Title'}</div>
-            <div style="font-size:0.85rem;color:#666">${job.company || 'Company Name'}</div>
-            <div style="font-size:0.8rem;color:#999;margin-top:4px">${job.location || 'Location'} · ${job.posted || 'Recent'}</div>
-          `;
-          blurredContainer.appendChild(blurCard);
-        });
-
-        grid.after(blurredContainer);
-      } else {
-        paywallEl.style.display = 'none';
-      }
+      // Blurred cards removed — free users see all jobs, gate is at contacts step
 
       visibleJobs.forEach((job, i) => {
         const card = document.createElement('div');
@@ -4571,9 +4507,19 @@ Return a JSON array with one object per job:
       goToStep(3);
       const container = document.getElementById('contactsContainer');
 
-      const selectedJobData = state.jobs
+      var allSelectedJobData = state.jobs
         .filter(j => state.selectedJobs.includes(j.id))
         .map(j => ({ job_id: j.id, title: j.title, company: j.company, industry: j.industry, location: j.location }));
+
+      // Free tier: only search contacts for 1 company
+      var isFreeUser = isFreeTier();
+      var lockedCompanies = [];
+      var selectedJobData = allSelectedJobData;
+      if (isFreeUser && allSelectedJobData.length > 1) {
+        selectedJobData = [allSelectedJobData[0]]; // first selected job only
+        lockedCompanies = allSelectedJobData.slice(1);
+        console.log('🔒 Free tier: contacts for 1 company, ' + lockedCompanies.length + ' locked');
+      }
 
       // Check session cache first
       var contactCacheKey = buildContactCacheKey(selectedJobData);
@@ -4612,6 +4558,7 @@ Return a JSON array with one object per job:
 
           // Use contactData directly - already verified server-side
           state.contacts = contactData;
+          state._lockedCompanies = lockedCompanies || [];
           renderContacts(contactData);
           logUsage('contact_search', { jobs: selectedJobData.length, contacts: (contactData.results || []).reduce(function(s,r){ return s + (r.contacts||[]).length; }, 0) });
           // Save to pipeline in background
@@ -4751,6 +4698,25 @@ Return a JSON array with one object per job:
       }
 
       updateContactSelectionCount();
+
+      // Show locked company cards for free tier
+      if (state._lockedCompanies && state._lockedCompanies.length > 0) {
+        state._lockedCompanies.forEach(function(job) {
+          var lockedDiv = document.createElement('div');
+          lockedDiv.className = 'contacts-group fade-up';
+          lockedDiv.innerHTML = '<div style="border:2px dashed #D1CFC9;border-radius:14px;padding:32px 24px;text-align:center;background:#FAFAF8">' +
+            '<h3 style="font-size:1rem;font-weight:600;color:#1a1a1a;margin-bottom:4px">' + esc(job.title) + '</h3>' +
+            '<p style="font-size:0.88rem;color:#666;margin-bottom:16px">' + esc(cleanDisplayCompany(job.company)) + '</p>' +
+            '<div style="display:inline-flex;align-items:center;gap:6px;background:#F3F1ED;padding:6px 14px;border-radius:8px;margin-bottom:16px">' +
+            '<span style="font-size:1.1rem">🔒</span>' +
+            '<span style="font-size:0.85rem;color:#555;font-weight:500">Contacts available — upgrade to reveal</span></div>' +
+            '<p style="font-size:0.82rem;color:#999;margin-bottom:16px">Estimated 6-10 verified decision-makers at this company</p>' +
+            '<button class="btn-primary" style="padding:10px 24px;font-size:0.88rem" onclick="openUpgradeModal()">Upgrade to Unlock</button>' +
+            '</div>';
+          container.appendChild(lockedDiv);
+        });
+      }
+
       saveSession();
     }
 
@@ -4857,6 +4823,32 @@ Return a JSON array with one object per job:
           contacts: selectedForJob.map(c => ({ name: c.name, title: c.title, role: c.role }))
         };
       }).filter(Boolean);
+
+      // Free tier: only generate outreach for 1 contact
+      var lockedOutreachContacts = [];
+      if (isFreeTier()) {
+        var firstContact = null;
+        var freeTargets = [];
+        for (var ti = 0; ti < targets.length; ti++) {
+          if (!firstContact && targets[ti].contacts.length > 0) {
+            firstContact = targets[ti].contacts[0];
+            // Keep only the first contact from the first target
+            var lockedFromThisTarget = targets[ti].contacts.slice(1).map(function(c) { return { name: c.name, title: c.title, company: targets[ti].company }; });
+            lockedOutreachContacts.push(...lockedFromThisTarget);
+            freeTargets.push({ ...targets[ti], contacts: [firstContact] });
+          } else {
+            // All contacts in other targets are locked
+            targets[ti].contacts.forEach(function(c) { lockedOutreachContacts.push({ name: c.name, title: c.title, company: targets[ti].company }); });
+          }
+        }
+        if (freeTargets.length > 0) {
+          targets.length = 0;
+          freeTargets.forEach(function(t) { targets.push(t); });
+        }
+        if (lockedOutreachContacts.length > 0) {
+          console.log('🔒 Free tier: outreach for 1 contact, ' + lockedOutreachContacts.length + ' locked');
+        }
+      }
 
       const totalContacts = targets.reduce((sum, t) => sum + t.contacts.length, 0);
       const totalBatchesEst = Math.ceil(totalContacts / 4);
@@ -4972,6 +4964,7 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
         const combinedData = { sequences: allSequences };
         stopProgress();
         state.sequences = combinedData;
+        state._lockedOutreachContacts = lockedOutreachContacts || [];
         sessionCache.setOutreach(combinedData);
         sessionCache._outreachContactIds = [...state.selectedContacts].sort().join(',');
         renderOutreach(combinedData);
@@ -5052,6 +5045,32 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
         div.innerHTML = html;
         container.appendChild(div);
       });
+
+      // Show locked outreach cards for free tier
+      if (state._lockedOutreachContacts && state._lockedOutreachContacts.length > 0) {
+        var lockDiv = document.createElement('div');
+        lockDiv.className = 'fade-up';
+        lockDiv.style.animationDelay = '0.3s';
+        var lockHtml = '<div style="border:2px dashed #D1CFC9;border-radius:14px;padding:32px 24px;text-align:center;background:#FAFAF8;margin-top:20px">' +
+          '<div style="font-size:1.3rem;margin-bottom:8px">🔒</div>' +
+          '<h3 style="font-size:1.05rem;font-weight:600;color:#1a1a1a;margin-bottom:12px">' + state._lockedOutreachContacts.length + ' more outreach sequence' + (state._lockedOutreachContacts.length !== 1 ? 's' : '') + ' available</h3>' +
+          '<div style="max-width:360px;margin:0 auto 16px;text-align:left">';
+        state._lockedOutreachContacts.slice(0, 5).forEach(function(c) {
+          lockHtml += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.85rem">' +
+            '<span style="color:#333">' + esc(c.name) + '</span>' +
+            '<span style="color:#999">' + esc(c.company) + '</span></div>';
+        });
+        if (state._lockedOutreachContacts.length > 5) {
+          lockHtml += '<div style="color:#999;font-size:0.8rem;padding-top:4px">+ ' + (state._lockedOutreachContacts.length - 5) + ' more contacts</div>';
+        }
+        lockHtml += '</div>' +
+          '<p style="font-size:0.85rem;color:#555;margin-bottom:16px">Upgrade to generate personalized outreach for every contact</p>' +
+          '<button class="btn-primary" style="padding:10px 24px;font-size:0.88rem" onclick="openUpgradeModal()">Upgrade to Unlock All Outreach</button>' +
+          '</div>';
+        lockDiv.innerHTML = lockHtml;
+        container.appendChild(lockDiv);
+      }
+
       saveSession();
     }
 
