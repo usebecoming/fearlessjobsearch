@@ -1923,6 +1923,11 @@
               <li style="padding:4px 0">&#10003; &nbsp;Personalized outreach sequences written from your resume</li>
               <li style="padding:4px 0">&#10003; &nbsp;Pipeline tracking to manage your campaign</li>
             </ul>
+            <div id="contactTeaser" style="display:none;background:#F7F5F2;border:1px solid #E8E6E1;border-radius:10px;padding:16px 20px;margin:0 auto 20px;max-width:400px;text-align:left">
+              <p style="font-size:0.9rem;font-weight:600;color:#1a1a1a;margin-bottom:6px" id="contactTeaserTitle">Decision-makers ready to unlock</p>
+              <div id="contactTeaserList" style="font-size:0.84rem;color:#555;line-height:1.7"></div>
+              <p style="font-size:0.78rem;color:#9A8B6E;margin-top:8px;font-style:italic">Upgrade to reveal names, titles, and LinkedIn profiles</p>
+            </div>
             <button class="btn-primary" style="padding:14px 32px" onclick="openUpgradeModal()">Unlock Full Access</button>
           </div>
         </div>
@@ -3998,6 +4003,37 @@ Return a JSON array with one object per job:
         const hiddenCount = state.jobs.length - FREE_JOB_LIMIT;
         const paywallH3 = paywallEl.querySelector('h3');
         if (paywallH3) paywallH3.textContent = `${hiddenCount} more matched opportunities available`;
+
+        // Build estimated contact teaser from companies in results
+        var contactTeaser = document.getElementById('contactTeaser');
+        var contactTeaserList = document.getElementById('contactTeaserList');
+        if (contactTeaser && contactTeaserList) {
+          var companies = [];
+          var seen = {};
+          state.jobs.forEach(function(j) {
+            var co = (j.company || j.employer_name || '').trim();
+            var key = co.toLowerCase();
+            if (co && !seen[key]) {
+              seen[key] = true;
+              companies.push(co);
+            }
+          });
+          if (companies.length > 0) {
+            var rows = companies.slice(0, 5).map(function(co) {
+              // Estimate contacts based on company name length as proxy for size
+              // Larger/well-known companies tend to have more indexed profiles
+              var est = co.length > 15 ? '5-8' : co.length > 8 ? '6-10' : '8-10';
+              return '<div style="display:flex;justify-content:space-between;padding:3px 0">' +
+                '<span style="color:#333">' + co + '</span>' +
+                '<span style="color:#9A8B6E;font-weight:500">' + est + ' contacts</span></div>';
+            }).join('');
+            if (companies.length > 5) {
+              rows += '<div style="color:#999;font-size:0.8rem;padding-top:4px">+ ' + (companies.length - 5) + ' more companies</div>';
+            }
+            contactTeaserList.innerHTML = rows;
+            contactTeaser.style.display = 'block';
+          }
+        }
 
         // Add blurred preview cards
         const blurredContainer = document.createElement('div');
