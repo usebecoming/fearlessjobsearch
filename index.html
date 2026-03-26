@@ -23,10 +23,13 @@
     ::-webkit-scrollbar-thumb { background: rgba(184,168,138,0.3); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(184,168,138,0.5); }
     * { scrollbar-width: thin; scrollbar-color: rgba(184,168,138,0.3) transparent; }
-    #upgradeModal .modal { scrollbar-color: rgba(184,168,138,0.15) transparent; }
+    #upgradeModal .modal { scrollbar-color: transparent transparent; }
+    #upgradeModal .modal:hover { scrollbar-color: rgba(184,168,138,0.15) transparent; }
+    #upgradeModal .modal::-webkit-scrollbar { width: 4px; }
     #upgradeModal .modal::-webkit-scrollbar-track { background: transparent; }
-    #upgradeModal .modal::-webkit-scrollbar-thumb { background: rgba(184,168,138,0.15); border-radius: 3px; }
-    #upgradeModal .modal::-webkit-scrollbar-thumb:hover { background: rgba(184,168,138,0.3); }
+    #upgradeModal .modal::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+    #upgradeModal .modal:hover::-webkit-scrollbar-thumb { background: rgba(184,168,138,0.2); }
+    #upgradeModal .modal::-webkit-scrollbar-thumb:hover { background: rgba(184,168,138,0.35); }
     body {
       font-family: 'IBM Plex Sans', sans-serif;
       font-weight: 500;
