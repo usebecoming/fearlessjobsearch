@@ -2854,34 +2854,59 @@
 
       // Handle OAuth callback (Google sign-in)
       // URL has #access_token=... but no type=recovery
-      // Also check if Supabase already parsed the hash and stored the session
       if ((recoveryToken && !recoveryType) || window.location.hash.includes('access_token')) {
-        console.log('🔐 OAuth callback detected');
+        console.log('🔐 OAuth callback detected — parsing token from URL');
         try {
-          if (recoveryToken) {
-            await supabase.auth.setSession({
-              access_token: recoveryToken,
-              refresh_token: refreshToken
+          // Parse token directly from hash — don't rely on getSession()
+          var oauthToken = recoveryToken || hashParams.get('access_token');
+          var oauthRefresh = refreshToken || hashParams.get('refresh_token');
+
+          if (oauthToken) {
+            // Decode JWT to get user info
+            var tokenParts = oauthToken.split('.');
+            var payload = JSON.parse(atob(tokenParts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            console.log('🔐 OAuth user:', payload.email);
+
+            // Cache the token
+            _cachedToken = oauthToken;
+            _cachedTokenExpiry = (payload.exp || 0) * 1000 || Date.now() + 3600000;
+
+            // Store in localStorage so it persists
+            var storageKey = Object.keys(localStorage).find(function(k) { return k.startsWith('sb-') && k.endsWith('-auth-token'); }) || 'sb-tgicomrycbhrinobvnlr-auth-token';
+            localStorage.setItem(storageKey, JSON.stringify({
+              access_token: oauthToken,
+              refresh_token: oauthRefresh,
+              expires_at: payload.exp,
+              expires_in: 3600,
+              token_type: 'bearer',
+              user: {
+                id: payload.sub,
+                email: payload.email,
+                user_metadata: payload.user_metadata || {}
+              }
+            }));
+
+            // Clean up URL
+            window.history.replaceState({}, '', window.location.pathname);
+
+            // Show app with user info from JWT
+            showApp({
+              id: payload.sub,
+              email: payload.email,
+              user_metadata: payload.user_metadata || {}
             });
-          }
-          // Clean up the URL hash
-          window.history.replaceState({}, '', window.location.pathname);
-          // Wait briefly for Supabase to process, then check session
-          await new Promise(function(r) { setTimeout(r, 500); });
-          var oauthSession = await Promise.race([
-            supabase.auth.getSession(),
-            new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 5000); })
-          ]);
-          if (oauthSession?.data?.session?.user) {
-            console.log('🔐 OAuth session confirmed:', oauthSession.data.session.user.email);
-            _cachedToken = oauthSession.data.session.access_token;
-            _cachedTokenExpiry = Date.now() + 3600000;
-            showApp(oauthSession.data.session.user);
             loadUserData();
+
+            // Also try setSession in background so Supabase client is in sync
+            supabase.auth.setSession({
+              access_token: oauthToken,
+              refresh_token: oauthRefresh
+            }).catch(function(e) { console.warn('setSession background error:', e); });
+
             return;
           }
         } catch (e) {
-          console.error('OAuth session error:', e);
+          console.error('OAuth parse error:', e);
           // Fall through to localStorage restore
         }
       }
