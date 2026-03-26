@@ -2854,17 +2854,32 @@
 
       // Handle OAuth callback (Google sign-in)
       // URL has #access_token=... but no type=recovery
-      if (recoveryToken && !recoveryType) {
-        console.log('🔐 OAuth callback detected — setting session');
+      // Also check if Supabase already parsed the hash and stored the session
+      if ((recoveryToken && !recoveryType) || window.location.hash.includes('access_token')) {
+        console.log('🔐 OAuth callback detected');
         try {
-          await supabase.auth.setSession({
-            access_token: recoveryToken,
-            refresh_token: refreshToken
-          });
+          if (recoveryToken) {
+            await supabase.auth.setSession({
+              access_token: recoveryToken,
+              refresh_token: refreshToken
+            });
+          }
           // Clean up the URL hash
           window.history.replaceState({}, '', window.location.pathname);
-          // onAuthStateChange will handle showing the app
-          return;
+          // Wait briefly for Supabase to process, then check session
+          await new Promise(function(r) { setTimeout(r, 500); });
+          var oauthSession = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 5000); })
+          ]);
+          if (oauthSession?.data?.session?.user) {
+            console.log('🔐 OAuth session confirmed:', oauthSession.data.session.user.email);
+            _cachedToken = oauthSession.data.session.access_token;
+            _cachedTokenExpiry = Date.now() + 3600000;
+            showApp(oauthSession.data.session.user);
+            loadUserData();
+            return;
+          }
         } catch (e) {
           console.error('OAuth session error:', e);
           // Fall through to localStorage restore
