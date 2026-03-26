@@ -2602,8 +2602,13 @@
             }).catch(function(e) { console.warn('Welcome email failed:', e.message); });
           } catch(e) { console.warn('Welcome email error:', e.message); }
         } else {
-          document.getElementById('signupSuccess').style.display = 'block';
-          document.getElementById('signupSuccess').textContent = 'Check your email to confirm your account, then sign in.';
+          var successEl = document.getElementById('signupSuccess');
+          successEl.style.display = 'block';
+          successEl.style.cssText = 'display:block;background:#F0F7ED;border:2px solid #4CAF50;border-radius:12px;padding:24px;text-align:center;margin-top:16px';
+          successEl.innerHTML = '<div style="font-size:2rem;margin-bottom:8px">📧</div>' +
+            '<h3 style="font-size:1.1rem;font-weight:600;color:#1a1a1a;margin-bottom:8px">Check your email</h3>' +
+            '<p style="font-size:0.9rem;color:#444;line-height:1.6;margin-bottom:4px">We sent a confirmation link to <strong>' + email + '</strong></p>' +
+            '<p style="font-size:0.82rem;color:#777">Click the link in your email to activate your account, then come back and sign in.</p>';
         }
       } catch (e) {
         document.getElementById('signupError').textContent = 'Connection error. Please try again.';
