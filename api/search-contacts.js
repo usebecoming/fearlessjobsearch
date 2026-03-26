@@ -1661,7 +1661,9 @@ function isFamousExecFalsePositive(contact, searchCompany) {
   // Check if note confirms the search company
   var companyWords = companyLower.split(/\s+/).filter(function(w) { return w.length > 2; });
   var noteConfirms = companyWords.some(function(w) { return noteLower.includes(w); });
-  if (!noteConfirms) return true;
+  // Also check if "pre-qualified" is in note — means company was confirmed during pre-qualification
+  var preQualified = noteLower.includes('pre-qualified') || noteLower.includes('pre-qualified');
+  if (!noteConfirms && !preQualified) return true;
   return false;
 }
 

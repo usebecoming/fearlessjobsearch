@@ -208,7 +208,11 @@ export default async function handler(req, res) {
       'pyramid consulting',
       'living the dream','living the dream austin','ltda',
       'life is good coaching','dream life','your best life','limitless life',
-      'unleash your potential','the success principles','power of you','the coaching institute'
+      'unleash your potential','the success principles','power of you','the coaching institute',
+      'virtualvocations','virtual vocations','ziprecruiter','glassdoor','indeed','monster',
+      'careerbuilder','snagajob','ladders','flexjobs','remote.co','we work remotely',
+      'working nomads','remotive','angel.co','wellfound','builtin','themuse',
+      'jobcase','linkup','adzuna','jora','neuvoo','talent.com'
     ]);
 
     const conditionalBlocklist = {
