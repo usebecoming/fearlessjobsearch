@@ -3914,7 +3914,10 @@ Return a JSON array with one object per job:
             pipelineResult = { filtered: sortedJobs, removedCount: 0 };
           }
           var jobLimit = state.jobsPerSearch || 10;
-          state.jobs = pipelineResult.filtered.slice(0, jobLimit);
+          // Always keep up to 10 jobs in state for blurred preview cards
+          // The renderer handles showing FREE_JOB_LIMIT (3) to free users
+          // with the rest blurred behind the paywall
+          state.jobs = pipelineResult.filtered.slice(0, Math.max(jobLimit, 10));
           state.allJobs = sortedJobs; // keep unfiltered for "show all"
           console.log('🏆 TOP SCORED JOBS (' + state.jobs.length + '):');
           state.jobs.forEach(function(job, i) {
