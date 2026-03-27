@@ -36,10 +36,10 @@ Built by Dr. Benjamin Ritter | Live for Yourself Consulting
 - Resume + LinkedIn $800:  price_1TDFi0K3APtatfMmtU7ZLSsk  ← payment mode, not subscription
 
 ## Plans
-- Free: 3 jobs visible, no contacts, no outreach
+- Free: 1 search, 10 jobs, contacts for 1 company, outreach for 1 contact
 - Starter: 3 searches/mo, 10 jobs, contacts + outreach enabled
-- Pro: 6 searches/mo, 10 jobs, company target mode, saved searches, resume scoring
-- Accelerate: 15 searches/mo, 20 jobs/search, all features, priority support, annual option
+- Pro: 10 searches/mo, 10 jobs, company target mode, saved searches, resume scoring
+- Accelerate: 30 searches/mo, 20 jobs/search, all features, priority support, annual option
 
 ## Coaching Products
 - Resume Review ($500) and Resume + LinkedIn ($800) are one-time Stripe payments
