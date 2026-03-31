@@ -74,9 +74,15 @@ export default async function handler(req, res) {
         if (!seen.has(key)) { seen.add(key); allExpanded.push(v); }
       }
     }
-    const expandedTitles = allExpanded.slice(0, 7);
+    // Cap titles based on location count to stay within 60s Vercel timeout
+    // Each title × location = 1 query. Batches of 3 with 1s delay = ~4s per batch.
+    // Budget: ~15 batches max = ~45 queries, but leave room for resume keyword queries
+    const locationCount = (locationQueries || []).length || 1;
+    const maxTitles = Math.max(3, Math.floor(16 / locationCount));
+    const expandedTitles = allExpanded.slice(0, Math.min(maxTitles, 7));
     console.log(`📋 Original titles: ${titles.join(', ')}`);
-    console.log(`📋 Expanded to ${expandedTitles.length} search terms (capped at 7):`);
+    console.log(`📋 Expanded to ${expandedTitles.length} search terms (capped at ${maxTitles} for ${locationCount} location${locationCount > 1 ? 's' : ''}):`);
+
     expandedTitles.forEach(t => console.log(`   • ${t}`));
 
     // Single JSearch call with timeout protection
