@@ -33,7 +33,7 @@ Built by Dr. Benjamin Ritter | Live for Yourself Consulting
 - Accelerate Monthly $99:  price_1TCujoK3APtatfMmz0GggJn4
 - Accelerate Yearly $999:  price_1TCukaK3APtatfMmKNbheswb
 - Resume Review $500:      price_1TDFhJK3APtatfMmjK9kHib4  ← payment mode, not subscription
-- Resume + LinkedIn $800:  price_1TDFi0K3APtatfMmtU7ZLSsk  ← payment mode, not subscription
+- Resume + LinkedIn $750:  price_1TDFi0K3APtatfMmtU7ZLSsk  ← payment mode, not subscription
 
 ## Plans
 - Free: 1 search, 10 jobs, contacts for 1 company, outreach for 1 contact
@@ -42,7 +42,7 @@ Built by Dr. Benjamin Ritter | Live for Yourself Consulting
 - Accelerate: 30 searches/mo, 20 jobs/search, all features, priority support, annual option
 
 ## Coaching Products
-- Resume Review ($500) and Resume + LinkedIn ($800) are one-time Stripe payments
+- Resume Review ($500) and Resume + LinkedIn ($750) are one-time Stripe payments
 - mode: 'payment' not 'subscription' in create-checkout.js
 - Both price IDs must be in COACHING_PRICE_IDS Set in create-checkout.js AND stripe-webhook.js
 - After purchase: Resend sends confirmation email automatically from benjaminritter@lfyconsulting.com
