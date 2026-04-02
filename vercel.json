@@ -62,6 +62,7 @@
     { "source": "/policies", "destination": "/policies.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/landing", "destination": "/landing.html" },
+    { "source": "/start", "destination": "/start.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
