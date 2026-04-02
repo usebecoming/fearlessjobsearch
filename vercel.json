@@ -61,6 +61,7 @@
     { "source": "/api/:path*", "destination": "/api/:path*" },
     { "source": "/policies", "destination": "/policies.html" },
     { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/landing", "destination": "/landing.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

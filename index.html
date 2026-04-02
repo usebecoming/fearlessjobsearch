@@ -2209,6 +2209,12 @@
 
   <script>
     // ── Check checkout success ──
+    // Auto-open signup modal if coming from landing page
+    if (window.location.search.includes('signup=true')) {
+      window.history.replaceState({}, '', window.location.pathname);
+      setTimeout(function() { openAuthModal('signup'); }, 300);
+    }
+
     if (window.location.search.includes('checkout=success')) {
       window.history.replaceState({}, '', window.location.pathname);
       // Show success toast after a brief delay (let page load first)
