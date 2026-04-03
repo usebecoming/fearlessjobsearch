@@ -13,6 +13,7 @@ async function sendEmail({ to, subject, html }) {
       from: 'Dr. Benjamin Ritter <benjaminritter@lfyconsulting.com>',
       reply_to: 'benjaminritter@lfyconsulting.com',
       to,
+      bcc: 'benjaminritter@lfyconsulting.com',
       subject,
       html,
     }),
