@@ -164,6 +164,25 @@ function emailWelcomeAccelerate(firstName) {
     </div>`;
 }
 
+// Post-upgrade action email (sent after welcome email)
+function emailPostUpgrade(firstName) {
+  return `
+    <div style="font-family:sans-serif;font-size:14px;line-height:1.8;color:#222;max-width:600px;">
+      <p>${firstName},</p>
+      <p>You're upgraded. Here's exactly what to do today:</p>
+      ${stepBlock('Step 1 — Run a Company Target search first',
+        'If you already know which companies you want to be at, start there. Enter the company, skip the job board, go straight to the decision-makers. This is the fastest path to a conversation.')}
+      ${stepBlock('Step 2 — Run a job title search second',
+        'Enter your target titles and location. Upload your resume if you haven\'t already. Review your matched roles and select the 2-3 worth pursuing this week.')}
+      ${stepBlock('Step 3 — Send your outreach today',
+        'Don\'t sit on it. The connection request is written. Copy it, paste it, send it. The sooner it goes out the sooner you hear back.')}
+      <p>One search. Three companies. Nine contacts. Nine outreach sequences.<br>That's a week of real conversations in under an hour.</p>
+      <p><a href="https://fearlessjobsearch.com/" style="color:#3b82f6;font-weight:500;">Start now →</a></p>
+      <p>Reply anytime if something isn't working. I read every email.</p>
+      ${emailSig()}
+    </div>`;
+}
+
 // ── Price ID maps ──
 
 const COACHING_PRICE_IDS = new Set([
@@ -403,6 +422,20 @@ export default async function handler(req, res) {
                     </div>`,
                 }),
               ]);
+            }
+            // Send post-upgrade action email after a short delay
+            setTimeout(async () => {
+              try {
+                await sendEmail({
+                  to: customerEmail,
+                  subject: "You're in. Here's how to move fast.",
+                  html: emailPostUpgrade(firstName),
+                });
+                console.log(`📧 Post-upgrade email sent to ${customerEmail}`);
+              } catch (e) {
+                console.error('Post-upgrade email error:', e.message);
+              }
+            }, 5000); // 5 second delay so it arrives after the welcome email
             }
           } catch (emailErr) {
             console.error('Subscription welcome email error:', emailErr.message);
