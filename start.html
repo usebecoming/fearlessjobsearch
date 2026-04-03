@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#B8A88A">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
   <!-- Vercel Analytics -->
   <script defer src="/_vercel/insights/script.js"></script>
   <!-- LinkedIn Insight Tag -->
@@ -568,8 +569,24 @@
     <div class="hero-eyebrow">For Directors &middot; VPs &middot; C-Suite Executives</div>
     <h1>Stop waiting for callbacks. Land your next role through real conversations.</h1>
     <p class="hero-sub">Fearless Job Search finds the roles, identifies exactly who to contact, and writes your outreach — from your actual resume, in your voice. Under 5 minutes.</p>
-    <button class="btn-cta" onclick="window.location.href='/?signup=true&utm_source=landing&utm_medium=page&utm_campaign=launch'">Start Free — No Credit Card Required</button>
-    <p class="subtext">Free plan includes matched roles, real contacts &amp; outreach</p>
+    <!-- Inline signup form — no redirect needed -->
+    <div id="signupBox" style="max-width:400px;margin:0 auto;text-align:center">
+      <button id="googleBtn" onclick="signInWithGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;border:1px solid #D1D0CE;border-radius:10px;background:#fff;cursor:pointer;font-size:0.95rem;font-weight:500;color:#333;font-family:inherit;margin-bottom:14px;transition:background 0.15s">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continue with Google — Free
+      </button>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div style="flex:1;height:1px;background:#E5E4E2"></div>
+        <span style="font-size:0.78rem;color:#999;font-weight:500">or sign up with email</span>
+        <div style="flex:1;height:1px;background:#E5E4E2"></div>
+      </div>
+      <input type="email" id="signupEmail" placeholder="you@example.com" style="width:100%;padding:14px 16px;border:1px solid #D1D0CE;border-radius:10px;font-size:0.95rem;font-family:inherit;margin-bottom:10px;box-sizing:border-box">
+      <input type="password" id="signupPassword" placeholder="Create a password (min 6 chars)" style="width:100%;padding:14px 16px;border:1px solid #D1D0CE;border-radius:10px;font-size:0.95rem;font-family:inherit;margin-bottom:10px;box-sizing:border-box" onkeydown="if(event.key==='Enter')handleSignup()">
+      <button class="btn-cta" onclick="handleSignup()" style="width:100%">Start Free — No Credit Card</button>
+      <p id="signupError" style="font-size:0.85rem;color:#C94444;margin-top:8px;display:none"></p>
+      <p id="signupSuccess" style="display:none"></p>
+    </div>
+    <p class="subtext" style="margin-top:14px">Free plan includes matched roles, real contacts &amp; outreach</p>
     <div class="hero-logos">
       <span class="hero-logos-label">Trusted by senior leaders from</span>
       <span class="hero-logos-names">
@@ -732,7 +749,7 @@
         <div><strong>Company Target Mode</strong> <span>— skip the job board, find contacts at any company</span></div>
       </div>
     </div>
-    <button class="btn-cta" onclick="window.location.href='/?signup=true&utm_source=landing&utm_medium=page&utm_campaign=launch'">Start Free Now — Takes 60 Seconds</button>
+    <button class="btn-cta" onclick="document.getElementById('signupBox').scrollIntoView({behavior:'smooth'})">Start Free Now — Takes 60 Seconds</button>
     <p class="subtext">No credit card. No commitment. Full product, one free search.</p>
   </section>
 
@@ -778,7 +795,7 @@
   <section class="final-cta">
     <h2>Land your role. Finally break the silence.</h2>
     <p class="final-sub">Every day you wait is a day someone else is building the relationship that lands the role you want.</p>
-    <button class="btn-cta" onclick="window.location.href='/?signup=true&utm_source=landing&utm_medium=page&utm_campaign=launch'">Start Free — fearlessjobsearch.com</button>
+    <button class="btn-cta" onclick="document.getElementById('signupBox').scrollIntoView({behavior:'smooth'})">Start Free — fearlessjobsearch.com</button>
     <p class="subtext">No credit card required &middot; Full product &middot; One free search</p>
   </section>
 
@@ -799,6 +816,73 @@
       if (!isOpen) {
         btn.classList.add('open');
         answer.classList.add('open');
+      }
+    }
+
+    // ── Supabase Auth ──
+    var sb = window.supabase.createClient(
+      'https://tgicomrycbhrinobvnlr.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnaWNvbXJ5Y2Jocmlub2J2bmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NzcwOTMsImV4cCI6MjA4OTU1MzA5M30.nmC38E3meTH6mS0yjhyXaSYlwLc28mxqxLNf5e1KSdg'
+    );
+
+    async function signInWithGoogle() {
+      try {
+        var { error } = await sb.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin + '/?utm_source=landing&utm_medium=page&utm_campaign=launch' }
+        });
+        if (error) {
+          document.getElementById('signupError').textContent = 'Google sign-in failed: ' + error.message;
+          document.getElementById('signupError').style.display = 'block';
+        }
+      } catch (err) {
+        console.error('Google sign-in error:', err);
+      }
+    }
+
+    async function handleSignup() {
+      var email = document.getElementById('signupEmail').value.trim();
+      var password = document.getElementById('signupPassword').value;
+      var errorEl = document.getElementById('signupError');
+      var successEl = document.getElementById('signupSuccess');
+      errorEl.style.display = 'none';
+
+      if (!email) { errorEl.textContent = 'Please enter your email.'; errorEl.style.display = 'block'; return; }
+      if (!password || password.length < 6) { errorEl.textContent = 'Password must be at least 6 characters.'; errorEl.style.display = 'block'; return; }
+
+      try {
+        var { data, error } = await sb.auth.signUp({ email: email, password: password });
+        if (error) {
+          errorEl.textContent = error.message;
+          errorEl.style.display = 'block';
+        } else if (data?.user?.identities?.length === 0) {
+          errorEl.textContent = 'An account with this email already exists. Sign in on the main site.';
+          errorEl.style.display = 'block';
+        } else if (data?.session) {
+          // Signed up and auto-logged in — redirect to app
+          // Send welcome email in background
+          try {
+            fetch('/api/welcome-email', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + data.session.access_token
+              },
+              body: JSON.stringify({ email: email, name: email.split('@')[0] })
+            }).catch(function() {});
+          } catch(e) {}
+          // Redirect to app
+          window.location.href = '/?utm_source=landing&utm_medium=page&utm_campaign=launch';
+        } else {
+          // Show success — email confirmation might be on
+          successEl.style.display = 'block';
+          successEl.style.cssText = 'display:block;background:#F0F7ED;border:2px solid #4CAF50;border-radius:12px;padding:20px;text-align:center;margin-top:12px';
+          successEl.innerHTML = '<h3 style="font-size:1rem;font-weight:600;color:#1a1a1a;margin-bottom:6px">Check your email</h3><p style="font-size:0.85rem;color:#444">We sent a confirmation link to <strong>' + email + '</strong></p>';
+          document.getElementById('signupBox').querySelector('.btn-cta').style.display = 'none';
+        }
+      } catch (e) {
+        errorEl.textContent = 'Something went wrong. Please try again.';
+        errorEl.style.display = 'block';
       }
     }
   </script>
