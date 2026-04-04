@@ -18,7 +18,11 @@ async function supabaseQuery(path, options = {}) {
     const text = await res.text().catch(() => '');
     throw new Error(`Supabase ${res.status}: ${text}`);
   }
-  return res.json();
+  // PATCH with return=minimal returns empty body — don't parse
+  if (options.prefer === 'return=minimal') return null;
+  const text = await res.text();
+  if (!text) return null;
+  return JSON.parse(text);
 }
 
 async function supabaseGetUserById(userId) {
