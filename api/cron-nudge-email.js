@@ -214,7 +214,7 @@ export default async function handler(req, res) {
         const userEmail = userData.email;
         if (ADMIN_EMAILS.includes(userEmail.toLowerCase())) { skipped++; continue; }
 
-        const firstName = (userData.user_metadata?.full_name || userEmail.split('@')[0] || 'there').split(' ')[0];
+        const firstName = (userData.user_metadata?.full_name || 'there').split(' ')[0];
 
         // Send the email
         await sendEmail({

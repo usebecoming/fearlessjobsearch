@@ -868,7 +868,7 @@
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + data.session.access_token
               },
-              body: JSON.stringify({ email: email, name: email.split('@')[0] })
+              body: JSON.stringify({ email: email, name: '' })
             }).catch(function() {});
           } catch(e) {}
           // Redirect to app

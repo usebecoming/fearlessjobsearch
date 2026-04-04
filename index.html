@@ -2653,7 +2653,7 @@
             fetch('/api/welcome-email', {
               method: 'POST',
               headers,
-              body: JSON.stringify({ email, name: email.split('@')[0] })
+              body: JSON.stringify({ email, name: '' })
             }).catch(function(e) { console.warn('Welcome email failed:', e.message); });
           } catch(e) { console.warn('Welcome email error:', e.message); }
         } else {
