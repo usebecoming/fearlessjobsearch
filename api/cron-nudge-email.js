@@ -197,7 +197,8 @@ export default async function handler(req, res) {
         // Find the next email to send
         let emailToSend = null;
         for (const email of EMAIL_SEQUENCE) {
-          if (daysSinceSignup >= email.day && !lastSent.includes(email.key)) {
+          var sentKeys = lastSent.split(',').map(function(k) { return k.trim(); });
+          if (daysSinceSignup >= email.day && !sentKeys.includes(email.key)) {
             // Check conditions
             if (email.needsNoSearch && hasSearched) continue;
             if (email.needsSearch && !hasSearched) continue;
