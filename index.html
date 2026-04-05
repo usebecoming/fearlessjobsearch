@@ -2239,6 +2239,10 @@
         sessionStorage.removeItem('fjs_demo_location');
         sessionStorage.removeItem('fjs_demo_resume');
         window.history.replaceState({}, '', window.location.pathname);
+        // Auto-run the search after a brief delay for auth to settle
+        if (demoTitle) {
+          setTimeout(function() { runSearch(); }, 1500);
+        }
       }, 500);
     }
 
