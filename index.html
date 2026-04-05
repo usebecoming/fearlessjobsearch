@@ -1290,7 +1290,7 @@
       <div class="hero-badge">Built for your next senior role</div>
       <div style="margin-bottom:16px">
         <img src="assets/ben-headshot.png" alt="Dr. Benjamin Ritter" style="width:100px;height:auto;border-radius:12px;object-fit:contain;box-shadow:0 4px 12px rgba(0,0,0,0.1)" onerror="this.style.display='none'">
-        <p style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#999;margin-top:6px">Created by Dr. Benjamin Ritter · ICF PCC</p>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#999;margin-top:6px">Created by Dr. Benjamin Ritter · ICF PCC · EdD Organizational Leadership</p>
       </div>
       <h1>Stop waiting for callbacks. <span>Start conversations with the right people.</span></h1>
       <p style="line-height:2">Upload your resume.<br>We find who's hiring, who to talk to, and what to say.<br>You just send it.</p>
@@ -2310,7 +2310,7 @@
 
     // ── Check checkout success ──
     // Auto-open signup modal if coming from landing page
-    if (window.location.search.includes('signup=true')) {
+    if (window.location.search.includes('signup=true') && !window.location.search.includes('demo=true')) {
       window.history.replaceState({}, '', window.location.pathname);
       setTimeout(function() { openAuthModal('signup'); }, 300);
     }

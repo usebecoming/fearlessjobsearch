@@ -686,7 +686,7 @@
         </div>
       </div>
     </div>
-    <p class="testimonial-disclaimer">Coaching clients of Dr. Benjamin Ritter, leveraging this exact strategy.</p>
+    <p class="testimonial-disclaimer">Coaching clients of Dr. Benjamin Ritter, leveraging this exact strategy. Results vary based on experience, industry, and effort.</p>
   </section>
 
   <!-- ═══ FAQ ═══ -->
@@ -997,6 +997,7 @@
       var loadingEl = document.getElementById('demoLoading');
       var loadingText = document.getElementById('demoLoadingText');
       loadingEl.style.display = 'block';
+      loadingEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       loadingText.textContent = 'Searching job boards for "' + title + '" in ' + location + '...';
 
       setTimeout(function() {
