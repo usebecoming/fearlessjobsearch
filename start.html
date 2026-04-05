@@ -546,7 +546,10 @@
       <input type="text" id="demoTitle" class="form-input" placeholder="e.g. VP of Marketing, Head of HR">
 
       <label class="form-label">Where?</label>
-      <input type="text" id="demoLocation" class="form-input" placeholder="e.g. Austin, TX">
+      <div style="position:relative">
+        <input type="text" id="demoLocation" class="form-input" placeholder="e.g. Austin, TX" autocomplete="off">
+        <div id="locationDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #E5E4E2;border-top:none;border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,0.08)"></div>
+      </div>
 
       <label class="form-label">Upload your resume (PDF, DOCX, or TXT)</label>
       <div class="file-upload-area" id="demoUploadArea" onclick="document.getElementById('demoResumeFile').click()">
@@ -826,6 +829,68 @@
     }
 
     // ── Demo search handler ──
+    // ── Location Autocomplete ──
+    var LOCATIONS = [
+      'Remote',
+      'California', 'Texas', 'New York State', 'Florida', 'Illinois', 'Pennsylvania',
+      'Ohio', 'Georgia', 'North Carolina', 'Michigan', 'New Jersey', 'Virginia',
+      'Washington State', 'Arizona', 'Massachusetts', 'Tennessee', 'Indiana',
+      'Missouri', 'Maryland', 'Wisconsin', 'Minnesota', 'Colorado', 'Oregon',
+      'Connecticut', 'Utah', 'Nevada', 'South Carolina', 'Alabama', 'Louisiana',
+      'Kentucky', 'Oklahoma', 'Iowa', 'Mississippi', 'Kansas', 'Arkansas',
+      'Nebraska', 'Idaho', 'New Mexico', 'Hawaii', 'Montana', 'Delaware',
+      'Rhode Island', 'New Hampshire', 'Maine', 'Vermont', 'Wyoming',
+      'North Dakota', 'South Dakota', 'Alaska', 'West Virginia',
+      'New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX', 'Phoenix, AZ',
+      'Philadelphia, PA', 'San Antonio, TX', 'San Diego, CA', 'Dallas, TX', 'Austin, TX',
+      'San Jose, CA', 'San Francisco, CA', 'Jacksonville, FL', 'Columbus, OH', 'Indianapolis, IN',
+      'Charlotte, NC', 'Seattle, WA', 'Denver, CO', 'Nashville, TN', 'Washington, DC',
+      'Boston, MA', 'Portland, OR', 'Las Vegas, NV', 'Atlanta, GA', 'Miami, FL',
+      'Minneapolis, MN', 'Raleigh, NC', 'Tampa, FL', 'Salt Lake City, UT', 'Pittsburgh, PA',
+      'Cincinnati, OH', 'Kansas City, MO', 'Orlando, FL', 'Cleveland, OH', 'St. Louis, MO',
+      'Detroit, MI', 'Baltimore, MD', 'Milwaukee, WI', 'Scottsdale, AZ', 'Richmond, VA',
+      'Oakland, CA', 'Durham, NC', 'Boulder, CO', 'Boise, ID', 'Des Moines, IA',
+      'Irvine, CA', 'Santa Monica, CA', 'Palo Alto, CA', 'Mountain View, CA', 'Sunnyvale, CA',
+      'Bellevue, WA', 'Redmond, WA', 'Stamford, CT', 'Greenwich, CT', 'Hoboken, NJ',
+      'Jersey City, NJ', 'Princeton, NJ', 'Cambridge, MA', 'Arlington, VA', 'Bethesda, MD',
+      'Plano, TX', 'Frisco, TX', 'Fort Worth, TX', 'Omaha, NE', 'Tulsa, OK',
+      'Honolulu, HI', 'Anchorage, AK', 'Birmingham, AL', 'Memphis, TN', 'Louisville, KY',
+      'Oklahoma City, OK', 'Hartford, CT', 'Providence, RI', 'Charleston, SC', 'Savannah, GA',
+      'New Orleans, LA', 'Albuquerque, NM', 'Tucson, AZ', 'Sacramento, CA', 'Wilmington, DE'
+    ];
+
+    var locInput = document.getElementById('demoLocation');
+    var locDropdown = document.getElementById('locationDropdown');
+
+    locInput.addEventListener('input', function() {
+      var val = locInput.value.trim().toLowerCase();
+      if (val.length < 1) { locDropdown.style.display = 'none'; return; }
+      var matches = LOCATIONS.filter(function(l) { return l.toLowerCase().includes(val); }).slice(0, 8);
+      if (matches.length === 0) { locDropdown.style.display = 'none'; return; }
+      locDropdown.innerHTML = matches.map(function(m) {
+        return '<div style="padding:10px 14px;cursor:pointer;font-size:0.9rem;border-bottom:1px solid #f0f0f0" onmouseover="this.style.background=\'#F7F5F0\'" onmouseout="this.style.background=\'#fff\'" onclick="selectLocation(this)">' + m + '</div>';
+      }).join('');
+      locDropdown.style.display = 'block';
+    });
+
+    locInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        locDropdown.style.display = 'none';
+      }
+    });
+
+    window.selectLocation = function(el) {
+      locInput.value = el.textContent;
+      locDropdown.style.display = 'none';
+    };
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#demoLocation') && !e.target.closest('#locationDropdown')) {
+        locDropdown.style.display = 'none';
+      }
+    });
+
     function handleDemoSearch() {
       var title = document.getElementById('demoTitle').value.trim();
       var location = document.getElementById('demoLocation').value.trim();
