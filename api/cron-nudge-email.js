@@ -86,7 +86,7 @@ function wrap(body) {
 
 function emailDay2(firstName) {
   return wrap(`
-    <p>${firstName},</p>
+    <p>${firstName ? firstName + ',' : 'Hi,'}</p>
     <p>You signed up but haven't run your first search yet.</p>
     <p>Takes less than 5 minutes. Here's what happens when you do:</p>
     <p>Upload your resume. Enter your target titles and location. Fearless Job Search pulls live listings from LinkedIn, Indeed, Glassdoor, and ZipRecruiter — scores each one against your actual experience — and surfaces the roles worth your time.</p>
@@ -100,7 +100,7 @@ function emailDay2(firstName) {
 
 function emailDay5(firstName) {
   return wrap(`
-    <p>${firstName},</p>
+    <p>${firstName ? firstName + ',' : 'Hi,'}</p>
     <p>S.R. is a VP of HR in financial services. She'd been applying online for two months and hearing nothing.</p>
     <p>She ran one search. Got the decision-makers at three companies she'd been targeting. Sent the outreach the tool wrote for her.</p>
     <p>Six days later she had a conversation booked with the VP of People at her top target company.</p>
@@ -114,7 +114,7 @@ function emailDay5(firstName) {
 
 function emailDay7(firstName) {
   return wrap(`
-    <p>${firstName},</p>
+    <p>${firstName ? firstName + ',' : 'Hi,'}</p>
     <p>You ran your first search. You saw the contacts. You saw the outreach.</p>
     <p>Now you know it works.</p>
     <p>The free plan gives you one search to experience the product. To keep going — more companies, more contacts, more outreach — you need to upgrade.</p>
@@ -128,7 +128,7 @@ function emailDay7(firstName) {
 
 function emailDay10(firstName) {
   return wrap(`
-    <p>${firstName},</p>
+    <p>${firstName ? firstName + ',' : 'Hi,'}</p>
     <p>You signed up for Fearless Job Search a little while ago. I wanted to check in — have you had a chance to run your first search?</p>
     <p>If you haven't yet, here's what you're missing: the tool scores every job against your actual resume, not just keywords. Most users are surprised by what surfaces — roles they wouldn't have found scrolling LinkedIn or Indeed.</p>
     <p>But the real value isn't the job list. It's what comes after.</p>
@@ -142,7 +142,7 @@ function emailDay10(firstName) {
 
 function emailDay14(firstName) {
   return wrap(`
-    <p>${firstName},</p>
+    <p>${firstName ? firstName + ',' : 'Hi,'}</p>
     <p>I'm not going to keep nudging you. This is my last email about upgrading.</p>
     <p>If the timing isn't right, that's okay. The free plan is still there whenever you need it.</p>
     <p>If you're still in active search and want to move faster — <a href="https://fearlessjobsearch.com/" style="color:#3b82f6;font-weight:500;">fearlessjobsearch.com</a>. Starter is $29/month, cancel anytime.</p>
@@ -218,7 +218,7 @@ export default async function handler(req, res) {
         const userEmail = userData.email;
         if (ADMIN_EMAILS.includes(userEmail.toLowerCase())) { skipped++; continue; }
 
-        const firstName = (userData.user_metadata?.full_name || 'there').split(' ')[0];
+        const firstName = userData.user_metadata?.full_name ? userData.user_metadata.full_name.split(' ')[0] : '';
 
         // Send the email
         await sendEmail({

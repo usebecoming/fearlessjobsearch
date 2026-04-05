@@ -36,7 +36,7 @@ function emailSig() {
 function welcomeEmailHtml(firstName) {
   return `
     <div style="font-family:sans-serif;font-size:14px;line-height:1.8;color:#222;max-width:600px;">
-      <p>${firstName},</p>
+      <p>${firstName ? firstName + ',' : 'Hi,'}</p>
 
       <p>Welcome to Fearless Job Search. I'm Ben — I've coached over 500 senior leaders at companies like Amazon, Google, DoorDash, and Pinterest through career transitions. One thing became clear: the way senior leaders find jobs is fundamentally different from how job boards work.</p>
 
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing email' });
   }
 
-  const firstName = (name || '').split(' ')[0] || 'there';
+  const firstName = (name || '').split(' ')[0] || '';
 
   try {
     await sendEmail({
