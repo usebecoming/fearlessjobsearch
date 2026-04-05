@@ -190,6 +190,27 @@
       border-color: #B8A88A;
       box-shadow: 0 0 0 3px rgba(184,168,138,0.12);
     }
+    .tag-input-wrap {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      padding: 8px 12px; background: #fff; border: 1px solid #E5E4E2;
+      border-radius: 10px; min-height: 46px;
+    }
+    .tag-input-wrap:focus-within { border-color: #B8A88A; }
+    .tag-field {
+      border: none; outline: none; font-size: 0.95rem; font-family: inherit;
+      flex: 1; min-width: 120px; padding: 6px 0; background: transparent;
+    }
+    .demo-tag {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(184,168,138,0.12); border: 1px solid rgba(184,168,138,0.3);
+      border-radius: 6px; padding: 4px 10px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+      color: #7A6C52; font-weight: 500;
+    }
+    .demo-tag button {
+      background: none; border: none; color: #999; cursor: pointer;
+      font-size: 1rem; padding: 0; line-height: 1;
+    }
     .file-upload-area {
       border: 2px dashed #C8C6C3;
       border-radius: 10px;
@@ -535,7 +556,10 @@
 
     <div id="tryForm">
       <label class="form-label">What role are you targeting?</label>
-      <input type="text" id="demoTitle" class="form-input" placeholder="e.g. VP of Marketing, Head of HR">
+      <div class="tag-input-wrap" id="demoTitlesWrap">
+        <input type="text" class="tag-field" id="demoTitle" placeholder="e.g. VP of Marketing, press Enter to add">
+      </div>
+      <p style="font-size:0.82rem;color:#999;margin-top:4px">Press Enter or comma to add multiple titles</p>
 
       <label class="form-label">Where?</label>
       <div style="position:relative">
@@ -830,6 +854,51 @@
     }
 
     // ── Demo search handler ──
+    // ── Title Tag Input ──
+    var demoTitles = [];
+    var demoTitleField = document.getElementById('demoTitle');
+    var demoTitlesWrap = document.getElementById('demoTitlesWrap');
+
+    function renderDemoTags() {
+      demoTitlesWrap.querySelectorAll('.demo-tag').forEach(function(t) { t.remove(); });
+      demoTitles.forEach(function(title, i) {
+        var tag = document.createElement('span');
+        tag.className = 'demo-tag';
+        tag.innerHTML = title + '<button onclick="removeDemoTitle(' + i + ')">×</button>';
+        demoTitlesWrap.insertBefore(tag, demoTitleField);
+      });
+    }
+
+    window.removeDemoTitle = function(i) {
+      demoTitles.splice(i, 1);
+      renderDemoTags();
+    };
+
+    function addDemoTitle(val) {
+      // Split on commas
+      val.split(',').forEach(function(t) {
+        t = t.trim();
+        if (t && t.length >= 3 && t.length <= 60 && demoTitles.length < 7 && !demoTitles.includes(t)) {
+          demoTitles.push(t);
+        }
+      });
+      demoTitleField.value = '';
+      renderDemoTags();
+    }
+
+    demoTitleField.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        var val = demoTitleField.value.trim();
+        if (val) addDemoTitle(val);
+      }
+    });
+
+    demoTitleField.addEventListener('blur', function() {
+      var val = demoTitleField.value.trim();
+      if (val) addDemoTitle(val);
+    });
+
     // ── Location Autocomplete ──
     var LOCATIONS = [
       'Remote',
@@ -893,13 +962,17 @@
     });
 
     function handleDemoSearch() {
-      var title = document.getElementById('demoTitle').value.trim();
+      // Auto-commit any uncommitted text
+      var uncommitted = demoTitleField.value.trim();
+      if (uncommitted) addDemoTitle(uncommitted);
+
+      var title = demoTitles.join(', ');
       var location = document.getElementById('demoLocation').value.trim();
       var errorEl = document.getElementById('demoError');
       errorEl.style.display = 'none';
 
-      if (!title) {
-        errorEl.textContent = 'Please enter a target role.';
+      if (demoTitles.length === 0) {
+        errorEl.textContent = 'Please enter at least one target role.';
         errorEl.style.display = 'block';
         return;
       }
