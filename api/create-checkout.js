@@ -25,28 +25,27 @@ export default async function handler(req, res) {
 
   try {
     const { plan, priceId: directPriceId } = req.body;
-    // Use verified userId and email from JWT — never trust req.body
     const userId = auth.userId;
     const email = auth.email;
 
-    // Coaching product price IDs — one-time payments, not subscriptions
+    // Coaching product price IDs
     const coachingPriceIds = new Set([
-      'price_1TDFhJK3APtatfMmjK9kHib4',  // Resume Review & Rewrite
-      'price_1TDFi0K3APtatfMmtU7ZLSsk'   // Resume + LinkedIn
+      'price_1TDFhJK3APtatfMmjK9kHib4',  // Resume Review $500
+      'price_1TDFi0K3APtatfMmtU7ZLSsk'   // Resume + LinkedIn $750
     ]);
+
+    // Plan price IDs — all one-time payments now
+    const PLAN_PRICE_IDS = {
+      starter: 'price_1TIrIFK3APtatfMmX1afwhgV',
+      pro: 'price_1TIrImK3APtatfMm3Vfei67o',
+      accelerate: 'price_1TIrK7K3APtatfMm2oJ9qPMW'
+    };
 
     console.log(`🛒 Checkout request: priceId=${directPriceId || 'none'}, plan=${plan || 'none'}, user=${email}`);
 
     // Resolve price ID
     let priceId = directPriceId;
     if (!priceId && plan) {
-      const PLAN_PRICE_IDS = {
-        starter: 'price_1TCuhfK3APtatfMmhlcWdsdW',
-        pro: 'price_1TCuiKK3APtatfMmOQCSWWd4',
-        accelerate_monthly: 'price_1TCujoK3APtatfMmz0GggJn4',
-        accelerate: 'price_1TCujoK3APtatfMmz0GggJn4',
-        accelerate_yearly: 'price_1TCukaK3APtatfMmKNbheswb'
-      };
       priceId = PLAN_PRICE_IDS[plan];
     }
 
@@ -54,9 +53,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: `Invalid plan or price: ${plan || directPriceId}` });
     }
 
-    // Server determines mode from price ID — no client trust needed
-    const checkoutMode = coachingPriceIds.has(priceId) ? 'payment' : 'subscription';
-    console.log(`🛒 Is coaching: ${coachingPriceIds.has(priceId)}, Mode: ${checkoutMode}`);
+    // All plans and coaching are one-time payments now
+    const checkoutMode = 'payment';
+    console.log(`🛒 Mode: ${checkoutMode}`);
 
     const origin = req.headers.origin || 'https://fearlessjobsearch.com';
 

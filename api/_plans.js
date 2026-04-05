@@ -8,12 +8,12 @@ export const PLANS = {
     outreach_enabled: true,
     pipeline_enabled: true,
     company_target_enabled: false,
-    free_contact_limit: 1,    // 1 company's contacts
-    free_outreach_limit: 1    // 1 contact's outreach
+    free_contact_limit: 1,
+    free_outreach_limit: 1
   },
   starter: {
     name: 'Starter',
-    price: 29,
+    price: 9.99,
     searches_per_month: 3,
     jobs_per_search: 10,
     contacts_enabled: true,
@@ -23,7 +23,7 @@ export const PLANS = {
   },
   pro: {
     name: 'Pro',
-    price: 59,
+    price: 29,
     searches_per_month: 10,
     jobs_per_search: 10,
     contacts_enabled: true,
@@ -31,19 +31,9 @@ export const PLANS = {
     pipeline_enabled: true,
     company_target_enabled: true
   },
-  accelerate_monthly: {
+  accelerate: {
     name: 'Accelerate',
-    price: 99,
-    searches_per_month: 30,
-    jobs_per_search: 20,
-    contacts_enabled: true,
-    outreach_enabled: true,
-    pipeline_enabled: true,
-    company_target_enabled: true
-  },
-  accelerate_yearly: {
-    name: 'Accelerate (Annual)',
-    price: 999,
+    price: 49,
     searches_per_month: 30,
     jobs_per_search: 20,
     contacts_enabled: true,
@@ -55,10 +45,9 @@ export const PLANS = {
 
 // Map Stripe price IDs to plan keys
 export const PRICE_TO_PLAN = {
-  'price_1TCuhfK3APtatfMmhlcWdsdW': 'starter',
-  'price_1TCuiKK3APtatfMmOQCSWWd4': 'pro',
-  'price_1TCujoK3APtatfMmz0GggJn4': 'accelerate_monthly',
-  'price_1TCukaK3APtatfMmKNbheswb': 'accelerate_yearly'
+  'price_1TIrIFK3APtatfMmX1afwhgV': 'starter',
+  'price_1TIrImK3APtatfMm3Vfei67o': 'pro',
+  'price_1TIrK7K3APtatfMm2oJ9qPMW': 'accelerate'
 };
 
 export const ADMIN_EMAILS = [

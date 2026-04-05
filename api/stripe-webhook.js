@@ -190,11 +190,16 @@ const COACHING_PRICE_IDS = new Set([
   'price_1TDFi0K3APtatfMmtU7ZLSsk',  // Resume + LinkedIn $750
 ]);
 
-const SUBSCRIPTION_PRICE_META = {
+// Plan price IDs — one-time payments
+const PLAN_PRICE_META = {
+  'price_1TIrIFK3APtatfMmX1afwhgV': { plan: 'Starter',    amount: '$9.99',  template: 'starter' },
+  'price_1TIrImK3APtatfMm3Vfei67o': { plan: 'Pro',        amount: '$29',    template: 'pro' },
+  'price_1TIrK7K3APtatfMm2oJ9qPMW': { plan: 'Accelerate', amount: '$49',    template: 'accelerate' },
+  // Legacy subscription IDs (for existing subscribers)
   'price_1TCuhfK3APtatfMmhlcWdsdW': { plan: 'Starter',           amount: '$29/mo',  template: 'starter' },
   'price_1TCuiKK3APtatfMmOQCSWWd4': { plan: 'Pro',               amount: '$59/mo',  template: 'pro' },
-  'price_1TCujoK3APtatfMmz0GggJn4': { plan: 'Accelerate Monthly', amount: '$99/mo',   template: 'accelerate' },
-  'price_1TCukaK3APtatfMmKNbheswb': { plan: 'Accelerate Yearly',  amount: '$999/yr', template: 'accelerate' },
+  'price_1TCujoK3APtatfMmz0GggJn4': { plan: 'Accelerate', amount: '$99/mo',   template: 'accelerate' },
+  'price_1TCukaK3APtatfMmKNbheswb': { plan: 'Accelerate',  amount: '$999/yr', template: 'accelerate' },
 };
 
 const COACHING_PRODUCTS = {
@@ -387,7 +392,7 @@ export default async function handler(req, res) {
           // Send subscription welcome email
           // Sent here (not in subscription.created) because profile is updated here
           try {
-            const meta = SUBSCRIPTION_PRICE_META[priceId];
+            const meta = PLAN_PRICE_META[priceId];
             if (meta) {
               const customerEmail = session.customer_details?.email;
               const fullName = session.customer_details?.name || '';
@@ -492,8 +497,8 @@ export default async function handler(req, res) {
       try {
         const prevPriceId = event.data.previous_attributes?.items?.data?.[0]?.price?.id;
         if (prevPriceId && prevPriceId !== priceId) {
-          const newMeta  = SUBSCRIPTION_PRICE_META[priceId]  || { plan: priceId };
-          const prevMeta = SUBSCRIPTION_PRICE_META[prevPriceId] || { plan: prevPriceId };
+          const newMeta  = PLAN_PRICE_META[priceId]  || { plan: priceId };
+          const prevMeta = PLAN_PRICE_META[prevPriceId] || { plan: prevPriceId };
           const customer = await getStripeCustomer(stripeCustomerId, stripeKey);
           const fullName = customer?.name || customer?.email || stripeCustomerId;
 
@@ -551,7 +556,7 @@ export default async function handler(req, res) {
       // Notify Ben
       try {
         const priceId = subscription.items?.data?.[0]?.price?.id;
-        const meta = SUBSCRIPTION_PRICE_META[priceId] || { plan: priceId || 'unknown' };
+        const meta = PLAN_PRICE_META[priceId] || { plan: priceId || 'unknown' };
         const customer = await getStripeCustomer(stripeCustomerId, stripeKey);
         const fullName = customer?.name || customer?.email || stripeCustomerId;
 
