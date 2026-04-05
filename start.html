@@ -994,11 +994,27 @@
         sessionStorage.setItem('fjs_demo_resume', resumeText);
       }
 
-      // Go straight to signup — no fake spinner, real search happens after signup
+      // Quick spinner to build anticipation, then reveal signup
       document.getElementById('tryForm').style.display = 'none';
-      var signupSection = document.getElementById('signupReveal');
-      signupSection.style.display = 'block';
-      signupSection.scrollIntoView({ behavior: 'smooth' });
+      var loadingEl = document.getElementById('demoLoading');
+      var loadingText = document.getElementById('demoLoadingText');
+      loadingEl.style.display = 'block';
+      loadingEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      loadingText.textContent = 'Searching for "' + title + '" in ' + location + '...';
+
+      setTimeout(function() {
+        loadingText.textContent = 'Scoring roles against your experience...';
+      }, 1200);
+
+      setTimeout(function() {
+        loadingText.textContent = 'Results ready.';
+        setTimeout(function() {
+          loadingEl.style.display = 'none';
+          var signupSection = document.getElementById('signupReveal');
+          signupSection.style.display = 'block';
+          signupSection.scrollIntoView({ behavior: 'smooth' });
+        }, 600);
+      }, 2400);
     }
 
     // ── Supabase Auth ──
