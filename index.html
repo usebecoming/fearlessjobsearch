@@ -1265,6 +1265,92 @@
       /* Landing nav — very small */
       #landingPage .nav-brand span { display: none; }
       #landingPage .nav-right a { font-size: 0.75rem !important; padding: 6px 12px !important; margin-right: 6px !important; }
+      .landing .try-section { padding: 48px 20px; }
+    }
+
+    /* ── Landing Try-It Form ── */
+    .landing .try-section {
+      padding: 72px 24px;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+    .landing .try-section h2 {
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .landing .try-sub {
+      font-size: 0.95rem;
+      color: #555;
+      line-height: 1.6;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .landing .demo-tag {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(184,168,138,0.12); border: 1px solid rgba(184,168,138,0.3);
+      border-radius: 6px; padding: 4px 10px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+      color: #7A6C52; font-weight: 500;
+    }
+    .landing .demo-tag button {
+      background: none; border: none; color: #999; cursor: pointer;
+      font-size: 1rem; padding: 0; line-height: 1;
+    }
+    .landing .form-divider {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+    }
+    .landing .form-divider span {
+      font-size: 0.78rem; color: #999; font-weight: 500; white-space: nowrap;
+    }
+    .landing .form-divider div {
+      flex: 1; height: 1px; background: #E5E4E2;
+    }
+    .landing .form-textarea {
+      width: 100%; padding: 14px 16px;
+      border: 1px solid #D1D0CE; border-radius: 10px;
+      font-size: 0.88rem; font-family: inherit;
+      margin-bottom: 20px; box-sizing: border-box;
+      background: #FFFFFF; resize: vertical; min-height: 100px;
+    }
+    .landing .form-textarea:focus {
+      outline: none; border-color: #B8A88A;
+      box-shadow: 0 0 0 3px rgba(184,168,138,0.12);
+    }
+    .landing .form-error {
+      font-size: 0.85rem; color: #C94444; margin-top: 8px; display: none;
+    }
+    .landing .landing-loading-state {
+      text-align: center; padding: 40px 0; display: none;
+    }
+    .landing .landing-loading-state p {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.92rem; color: #555;
+    }
+    .landing .landing-loading-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #E5E4E2; border-top: 3px solid #B8A88A;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    .landing .landing-loading-dots::after {
+      content: ''; animation: landingDots 1.5s steps(4, end) infinite;
+    }
+    @keyframes landingDots {
+      0%   { content: ''; }
+      25%  { content: '.'; }
+      50%  { content: '..'; }
+      75%  { content: '...'; }
+      100% { content: ''; }
+    }
+    .landing .form-input {
+      width: 100%; padding: 14px 16px;
+      border: 1px solid #D1D0CE; border-radius: 10px;
+      font-size: 0.95rem; font-family: inherit;
+      margin-bottom: 16px; box-sizing: border-box; background: #FFFFFF;
+    }
+    .landing .form-input:focus {
+      outline: none; border-color: #B8A88A;
+      box-shadow: 0 0 0 3px rgba(184,168,138,0.12);
     }
   </style>
 </head>
@@ -1295,12 +1381,56 @@
       <h1>Stop waiting for callbacks. <span>Start conversations with the right people.</span></h1>
       <p style="line-height:2">Upload your resume.<br>We find who's hiring, who to talk to, and what to say.<br>You just send it.</p>
       <div class="hero-cta">
-        <button class="btn-primary" onclick="openAuthModal('signup')">Try It Free</button>
+        <button class="btn-primary" onclick="document.getElementById('tryNow').scrollIntoView({behavior:'smooth'})">Try It Free</button>
         <button class="btn-secondary" style="padding:16px 36px;font-size:1rem" onclick="document.getElementById('demoVideo').scrollIntoView({behavior:'smooth'})">See How It Works</button>
       </div>
       <p style="font-size:0.88rem;color:#777;margin-top:14px;font-weight:500">All in 5 minutes. Free to try. No credit card required. Currently available for US-based roles.</p>
       <p style="font-size:0.82rem;color:#B8A88A;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-weight:500">Joined by 500+ senior leaders in their job search</p>
     </div>
+
+    <!-- Try It Now -->
+    <section class="try-section" id="tryNow">
+      <div class="label" style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#B8A88A;margin-bottom:8px;text-align:center">Try it now — free</div>
+      <h2>See what Fearless Job Search finds for you.</h2>
+      <p class="try-sub">Enter your target role and location. Upload your resume. We'll show you what's out there.</p>
+
+      <div id="landingTryForm">
+        <label class="form-label">What role are you targeting?</label>
+        <div class="tag-input-wrap" id="landingTitlesWrap">
+          <input type="text" class="tag-field" id="landingTitleInput" placeholder="e.g. VP of Marketing, press Enter to add">
+        </div>
+        <p style="font-size:0.78rem;color:#bbb;margin-top:4px">Press Enter or comma to add multiple titles</p>
+
+        <label class="form-label">Where?</label>
+        <div style="position:relative">
+          <input type="text" id="landingLocationInput" class="form-input" placeholder="e.g. Austin, TX" autocomplete="off">
+          <div id="landingLocationDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #E5E4E2;border-top:none;border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,0.08)"></div>
+        </div>
+        <p style="font-size:0.78rem;color:#bbb;margin-top:4px">Currently available for US-based roles. Add "Remote" to include remote opportunities.</p>
+
+        <label class="form-label">Upload your resume (PDF, DOCX, or TXT)</label>
+        <div class="file-upload-area" id="landingUploadArea" onclick="document.getElementById('landingResumeFile').click()">
+          <p>Drop a file here or click to upload</p>
+          <p style="font-size:0.82rem;color:#777777;margin-top:4px">PDF, DOCX, or TXT</p>
+          <input type="file" id="landingResumeFile" accept=".txt,.pdf,.docx">
+        </div>
+
+        <div class="form-divider">
+          <div></div>
+          <span>or paste your resume text</span>
+          <div></div>
+        </div>
+        <textarea id="landingResumeText" class="form-textarea" placeholder="Paste your resume text here..."></textarea>
+
+        <button class="btn-primary" style="width:100%;padding:18px;font-size:1rem" id="landingSearchBtn" onclick="handleLandingSearch()">Start My Free Search &rarr;</button>
+        <p id="landingError" class="form-error"></p>
+      </div>
+
+      <div id="landingLoading" class="landing-loading-state">
+        <div class="landing-loading-spinner"></div>
+        <p class="landing-loading-dots">Finding roles that match your experience</p>
+      </div>
+    </section>
 
     <!-- See It In Action — Video immediately after hero -->
     <div style="text-align:center;padding:32px 24px 0">
@@ -1382,176 +1512,6 @@
           <h3>Land Interviews, Not Applications</h3>
           <p>Stop applying into the void. Start having conversations that lead to offers. Track every contact, every message, every response — so you always know where you stand and what to do next.</p>
         </div>
-      </div>
-    </div>
-
-    <!-- See It In Action -->
-    <div class="screenshots-section" style="text-align:left;max-width:800px">
-      <h2 style="text-align:center">See it in action</h2>
-      <p class="section-sub" style="text-align:center">Here's exactly what you get at each step.</p>
-
-      <!-- Step 1: Search -->
-      <div style="margin-bottom:48px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:700;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 1: Target Your Search</div>
-        <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:14px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,0.04)">
-          <div style="margin-bottom:16px">
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Target Job Titles</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#7A6C52">VP of Marketing</span>
-              <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#7A6C52">CMO</span>
-              <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#7A6C52">Head of Growth</span>
-            </div>
-          </div>
-          <div style="display:flex;gap:24px;flex-wrap:wrap">
-            <div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Locations</div>
-              <div style="display:flex;gap:8px">
-                <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#7A6C52">New York</span>
-                <span style="background:rgba(184,168,138,0.12);border:1px solid rgba(184,168,138,0.3);border-radius:6px;padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#7A6C52">Remote</span>
-              </div>
-            </div>
-            <div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Resume</div>
-              <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#555;font-weight:500">Uploaded ✓</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 2: Jobs -->
-      <div style="margin-bottom:48px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:700;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 2: See What's Out There</div>
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <div style="background:#FFFFFF;border:2px solid #B8A88A;border-radius:14px;padding:20px;box-shadow:0 0 0 2px #B8A88A,0 4px 16px rgba(184,168,138,0.1);position:relative">
-            <div style="position:absolute;top:12px;right:14px;background:#111;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.82rem;font-weight:700">&#10003;</div>
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-right:40px">
-              <div>
-                <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">VP of Marketing</div>
-                <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#B8A88A;margin-top:2px">Stripe</div>
-              </div>
-              <span class="mock-badge" style="background:rgba(58,138,92,0.1);color:#3A8A5C;border:1px solid rgba(58,138,92,0.2);padding:4px 10px">92 · Strong Match</span>
-            </div>
-            <div style="display:flex;gap:14px;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#6E6E6E">
-              <span>New York, NY</span><span>Fintech</span><span>1 day ago</span><span>$280K-$350K</span>
-            </div>
-            <div style="margin-top:10px;padding-top:10px;border-top:1px solid #EEEEED;font-size:0.82rem;color:#555;font-style:italic;font-weight:500">"Strong alignment with candidate's B2B SaaS growth experience and team leadership at scale."</div>
-          </div>
-          <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:14px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,0.02)">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start">
-              <div>
-                <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">Head of Growth</div>
-                <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#B8A88A;margin-top:2px">Notion</div>
-              </div>
-              <span class="mock-badge" style="background:rgba(58,138,92,0.1);color:#3A8A5C;border:1px solid rgba(58,138,92,0.2);padding:4px 10px">87 · Strong Match</span>
-            </div>
-            <div style="display:flex;gap:14px;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#6E6E6E">
-              <span>Remote</span><span>SaaS</span><span>2 days ago</span><span>$250K-$320K</span>
-            </div>
-            <div style="margin-top:10px;padding-top:10px;border-top:1px solid #EEEEED;font-size:0.82rem;color:#555;font-style:italic;font-weight:500">"PLG expertise and cross-functional leadership directly applicable to Notion's expansion phase."</div>
-          </div>
-          <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:14px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,0.02)">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start">
-              <div>
-                <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#111">CMO</div>
-                <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#B8A88A;margin-top:2px">Calm</div>
-              </div>
-              <span class="mock-badge" style="background:rgba(184,168,138,0.15);color:#7A6C52;border:1px solid rgba(184,168,138,0.3);padding:4px 10px">71 · Good Match</span>
-            </div>
-            <div style="display:flex;gap:14px;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#6E6E6E">
-              <span>San Francisco, CA</span><span>Health & Wellness</span><span>3 days ago</span><span>$300K-$400K</span>
-            </div>
-            <div style="margin-top:10px;padding-top:10px;border-top:1px solid #EEEEED;font-size:0.82rem;color:#555;font-style:italic;font-weight:500">"Brand marketing background is strong; DTC consumer health is a slight pivot from B2B SaaS."</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 3: Contacts -->
-      <div style="margin-bottom:48px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:700;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 3: Get to the Right People at Stripe</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,0.02)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <span style="font-weight:600;font-size:0.92rem;color:#111">Rachel Torres</span>
-              <span class="mock-badge" style="background:rgba(58,138,92,0.1);color:#3A8A5C;border:1px solid rgba(58,138,92,0.2)">Hiring Manager</span>
-            </div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">SVP of Marketing, Stripe</div>
-            <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Directly owns this role. 8 years at Stripe, promoted from VP. Active on LinkedIn.</div>
-            <div><span style="background:#111;color:#fff;padding:6px 14px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:500;display:inline-block">View on LinkedIn &#8599;</span></div>
-          </div>
-          <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,0.02)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <span style="font-weight:600;font-size:0.92rem;color:#111">James Liu</span>
-              <span class="mock-badge" style="background:rgba(184,168,138,0.15);color:#7A6C52;border:1px solid rgba(184,168,138,0.3)">Skip-Level</span>
-            </div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">CRO, Stripe</div>
-            <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Two levels above the role. Influence over final hiring decisions at VP level.</div>
-            <div><span style="background:#111;color:#fff;padding:6px 14px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:500;display:inline-block">View on LinkedIn &#8599;</span></div>
-          </div>
-          <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,0.02)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <span style="font-weight:600;font-size:0.92rem;color:#111">Priya Kapoor</span>
-              <span class="mock-badge" style="background:rgba(107,131,168,0.1);color:#5A7A9A;border:1px solid rgba(107,131,168,0.25)">Recruiter / TA</span>
-            </div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#666;margin-bottom:6px">Senior Talent Partner, Stripe</div>
-            <div style="font-size:0.82rem;color:#555;font-style:italic;margin-bottom:10px">Handles VP-level marketing hires. Responsive to direct outreach on LinkedIn.</div>
-            <div><span style="background:#111;color:#fff;padding:6px 14px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;font-weight:500;display:inline-block">View on LinkedIn &#8599;</span></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 4: Outreach -->
-      <div style="margin-bottom:32px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.9rem;font-weight:700;color:#111;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Step 4: Start the Conversation</div>
-        <div style="background:#FFFFFF;border:1px solid #E5E4E2;border-radius:14px 14px 0 0;padding:18px 22px;box-shadow:0 1px 2px rgba(0,0,0,0.02)">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div style="font-weight:600;font-size:0.95rem;color:#111">Rachel Torres</div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:#777777;margin-top:2px">VP of Marketing · Stripe</div>
-            </div>
-            <span class="mock-badge" style="background:rgba(58,138,92,0.1);color:#3A8A5C;border:1px solid rgba(58,138,92,0.2)">Hiring Manager Track</span>
-          </div>
-        </div>
-        <div style="background:#FDFBF8;border:1px solid #E5E4E2;border-top:none;padding:20px 22px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A">Connection Request</span>
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777">LinkedIn · Day 1</span>
-          </div>
-          <div style="font-size:0.88rem;color:#111;line-height:1.65;font-weight:500">Rachel, your team is expanding Stripe's marketing org. I've scaled a 25-person B2B SaaS marketing team to $180M in pipeline at a Series D fintech. Would value connecting.</div>
-        </div>
-        <div style="position:relative">
-          <div style="filter:blur(5px);pointer-events:none;user-select:none">
-            <div style="background:#FDFBF8;border:1px solid #E5E4E2;border-top:none;padding:20px 22px">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A">Follow-Up</span>
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777">LinkedIn DM · Day 2</span>
-              </div>
-              <div style="font-size:0.88rem;color:#111;line-height:1.65;font-weight:500">Thanks for connecting, Rachel. To add some context — I repositioned our brand during a market downturn and grew enterprise revenue 3x in 18 months. Happy to connect briefly if my background could be useful to your team.</div>
-            </div>
-            <div style="background:#FDFBF8;border:1px solid #E5E4E2;border-top:none;padding:20px 22px">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A">Re-Engage</span>
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777">Email · Day 8</span>
-              </div>
-              <div style="font-size:0.88rem;color:#111;line-height:1.65;font-weight:500">Rachel, bringing this back to the top of your inbox. What's top of mind for you as the marketing org scales — is there a specific gap you're building toward?</div>
-            </div>
-            <div style="background:#FDFBF8;border:1px solid #E5E4E2;border-top:none;padding:20px 22px;border-radius:0 0 14px 14px">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;color:#B8A88A">Friendly Close</span>
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#777777">LinkedIn DM · Day 14</span>
-              </div>
-              <div style="font-size:0.88rem;color:#111;line-height:1.65;font-weight:500">Appreciate the connection either way, Rachel. If the timing shifts or a role opens up where my background could add value, I'd welcome the conversation.</div>
-            </div>
-          </div>
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:rgba(255,248,242,0.5);border-radius:0 0 14px 14px">
-            <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:#111;text-align:center">3 more messages in this sequence</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#555;text-align:center">Full 14-day follow-up sequence, personalized to your resume</div>
-            <button class="btn-primary" style="padding:12px 28px" onclick="document.getElementById('pricingSection').scrollIntoView({behavior:'smooth'})">Unlock Full Sequences</button>
-          </div>
-        </div>
-      </div>
-      <!-- Outreach Disclaimer (landing page) -->
-      <div style="margin-top:24px;background:rgba(184,168,138,0.08);border:1px solid rgba(184,168,138,0.2);border-radius:10px;padding:14px 20px;font-size:0.82rem;color:#7A6C52;font-family:'IBM Plex Mono',monospace;line-height:1.6">
-        Fearless Job Search writes the outreach. You send it through LinkedIn. We do the writing. You do the connecting.
       </div>
     </div>
 
@@ -1742,12 +1702,6 @@
       <p style="font-size:0.95rem;color:#555;font-weight:500;line-height:1.7;margin-bottom:8px">The tool finds the opportunities and writes the outreach. But if your resume isn't landing or your LinkedIn is invisible, that's where expert help comes in.</p>
       <p style="font-size:0.88rem;color:#555;font-weight:500;line-height:1.7;margin-bottom:24px">Work directly with Dr. Benjamin Ritter to get your resume rewritten and your LinkedIn repositioned so you stand out to the people who matter.</p>
       <button class="btn-secondary" style="padding:14px 32px;font-size:0.95rem;border-color:#B8A88A;color:#B8A88A" onclick="openBookingModal()">Explore Resume &amp; LinkedIn Services</button>
-    </div>
-
-    <!-- Sign In Prompt (visible only when logged out) -->
-    <div id="signInPrompt" style="padding:48px 24px;text-align:center;max-width:600px;margin:0 auto;border-top:1px solid #F0EFED">
-      <p style="font-size:0.95rem;color:#555;font-weight:500;line-height:1.7;margin-bottom:16px">Already have an account? Sign in to pick up where you left off.</p>
-      <button class="btn-secondary" style="padding:14px 32px;font-size:0.95rem" onclick="openAuthModal('login')">Sign In</button>
     </div>
 
     <!-- Footer -->
@@ -5680,6 +5634,283 @@ IMPORTANT: For the Connection Request message, include char_count with the exact
       caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
+
+    // ── Landing Page Try-It Form ──
+    (function() {
+      var landingTitles = [];
+      var landingResumeContent = '';
+
+      var titleInput = document.getElementById('landingTitleInput');
+      var titlesWrap = document.getElementById('landingTitlesWrap');
+      var locationInput = document.getElementById('landingLocationInput');
+      var locationDropdown = document.getElementById('landingLocationDropdown');
+      var uploadArea = document.getElementById('landingUploadArea');
+      var resumeFile = document.getElementById('landingResumeFile');
+      var resumeText = document.getElementById('landingResumeText');
+      var errorEl = document.getElementById('landingError');
+
+      // Tag input for titles
+      function renderLandingTags() {
+        var existing = titlesWrap.querySelectorAll('.demo-tag');
+        existing.forEach(function(t) { t.remove(); });
+        landingTitles.forEach(function(title, i) {
+          var tag = document.createElement('span');
+          tag.className = 'demo-tag';
+          tag.innerHTML = title + ' <button onclick="this.parentElement.remove();window._landingRemoveTitle(' + i + ')">&times;</button>';
+          titlesWrap.insertBefore(tag, titleInput);
+        });
+      }
+      window._landingRemoveTitle = function(i) {
+        landingTitles.splice(i, 1);
+        renderLandingTags();
+      };
+
+      function commitLandingTitle() {
+        var val = titleInput.value.trim();
+        if (val && landingTitles.length < 5) {
+          // Split on commas
+          val.split(',').forEach(function(t) {
+            t = t.trim();
+            if (t && landingTitles.indexOf(t) === -1 && landingTitles.length < 5) {
+              landingTitles.push(t);
+            }
+          });
+          titleInput.value = '';
+          renderLandingTags();
+        }
+      }
+
+      if (titleInput) {
+        titleInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            commitLandingTitle();
+          }
+        });
+        titleInput.addEventListener('blur', function() { commitLandingTitle(); });
+      }
+
+      // Location autocomplete
+      var US_CITIES = [
+        'New York, NY','Los Angeles, CA','Chicago, IL','Houston, TX','Phoenix, AZ',
+        'Philadelphia, PA','San Antonio, TX','San Diego, CA','Dallas, TX','San Jose, CA',
+        'Austin, TX','Jacksonville, FL','Fort Worth, TX','Columbus, OH','Charlotte, NC',
+        'Indianapolis, IN','San Francisco, CA','Seattle, WA','Denver, CO','Nashville, TN',
+        'Oklahoma City, OK','Washington, DC','El Paso, TX','Las Vegas, NV','Boston, MA',
+        'Portland, OR','Memphis, TN','Louisville, KY','Baltimore, MD','Milwaukee, WI',
+        'Albuquerque, NM','Tucson, AZ','Fresno, CA','Sacramento, CA','Mesa, AZ',
+        'Kansas City, MO','Atlanta, GA','Omaha, NE','Raleigh, NC','Miami, FL',
+        'Minneapolis, MN','Tampa, FL','Cleveland, OH','Pittsburgh, PA','Cincinnati, OH',
+        'St. Louis, MO','Orlando, FL','Salt Lake City, UT','Detroit, MI','Honolulu, HI',
+        'Remote'
+      ];
+
+      if (locationInput) {
+        locationInput.addEventListener('input', function() {
+          var q = this.value.trim().toLowerCase();
+          if (q.length < 2) { locationDropdown.style.display = 'none'; return; }
+          var matches = US_CITIES.filter(function(c) { return c.toLowerCase().indexOf(q) !== -1; }).slice(0, 6);
+          if (matches.length === 0) { locationDropdown.style.display = 'none'; return; }
+          locationDropdown.innerHTML = matches.map(function(c) {
+            return '<div style="padding:10px 14px;cursor:pointer;font-size:0.92rem;border-bottom:1px solid #F0EFED" onmousedown="document.getElementById(\'landingLocationInput\').value=\'' + c.replace(/'/g, "\\'") + '\';document.getElementById(\'landingLocationDropdown\').style.display=\'none\'">' + c + '</div>';
+          }).join('');
+          locationDropdown.style.display = 'block';
+        });
+        locationInput.addEventListener('blur', function() {
+          setTimeout(function() { locationDropdown.style.display = 'none'; }, 200);
+        });
+      }
+
+      // File upload
+      if (resumeFile) {
+        resumeFile.addEventListener('change', function(e) {
+          var file = e.target.files[0];
+          if (!file) return;
+          handleLandingFile(file);
+        });
+      }
+      if (uploadArea) {
+        uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('drag-over'); });
+        uploadArea.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
+        uploadArea.addEventListener('drop', function(e) {
+          e.preventDefault();
+          this.classList.remove('drag-over');
+          var file = e.dataTransfer.files[0];
+          if (file) handleLandingFile(file);
+        });
+      }
+
+      function handleLandingFile(file) {
+        var ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'txt') {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            landingResumeContent = e.target.result;
+            showLandingFileSuccess(file.name);
+          };
+          reader.readAsText(file);
+        } else if (ext === 'pdf') {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var typedArray = new Uint8Array(e.target.result);
+            if (typeof pdfjsLib !== 'undefined') {
+              pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+              pdfjsLib.getDocument(typedArray).promise.then(function(pdf) {
+                var pages = [];
+                var total = pdf.numPages;
+                function getPage(n) {
+                  if (n > total) {
+                    landingResumeContent = pages.join('\n\n');
+                    showLandingFileSuccess(file.name);
+                    return;
+                  }
+                  pdf.getPage(n).then(function(page) {
+                    page.getTextContent().then(function(content) {
+                      var lines = [];
+                      var lastY = null;
+                      content.items.forEach(function(item) {
+                        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+                          lines.push('\n');
+                        }
+                        lines.push(item.str);
+                        lastY = item.transform[5];
+                      });
+                      pages.push(lines.join(''));
+                      getPage(n + 1);
+                    });
+                  });
+                }
+                getPage(1);
+              });
+            }
+          };
+          reader.readAsArrayBuffer(file);
+        } else if (ext === 'docx') {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            if (typeof mammoth !== 'undefined') {
+              mammoth.extractRawText({ arrayBuffer: e.target.result }).then(function(result) {
+                landingResumeContent = result.value;
+                showLandingFileSuccess(file.name);
+              });
+            }
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      }
+
+      function showLandingFileSuccess(name) {
+        if (uploadArea) {
+          uploadArea.classList.add('has-file');
+          uploadArea.innerHTML = '<p>Uploaded</p><p class="file-name">' + name + '</p><input type="file" id="landingResumeFile" accept=".txt,.pdf,.docx">';
+          document.getElementById('landingResumeFile').addEventListener('change', function(e) {
+            var f = e.target.files[0];
+            if (f) handleLandingFile(f);
+          });
+        }
+      }
+
+      // Main search handler
+      window.handleLandingSearch = function() {
+        // Commit any uncommitted title text
+        commitLandingTitle();
+
+        var titles = landingTitles;
+        var location = (locationInput ? locationInput.value.trim() : '');
+        var resume = landingResumeContent || (resumeText ? resumeText.value.trim() : '');
+
+        // Validate
+        if (titles.length === 0) {
+          if (errorEl) { errorEl.textContent = 'Add at least one target title.'; errorEl.style.display = 'block'; }
+          return;
+        }
+        if (!location) {
+          if (errorEl) { errorEl.textContent = 'Enter a location.'; errorEl.style.display = 'block'; }
+          return;
+        }
+        if (errorEl) { errorEl.style.display = 'none'; }
+
+        // If user is logged in, populate state directly and run search
+        if (typeof state !== 'undefined' && state.userId) {
+          state.titles = titles.slice();
+          state.locations = [location];
+          if (resume) {
+            state.resumeText = resume;
+            var appResumeText = document.getElementById('resumeText');
+            if (appResumeText) appResumeText.value = resume;
+          }
+          if (typeof renderTags === 'function') renderTags();
+          if (typeof renderLocationTags === 'function') renderLocationTags();
+          if (typeof validateSearch === 'function') validateSearch();
+          // Hide landing, show app
+          document.getElementById('landingPage').style.display = 'none';
+          document.querySelector('.app').style.display = 'block';
+          document.querySelector('.nav').style.display = 'flex';
+          // Run search after brief delay
+          setTimeout(function() {
+            if (typeof runSearch === 'function') runSearch();
+          }, 500);
+          return;
+        }
+
+        // Not logged in: store in sessionStorage and open signup
+        sessionStorage.setItem('fjs_demo_title', titles.join(','));
+        sessionStorage.setItem('fjs_demo_location', location);
+        if (resume) sessionStorage.setItem('fjs_demo_resume', resume);
+
+        // Mark that we have pending demo data
+        sessionStorage.setItem('fjs_landing_demo', 'true');
+
+        // Open auth modal for signup
+        if (typeof openAuthModal === 'function') {
+          openAuthModal('signup');
+        } else {
+          window.location.href = '/?demo=true';
+        }
+      };
+      // Watch for auth completion when landing demo data is pending
+      var landingDemoCheck = setInterval(function() {
+        if (sessionStorage.getItem('fjs_landing_demo') !== 'true') {
+          clearInterval(landingDemoCheck);
+          return;
+        }
+        if (typeof state !== 'undefined' && state.userId) {
+          clearInterval(landingDemoCheck);
+          sessionStorage.removeItem('fjs_landing_demo');
+
+          var dTitle = sessionStorage.getItem('fjs_demo_title');
+          var dLocation = sessionStorage.getItem('fjs_demo_location');
+          var dResume = sessionStorage.getItem('fjs_demo_resume');
+
+          if (dTitle) {
+            state.titles = dTitle.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+            if (typeof renderTags === 'function') renderTags();
+          }
+          if (dLocation) {
+            state.locations = [dLocation];
+            if (typeof renderLocationTags === 'function') renderLocationTags();
+          }
+          if (dResume) {
+            state.resumeText = dResume;
+            var appResume = document.getElementById('resumeText');
+            if (appResume) appResume.value = dResume;
+          }
+          if (typeof validateSearch === 'function') validateSearch();
+
+          sessionStorage.removeItem('fjs_demo_title');
+          sessionStorage.removeItem('fjs_demo_location');
+          sessionStorage.removeItem('fjs_demo_resume');
+
+          // Auto-run search
+          if (dTitle) {
+            setTimeout(function() {
+              if (typeof runSearch === 'function') runSearch();
+            }, 1500);
+          }
+        }
+      }, 500);
+    })();
+
   </script>
 </body>
 </html>
