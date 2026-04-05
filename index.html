@@ -2220,6 +2220,32 @@
       setTimeout(function() { openAuthModal('signup'); }, 300);
     }
 
+    if (window.location.search.includes('demo=true')) {
+      setTimeout(function() {
+        var demoTitle = sessionStorage.getItem('fjs_demo_title');
+        var demoLocation = sessionStorage.getItem('fjs_demo_location');
+        var demoResume = sessionStorage.getItem('fjs_demo_resume');
+        if (demoTitle) {
+          state.titles = demoTitle.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+          renderTags();
+        }
+        if (demoLocation) {
+          state.locations = [demoLocation];
+          renderLocationTags();
+        }
+        if (demoResume) {
+          state.resumeText = demoResume;
+          document.getElementById('resumeText').value = demoResume;
+        }
+        validateSearch();
+        // Clean up
+        sessionStorage.removeItem('fjs_demo_title');
+        sessionStorage.removeItem('fjs_demo_location');
+        sessionStorage.removeItem('fjs_demo_resume');
+        window.history.replaceState({}, '', window.location.pathname);
+      }, 500);
+    }
+
     if (window.location.search.includes('checkout=success')) {
       window.history.replaceState({}, '', window.location.pathname);
       // Show success toast after a brief delay (let page load first)

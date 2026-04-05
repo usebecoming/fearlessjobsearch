@@ -9,6 +9,8 @@
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
   <!-- Vercel Analytics -->
   <script defer src="/_vercel/insights/script.js"></script>
   <!-- LinkedIn Insight Tag -->
@@ -105,15 +107,6 @@
       color: #1a1a1a;
       letter-spacing: 0.3px;
     }
-    .hero-eyebrow {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #B8A88A;
-      margin-bottom: 20px;
-    }
     .hero h1 {
       font-size: 2.6rem;
       line-height: 1.18;
@@ -129,27 +122,6 @@
       max-width: 600px;
       margin: 0 auto 36px;
     }
-    .hero-logos {
-      margin-top: 48px;
-      text-align: center;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.82rem;
-      color: #6E6E6E;
-    }
-    .hero-logos-label { display: block; margin-bottom: 12px; }
-    .hero-logos-names {
-      display: inline-flex;
-      align-items: center;
-      gap: 24px;
-      flex-wrap: wrap;
-      justify-content: center;
-      opacity: 0.5;
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: #111;
-      font-family: 'IBM Plex Sans', sans-serif;
-      letter-spacing: 0.3px;
-    }
 
     /* ── VIDEO ── */
     .video-section {
@@ -158,7 +130,6 @@
       max-width: 860px;
       margin: 0 auto;
     }
-    .video-section h2 { font-size: 1.8rem; margin-bottom: 28px; }
     .video-wrap {
       position: relative;
       padding-bottom: 56.25%;
@@ -176,113 +147,187 @@
       top: 0; left: 0;
       width: 100%; height: 100%;
     }
-    .video-subtext {
-      font-size: 0.82rem;
-      color: #888;
-      margin-top: 16px;
-      font-family: 'IBM Plex Mono', monospace;
-    }
 
-    /* ── PAIN ── */
-    .pain-section {
-      padding: 64px 24px;
-      max-width: 860px;
+    /* ── TRY IT NOW ── */
+    .try-section {
+      padding: 72px 24px;
+      max-width: 620px;
       margin: 0 auto;
     }
-    .pain-section h2 { font-size: 1.8rem; margin-bottom: 32px; text-align: center; }
-    .pain-cards {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
-    .pain-card {
-      background: #FFFFFF;
-      border: 1px solid #E5E4E2;
-      border-radius: 12px;
-      padding: 28px 24px;
-    }
-    .pain-icon {
-      font-size: 1.4rem;
+    .try-section h2 {
+      font-size: 1.8rem;
       margin-bottom: 12px;
-      display: block;
-      color: #C0392B;
-    }
-    .pain-card h3 {
-      font-size: 1.05rem;
-      margin-bottom: 8px;
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-weight: 600;
-    }
-    .pain-card p {
-      font-size: 0.88rem;
-      color: #666;
-      line-height: 1.55;
-    }
-
-    /* ── QUOTE ── */
-    .quote-block {
-      background: #F7F5F0;
-      border-top: 1px solid #E5E4E2;
-      border-bottom: 1px solid #E5E4E2;
-      padding: 60px 24px;
       text-align: center;
     }
-    .quote-block blockquote {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.45rem;
-      font-weight: 700;
-      color: #1a1a1a;
-      line-height: 1.5;
-      max-width: 780px;
-      margin: 0 auto;
-      font-style: italic;
+    .try-sub {
+      font-size: 0.95rem;
+      color: #555;
+      line-height: 1.6;
+      text-align: center;
+      margin-bottom: 32px;
     }
-
-    /* ── HOW IT WORKS ── */
-    .how-section {
-      padding: 72px 24px;
-      max-width: 860px;
-      margin: 0 auto;
-    }
-    .how-section h2 { font-size: 1.8rem; margin-bottom: 40px; text-align: center; }
-    .how-steps { display: flex; flex-direction: column; gap: 32px; }
-    .how-step {
-      background: #FFFFFF;
-      border: 1px solid #E5E4E2;
-      border-radius: 12px;
-      padding: 32px;
-      display: flex;
-      gap: 24px;
-      align-items: flex-start;
-    }
-    .how-step-num {
+    .form-label {
       font-family: 'IBM Plex Mono', monospace;
       font-size: 0.82rem;
       font-weight: 600;
-      color: #B8A88A;
-      background: #F9F6F1;
-      border-radius: 8px;
-      padding: 8px 14px;
+      color: #555;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #D1D0CE;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      margin-bottom: 16px;
+      box-sizing: border-box;
+      background: #FFFFFF;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #B8A88A;
+      box-shadow: 0 0 0 3px rgba(184,168,138,0.12);
+    }
+    .file-upload-area {
+      border: 2px dashed #C8C6C3;
+      border-radius: 10px;
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s;
+      margin-bottom: 12px;
+      background: #FFFFFF;
+    }
+    .file-upload-area:hover { border-color: #B8A88A; background: rgba(184,168,138,0.03); }
+    .file-upload-area.drag-over { border-color: #9A8B6E; background: #F7F5F2; }
+    .file-upload-area.has-file { border-color: #3A8A5C; background: rgba(58,138,92,0.03); }
+    .file-upload-area p { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; color: #777777; }
+    .file-upload-area .file-name { color: #3A8A5C; font-weight: 500; margin-top: 6px; }
+    .file-upload-area input { display: none; }
+    .form-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .form-divider span {
+      font-size: 0.78rem;
+      color: #999;
+      font-weight: 500;
       white-space: nowrap;
-      flex-shrink: 0;
     }
-    .how-step h3 {
-      font-size: 1.1rem;
-      margin-bottom: 8px;
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-weight: 600;
+    .form-divider div {
+      flex: 1;
+      height: 1px;
+      background: #E5E4E2;
     }
-    .how-step p {
+    .form-textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #D1D0CE;
+      border-radius: 10px;
       font-size: 0.88rem;
-      color: #666;
-      line-height: 1.6;
+      font-family: inherit;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+      background: #FFFFFF;
+      resize: vertical;
+      min-height: 100px;
+    }
+    .form-textarea:focus {
+      outline: none;
+      border-color: #B8A88A;
+      box-shadow: 0 0 0 3px rgba(184,168,138,0.12);
+    }
+    .form-error {
+      font-size: 0.85rem;
+      color: #C94444;
+      margin-top: 8px;
+      display: none;
     }
 
-    /* ── STATS ── */
-    .stats-section {
+    /* ── LOADING STATE ── */
+    .loading-state {
+      text-align: center;
+      padding: 40px 0;
+      display: none;
+    }
+    .loading-state p {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.92rem;
+      color: #555;
+    }
+    .loading-dots::after {
+      content: '';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+    @keyframes dots {
+      0%   { content: ''; }
+      25%  { content: '.'; }
+      50%  { content: '..'; }
+      75%  { content: '...'; }
+      100% { content: ''; }
+    }
+    .loading-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #E5E4E2;
+      border-top: 3px solid #B8A88A;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── SIGNUP REVEAL ── */
+    .signup-section {
+      padding: 72px 24px;
+      max-width: 460px;
+      margin: 0 auto;
+      text-align: center;
+      display: none;
+    }
+    .signup-section h2 {
+      font-size: 1.6rem;
+      margin-bottom: 12px;
+    }
+    .signup-sub {
+      font-size: 0.92rem;
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    /* ── TRUST / STATS ── */
+    .trust-section {
       padding: 48px 24px;
       max-width: 860px;
       margin: 0 auto;
+    }
+    .hero-logos {
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.82rem;
+      color: #6E6E6E;
+      margin-bottom: 40px;
+    }
+    .hero-logos-label { display: block; margin-bottom: 12px; }
+    .hero-logos-names {
+      display: inline-flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+      opacity: 0.5;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #111;
+      font-family: 'IBM Plex Sans', sans-serif;
+      letter-spacing: 0.3px;
     }
     .stats-grid {
       display: grid;
@@ -385,37 +430,6 @@
       font-style: italic;
     }
 
-    /* ── OFFER ── */
-    .offer-section {
-      padding: 72px 24px;
-      max-width: 860px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    .offer-section h2 { font-size: 1.8rem; margin-bottom: 36px; text-align: center; }
-    .offer-items {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      max-width: 560px;
-      margin: 0 auto 36px;
-      text-align: left;
-    }
-    .offer-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      font-size: 0.95rem;
-    }
-    .offer-check {
-      color: #27AE60;
-      font-size: 1.2rem;
-      flex-shrink: 0;
-      line-height: 1.4;
-    }
-    .offer-item strong { font-weight: 600; }
-    .offer-item span { color: #666; }
-
     /* ── FAQ ── */
     .faq-section {
       padding: 64px 24px;
@@ -464,62 +478,6 @@
       padding: 12px 0 20px;
     }
 
-    /* ── BUILDER ── */
-    .builder-section {
-      padding: 64px 24px;
-      max-width: 860px;
-      margin: 0 auto;
-    }
-    .builder-section h2 { font-size: 1.6rem; margin-bottom: 18px; }
-    .builder-section .builder-text {
-      font-size: 0.95rem;
-      color: #555;
-      line-height: 1.65;
-      margin-bottom: 20px;
-      max-width: 680px;
-    }
-    .builder-quote {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.15rem;
-      font-style: italic;
-      color: #1a1a1a;
-      border-left: 3px solid #B8A88A;
-      padding-left: 20px;
-      margin: 24px 0;
-      max-width: 640px;
-    }
-    .builder-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 24px;
-    }
-    .builder-badge {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: #B8A88A;
-      background: #F9F6F1;
-      border: 1px solid #E5E4E2;
-      border-radius: 20px;
-      padding: 6px 16px;
-    }
-
-    /* ── FINAL CTA ── */
-    .final-cta {
-      text-align: center;
-      padding: 80px 24px;
-      max-width: 700px;
-      margin: 0 auto;
-    }
-    .final-cta h2 { font-size: 2rem; margin-bottom: 14px; }
-    .final-cta .final-sub {
-      font-size: 0.95rem;
-      color: #666;
-      margin-bottom: 32px;
-      line-height: 1.6;
-    }
-
     /* ── FOOTER ── */
     .landing-footer {
       text-align: center;
@@ -538,23 +496,12 @@
       .hero-sub { font-size: 0.95rem; }
       .btn-cta { font-size: 0.88rem; padding: 16px 32px; }
       .hero-logos-names { font-size: 0.88rem; gap: 16px; }
-
-      .pain-cards { grid-template-columns: 1fr; }
-      .quote-block blockquote { font-size: 1.15rem; }
-
-      .how-step { flex-direction: column; gap: 12px; }
-
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .stat-num { font-size: 1.8rem; }
-
       .testimonials-grid { grid-template-columns: 1fr; }
-
-      .video-section, .pain-section, .how-section,
-      .stats-section, .testimonials-section,
-      .offer-section, .faq-section, .builder-section { padding: 48px 20px; }
-
-      .final-cta { padding: 56px 20px; }
-      .final-cta h2 { font-size: 1.5rem; }
+      .video-section, .try-section, .trust-section,
+      .testimonials-section, .faq-section { padding: 48px 20px; }
+      .signup-section { padding: 48px 20px; }
     }
   </style>
 </head>
@@ -566,10 +513,70 @@
       <img src="assets/phoenix-logo.png" alt="Fearless Job Search" onerror="this.style.display='none'">
       <span>FEARLESS JOB SEARCH</span>
     </div>
-    <div class="hero-eyebrow">For Directors &middot; VPs &middot; C-Suite Executives</div>
-    <h1>Stop waiting for callbacks. Land your next role through real conversations.</h1>
-    <p class="hero-sub">Fearless Job Search finds the roles, identifies exactly who to contact, and writes your outreach — from your actual resume, in your voice. Under 5 minutes.</p>
-    <!-- Inline signup form — no redirect needed -->
+
+    <!-- Headshot -->
+    <div style="margin-bottom:24px">
+      <img src="assets/ben-headshot.png" alt="Dr. Benjamin Ritter" style="width:80px;height:80px;border-radius:50%;object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div style="width:80px;height:80px;border-radius:50%;background:#E6F1FB;display:none;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:#185FA5;margin:0 auto 8px">BR</div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#888;margin-top:8px">Dr. Benjamin Ritter &middot; ICF PCC &middot; EdD Organizational Leadership</p>
+    </div>
+
+    <h1>Stop applying into the void. Start conversations that lead to offers.</h1>
+    <p class="hero-sub">Upload your resume. We find who's hiring, who to talk to, and what to say. You just send it.</p>
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#888;margin-bottom:16px">Currently available for US-based roles.</p>
+    <button class="btn-cta" onclick="document.getElementById('tryNow').scrollIntoView({behavior:'smooth'})">Try It Free</button>
+  </section>
+
+  <!-- ═══ VIDEO ═══ -->
+  <section class="video-section">
+    <div class="label">See it in action</div>
+    <div class="video-wrap">
+      <iframe src="https://player.vimeo.com/video/1177417614?badge=0&autopause=0&title=0&byline=0&portrait=0" title="Fearless Job Search — How It Works" frameborder="0" allow="autoplay;fullscreen;picture-in-picture;clipboard-write;encrypted-media" allowfullscreen></iframe>
+    </div>
+  </section>
+
+  <!-- ═══ TRY IT NOW ═══ -->
+  <section class="try-section" id="tryNow">
+    <div class="label">Try it now — free</div>
+    <h2>See what Fearless Job Search finds for you.</h2>
+    <p class="try-sub">Enter your target role and location. Upload your resume. We'll show you what's out there.</p>
+
+    <div id="tryForm">
+      <label class="form-label">What role are you targeting?</label>
+      <input type="text" id="demoTitle" class="form-input" placeholder="e.g. VP of Marketing, Head of HR">
+
+      <label class="form-label">Where?</label>
+      <input type="text" id="demoLocation" class="form-input" placeholder="e.g. Austin, TX">
+
+      <label class="form-label">Upload your resume (PDF, DOCX, or TXT)</label>
+      <div class="file-upload-area" id="demoUploadArea" onclick="document.getElementById('demoResumeFile').click()">
+        <p>Drop a file here or click to upload</p>
+        <p style="font-size:0.82rem;color:#777777;margin-top:4px">PDF, DOCX, or TXT</p>
+        <input type="file" id="demoResumeFile" accept=".txt,.pdf,.docx">
+      </div>
+
+      <div class="form-divider">
+        <div></div>
+        <span>or paste your resume text</span>
+        <div></div>
+      </div>
+      <textarea id="demoResumeText" class="form-textarea" placeholder="Paste your resume text here..."></textarea>
+
+      <button class="btn-cta" style="width:100%" id="demoSearchBtn" onclick="handleDemoSearch()">Show My Results &rarr;</button>
+      <p id="demoError" class="form-error"></p>
+    </div>
+
+    <div id="demoLoading" class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Finding roles that match your experience<span class="loading-dots"></span></p>
+    </div>
+  </section>
+
+  <!-- ═══ SIGNUP REVEAL ═══ -->
+  <section class="signup-section" id="signupReveal">
+    <h2>Your results are ready. Create a free account to see them.</h2>
+    <p class="signup-sub">We found roles matching your search. Sign up to reveal your personalized results — jobs scored against your resume, verified contacts, and ready-to-send outreach.</p>
+
     <div id="signupBox" style="max-width:400px;margin:0 auto;text-align:center">
       <button id="googleBtn" onclick="signInWithGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;border:1px solid #D1D0CE;border-radius:10px;background:#fff;cursor:pointer;font-size:0.95rem;font-weight:500;color:#333;font-family:inherit;margin-bottom:14px;transition:background 0.15s">
         <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
@@ -580,13 +587,17 @@
         <span style="font-size:0.78rem;color:#999;font-weight:500">or sign up with email</span>
         <div style="flex:1;height:1px;background:#E5E4E2"></div>
       </div>
-      <input type="email" id="signupEmail" placeholder="you@example.com" style="width:100%;padding:14px 16px;border:1px solid #D1D0CE;border-radius:10px;font-size:0.95rem;font-family:inherit;margin-bottom:10px;box-sizing:border-box">
-      <input type="password" id="signupPassword" placeholder="Create a password (min 6 chars)" style="width:100%;padding:14px 16px;border:1px solid #D1D0CE;border-radius:10px;font-size:0.95rem;font-family:inherit;margin-bottom:10px;box-sizing:border-box" onkeydown="if(event.key==='Enter')handleSignup()">
-      <button class="btn-cta" onclick="handleSignup()" style="width:100%">Start Free — No Credit Card</button>
+      <input type="email" id="signupEmail" class="form-input" placeholder="you@example.com">
+      <input type="password" id="signupPassword" class="form-input" placeholder="Create a password (min 6 chars)" onkeydown="if(event.key==='Enter')handleSignup()">
+      <button class="btn-cta" onclick="handleSignup()" style="width:100%">Create Account — Free</button>
       <p id="signupError" style="font-size:0.85rem;color:#C94444;margin-top:8px;display:none"></p>
       <p id="signupSuccess" style="display:none"></p>
     </div>
-    <p class="subtext" style="margin-top:14px">Free plan includes matched roles, real contacts &amp; outreach. Currently available for US-based roles.</p>
+    <p class="subtext" style="margin-top:16px">No credit card required. Your first search is completely free.</p>
+  </section>
+
+  <!-- ═══ SOCIAL PROOF ═══ -->
+  <section class="trust-section">
     <div class="hero-logos">
       <span class="hero-logos-label">Trusted by senior leaders from</span>
       <span class="hero-logos-names">
@@ -594,87 +605,15 @@
         <span>Amazon</span>
         <span>DoorDash</span>
         <span>Pinterest</span>
+        <span>Coursera</span>
         <span>Mayo Clinic</span>
       </span>
     </div>
-  </section>
-
-  <!-- ═══ VIDEO ═══ -->
-  <section class="video-section">
-    <div class="label">See it in action</div>
-    <h2>From search to outreach-ready in minutes.</h2>
-    <div class="video-wrap">
-      <iframe src="https://player.vimeo.com/video/1177417614?badge=0&autopause=0&title=0&byline=0&portrait=0" title="Fearless Job Search — How It Works" frameborder="0" allow="autoplay;fullscreen;picture-in-picture;clipboard-write;encrypted-media" allowfullscreen></iframe>
-    </div>
-    <p class="video-subtext">Watch the full walkthrough before you sign up.</p>
-  </section>
-
-  <!-- ═══ PAIN ═══ -->
-  <section class="pain-section">
-    <div class="label">Why your job search isn't working</div>
-    <h2>The traditional job search is designed for a different level.</h2>
-    <div class="pain-cards">
-      <div class="pain-card">
-        <span class="pain-icon">&#10007;</span>
-        <h3>You apply and disappear.</h3>
-        <p>Your resume hits the ATS, vanishes into a queue, and you never hear back. Most senior roles are filled before they're ever posted.</p>
-      </div>
-      <div class="pain-card">
-        <span class="pain-icon">&#10007;</span>
-        <h3>You don't know who to talk to.</h3>
-        <p>Finding the actual hiring manager takes hours per role — searching LinkedIn, guessing titles, hitting dead ends.</p>
-      </div>
-      <div class="pain-card">
-        <span class="pain-icon">&#10007;</span>
-        <h3>Your outreach sounds like everyone else's.</h3>
-        <p>Generic connection requests get ignored. Without personalization at the right level, your message blends in with noise.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══ QUOTE ═══ -->
-  <section class="quote-block">
-    <blockquote>"80% of senior roles are filled through relationships — before they're ever posted publicly. You don't need more applications. You need better conversations."</blockquote>
-  </section>
-
-  <!-- ═══ HOW IT WORKS ═══ -->
-  <section class="how-section">
-    <div class="label">How it works</div>
-    <h2>Three steps. Zero cold applying.</h2>
-    <div class="how-steps">
-      <div class="how-step">
-        <span class="how-step-num">01</span>
-        <div>
-          <h3>Find the roles you are more likely to get.</h3>
-          <p>Upload your resume, and AI scores each role against your actual experience. Live listings from LinkedIn, Indeed, Glassdoor, and ZipRecruiter — no agencies, no noise. <span style="color:#999;font-size:0.85rem">Currently available for US-based roles.</span></p>
-        </div>
-      </div>
-      <div class="how-step">
-        <span class="how-step-num">02</span>
-        <div>
-          <h3>Immediately identify who is responsible for hiring you.</h3>
-          <p>The hiring manager, internal recruiter, and skip-level executive — with real LinkedIn profiles and current employment confirmed.</p>
-        </div>
-      </div>
-      <div class="how-step">
-        <span class="how-step-num">03</span>
-        <div>
-          <h3>Send outreach proven to convert to real conversations.</h3>
-          <p>A 4-message sequence across 14 days, written from your resume in a peer-level tone. Copy, paste, send.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══ STATS ═══ -->
-  <section class="stats-section">
-    <p style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#B8A88A;margin-bottom:8px;text-align:center">The numbers</p>
-    <h2 style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:800;color:#1a1a1a;margin-bottom:32px;text-align:center">Results that speak for themselves</h2>
     <div class="stats-grid">
       <div class="stat-item">
         <span class="stat-num">35%</span>
         <div class="stat-label">Connection request acceptance rate</div>
-        <div class="stat-sub">Industry avg: 15–20%</div>
+        <div class="stat-sub">Industry avg: 15-20%</div>
       </div>
       <div class="stat-item">
         <span class="stat-num">1 in 6</span>
@@ -727,32 +666,6 @@
     <p class="testimonial-disclaimer">Coaching clients of Dr. Benjamin Ritter, leveraging this exact strategy.</p>
   </section>
 
-  <!-- ═══ OFFER ═══ -->
-  <section class="offer-section">
-    <div class="label">What you get — free</div>
-    <h2>Everything you need to start having real conversations.</h2>
-    <div class="offer-items">
-      <div class="offer-item">
-        <span class="offer-check">&#10003;</span>
-        <div><strong>AI-scored job matches</strong> <span>— scored against your resume</span></div>
-      </div>
-      <div class="offer-item">
-        <span class="offer-check">&#10003;</span>
-        <div><strong>Verified decision-maker contacts</strong> <span>— hiring managers, recruiters, executives</span></div>
-      </div>
-      <div class="offer-item">
-        <span class="offer-check">&#10003;</span>
-        <div><strong>4-message outreach sequence</strong> <span>— written from your resume, in your voice</span></div>
-      </div>
-      <div class="offer-item">
-        <span class="offer-check">&#10003;</span>
-        <div><strong>Company Target Mode</strong> <span>— skip the job board, find contacts at any company</span></div>
-      </div>
-    </div>
-    <button class="btn-cta" onclick="document.getElementById('signupBox').scrollIntoView({behavior:'smooth'})">Start Free Now — Takes 60 Seconds</button>
-    <p class="subtext">No credit card. No commitment. Full product, one free search.</p>
-  </section>
-
   <!-- ═══ FAQ ═══ -->
   <section class="faq-section">
     <h2>Questions you probably have.</h2>
@@ -778,27 +691,6 @@
     </div>
   </section>
 
-  <!-- ═══ BUILDER ═══ -->
-  <section class="builder-section">
-    <h2>Built by the coach who has helped hundreds of executives land their next role.</h2>
-    <p class="builder-text">Dr. Benjamin Ritter spent years watching senior leaders fail at the job search — not because they weren't qualified, but because they were playing the wrong game. Applications don't work at this level. Relationships do. Fearless Job Search is the strategy he's used with 500+ coaching clients, now available as a tool anyone can use.</p>
-    <blockquote class="builder-quote">"You don't need to apply to more jobs. You need to have better conversations with the right people. I built this tool to make that happen."</blockquote>
-    <div class="builder-badges">
-      <span class="builder-badge">ICF PCC Certified</span>
-      <span class="builder-badge">EdD Organizational Leadership</span>
-      <span class="builder-badge">Author, Becoming Fearless</span>
-      <span class="builder-badge">Clients at Google, Amazon, DoorDash</span>
-    </div>
-  </section>
-
-  <!-- ═══ FINAL CTA ═══ -->
-  <section class="final-cta">
-    <h2>Land your role. Finally break the silence.</h2>
-    <p class="final-sub">Every day you wait is a day someone else is building the relationship that lands the role you want.</p>
-    <button class="btn-cta" onclick="document.getElementById('signupBox').scrollIntoView({behavior:'smooth'})">Start Free — fearlessjobsearch.com</button>
-    <p class="subtext">No credit card required &middot; Full product &middot; One free search</p>
-  </section>
-
   <!-- ═══ FOOTER ═══ -->
   <footer class="landing-footer">
     <p>Fearless Job Search &middot; Live for Yourself Consulting &middot; Dr. Benjamin Ritter</p>
@@ -806,17 +698,155 @@
   </footer>
 
   <script>
+    // ── FAQ toggle ──
     function toggleFaq(btn) {
       var answer = btn.nextElementSibling;
       var isOpen = btn.classList.contains('open');
-      // Close all
       document.querySelectorAll('.faq-q').forEach(function(q) { q.classList.remove('open'); });
       document.querySelectorAll('.faq-a').forEach(function(a) { a.classList.remove('open'); });
-      // Toggle clicked
       if (!isOpen) {
         btn.classList.add('open');
         answer.classList.add('open');
       }
+    }
+
+    // ── Resume file handling ──
+    var demoResumeText = '';
+    var uploadArea = document.getElementById('demoUploadArea');
+    var resumeFileInput = document.getElementById('demoResumeFile');
+
+    resumeFileInput.addEventListener('change', function(e) {
+      handleDemoResumeFile(e.target.files[0]);
+    });
+
+    uploadArea.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      uploadArea.classList.add('drag-over');
+    });
+
+    uploadArea.addEventListener('dragleave', function(e) {
+      uploadArea.classList.remove('drag-over');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+      e.preventDefault();
+      uploadArea.classList.remove('drag-over');
+      var file = e.dataTransfer.files[0];
+      if (file) handleDemoResumeFile(file);
+    });
+
+    async function handleDemoResumeFile(file) {
+      if (!file) return;
+      var ext = file.name.split('.').pop().toLowerCase();
+
+      var allowedTypes = ['pdf', 'docx', 'txt', 'doc'];
+      if (!allowedTypes.includes(ext)) {
+        uploadArea.innerHTML = '<p style="color:#C94444">Only PDF, DOCX, and TXT files are accepted.</p>';
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        uploadArea.innerHTML = '<p style="color:#C94444">File too large. Maximum size is 5MB.</p>';
+        return;
+      }
+
+      uploadArea.classList.remove('has-file');
+      uploadArea.innerHTML = '<p style="color:#777777">Processing ' + file.name + '...</p>';
+
+      try {
+        var text = '';
+
+        if (ext === 'pdf') {
+          var arrayBuffer = await file.arrayBuffer();
+          var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          var pages = [];
+          for (var i = 1; i <= pdf.numPages; i++) {
+            var page = await pdf.getPage(i);
+            var content = await page.getTextContent();
+            var lastY = null;
+            var pageLines = [];
+            var currentLine = '';
+            content.items.forEach(function(item) {
+              var y = item.transform ? item.transform[5] : null;
+              if (lastY !== null && y !== null && Math.abs(y - lastY) > 5) {
+                if (currentLine.trim()) pageLines.push(currentLine.trim());
+                currentLine = item.str;
+              } else {
+                if (currentLine && item.str && !currentLine.endsWith(' ') && !item.str.startsWith(' ')) {
+                  currentLine += ' ';
+                }
+                currentLine += item.str;
+              }
+              lastY = y;
+            });
+            if (currentLine.trim()) pageLines.push(currentLine.trim());
+            pages.push(pageLines.join('\n'));
+          }
+          text = pages.join('\n\n');
+        } else if (ext === 'docx') {
+          var arrayBuffer = await file.arrayBuffer();
+          var result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+          text = result.value;
+        } else {
+          text = await file.text();
+        }
+
+        // Normalize whitespace
+        text = text.split(/\n\s*\n/).map(function(para) {
+          return para.split('\n').map(function(line) {
+            return line.replace(/\s+/g, ' ').trim();
+          }).filter(Boolean).join('\n');
+        }).filter(Boolean).join('\n\n').trim();
+
+        demoResumeText = text;
+        uploadArea.classList.add('has-file');
+        uploadArea.innerHTML = '<p class="file-name">' + file.name + '</p><p style="font-size:0.78rem;color:#777;margin-top:4px">' + text.length.toLocaleString() + ' characters extracted</p>';
+      } catch (err) {
+        console.error('Resume parse error:', err);
+        uploadArea.innerHTML = '<p style="color:#C94444">Could not read file. Try pasting your resume text below instead.</p>';
+        demoResumeText = '';
+      }
+    }
+
+    // ── Demo search handler ──
+    function handleDemoSearch() {
+      var title = document.getElementById('demoTitle').value.trim();
+      var location = document.getElementById('demoLocation').value.trim();
+      var errorEl = document.getElementById('demoError');
+      errorEl.style.display = 'none';
+
+      if (!title) {
+        errorEl.textContent = 'Please enter a target role.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      if (!location) {
+        errorEl.textContent = 'Please enter a location.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      // Get resume text from file upload or textarea
+      var resumeText = demoResumeText || document.getElementById('demoResumeText').value.trim();
+
+      // Store in sessionStorage
+      sessionStorage.setItem('fjs_demo_title', title);
+      sessionStorage.setItem('fjs_demo_location', location);
+      if (resumeText) {
+        sessionStorage.setItem('fjs_demo_resume', resumeText);
+      }
+
+      // Show loading state
+      document.getElementById('tryForm').style.display = 'none';
+      document.getElementById('demoLoading').style.display = 'block';
+
+      // After 2 seconds, reveal signup
+      setTimeout(function() {
+        document.getElementById('demoLoading').style.display = 'none';
+        var signupSection = document.getElementById('signupReveal');
+        signupSection.style.display = 'block';
+        signupSection.scrollIntoView({ behavior: 'smooth' });
+      }, 2000);
     }
 
     // ── Supabase Auth ──
@@ -829,7 +859,7 @@
       try {
         var { error } = await sb.auth.signInWithOAuth({
           provider: 'google',
-          options: { redirectTo: window.location.origin + '/?utm_source=landing&utm_medium=page&utm_campaign=launch' }
+          options: { redirectTo: window.location.origin + '/?signup=true&demo=true' }
         });
         if (error) {
           document.getElementById('signupError').textContent = 'Google sign-in failed: ' + error.message;
@@ -859,8 +889,7 @@
           errorEl.textContent = 'An account with this email already exists. Sign in on the main site.';
           errorEl.style.display = 'block';
         } else if (data?.session) {
-          // Signed up and auto-logged in — redirect to app
-          // Send welcome email in background
+          // Signed up and auto-logged in — redirect to app with demo flag
           try {
             fetch('/api/welcome-email', {
               method: 'POST',
@@ -871,10 +900,9 @@
               body: JSON.stringify({ email: email, name: '' })
             }).catch(function() {});
           } catch(e) {}
-          // Redirect to app
-          window.location.href = '/?utm_source=landing&utm_medium=page&utm_campaign=launch';
+          window.location.href = '/?signup=true&demo=true';
         } else {
-          // Show success — email confirmation might be on
+          // Email confirmation required
           successEl.style.display = 'block';
           successEl.style.cssText = 'display:block;background:#F0F7ED;border:2px solid #4CAF50;border-radius:12px;padding:20px;text-align:center;margin-top:12px';
           successEl.innerHTML = '<h3 style="font-size:1rem;font-weight:600;color:#1a1a1a;margin-bottom:6px">Check your email</h3><p style="font-size:0.85rem;color:#444">We sent a confirmation link to <strong>' + email + '</strong></p>';
