@@ -37,7 +37,12 @@
       "maxDuration": 30
     }
   },
-  "crons": [],
+  "crons": [
+    {
+      "path": "/api/cron-nudge-email",
+      "schedule": "0 14 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/",
