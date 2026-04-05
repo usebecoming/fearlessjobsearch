@@ -1000,6 +1000,54 @@
       background: rgba(184,168,138,0.05); border-radius: 0 10px 10px 0;
     }
 
+    /* ── FAQ ── */
+    .faq-section {
+      padding: 64px 24px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .faq-section h2 { font-size: 1.8rem; margin-bottom: 32px; text-align: center; }
+    .faq-item {
+      border-bottom: 1px solid #E5E4E2;
+    }
+    .faq-q {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 20px 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'IBM Plex Sans', sans-serif;
+    }
+    .faq-q::after {
+      content: '+';
+      font-size: 1.3rem;
+      color: #B8A88A;
+      font-weight: 400;
+      transition: transform 0.2s;
+      flex-shrink: 0;
+      margin-left: 16px;
+    }
+    .faq-q.open::after { content: '\2212'; }
+    .faq-a {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+      font-size: 0.88rem;
+      color: #666;
+      line-height: 1.6;
+    }
+    .faq-a.open {
+      max-height: 300px;
+      padding: 12px 0 20px;
+    }
+
     /* ── Responsive ── */
     /* ── Hamburger Button ── */
     .hamburger-btn {
@@ -1081,6 +1129,9 @@
       .credibility-section h2 { font-size: 1.4rem; }
       .credibility-quote { font-size: 1rem; padding: 14px 16px; }
       .proof-badge { font-size: 0.78rem; padding: 6px 12px; }
+
+      /* FAQ */
+      .faq-section { padding: 48px 16px; }
 
       /* App wrapper */
       .app-wrapper { padding: 20px 16px; margin: 16px auto; border-radius: 12px; }
@@ -1237,6 +1288,10 @@
     <!-- Hero -->
     <div class="hero">
       <div class="hero-badge">Built for your next senior role</div>
+      <div style="margin-bottom:16px">
+        <img src="assets/ben-headshot.png" alt="Dr. Benjamin Ritter" style="width:100px;height:auto;border-radius:12px;object-fit:contain;box-shadow:0 4px 12px rgba(0,0,0,0.1)" onerror="this.style.display='none'">
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:#999;margin-top:6px">Created by Dr. Benjamin Ritter · ICF PCC</p>
+      </div>
       <h1>Stop waiting for callbacks. <span>Start conversations with the right people.</span></h1>
       <p style="line-height:2">Upload your resume.<br>We find who's hiring, who to talk to, and what to say.<br>You just send it.</p>
       <div class="hero-cta">
@@ -1560,18 +1615,50 @@
 
     <!-- Credibility Section -->
     <div class="credibility-section">
-      <h2>Built by the coach who has helped executives land the jobs they actually want</h2>
-      <p class="section-sub" style="font-size:1.05rem;max-width:650px;margin-left:auto;margin-right:auto">This is not another AI gimmick. Fearless Job Search was created by Dr. Benjamin Ritter, an ICF PCC-certified executive coach with a Doctorate in Organizational Leadership.</p>
-      <div class="proof-badges">
-        <span class="proof-badge">ICF PCC Certified</span>
-        <span class="proof-badge">Doctorate in Organizational Leadership</span>
-        <span class="proof-badge">Clients at Google, Amazon, DoorDash, Pinterest, Coursera</span>
-        <span class="proof-badge">Author of "Becoming Fearless"</span>
-        <span class="proof-badge">Founder, Live for Yourself Consulting</span>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#B8A88A;margin-bottom:8px">Built by a coach, not a startup</p>
+      <h2>Dr. Benjamin Ritter has helped 500+ executives land their next role.</h2>
+      <div style="display:flex;gap:32px;align-items:center;text-align:left;flex-wrap:wrap;justify-content:center;margin-top:28px">
+        <div style="flex:1;min-width:280px;max-width:420px">
+          <p style="font-size:0.95rem;color:#444;line-height:1.8;margin-bottom:16px">He spent years watching senior leaders fail at the job search — not because they weren't qualified, but because they were playing the wrong game. Applications don't work at this level. Relationships do.</p>
+          <p style="font-size:0.95rem;color:#444;line-height:1.8;margin-bottom:16px">Fearless Job Search is the exact strategy he's used with coaching clients at Google, Amazon, DoorDash, Pinterest, Coursera, and Mayo Clinic — now available as a tool.</p>
+          <blockquote style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:#B8A88A;font-style:italic;margin:16px 0;padding-left:16px;border-left:3px solid #B8A88A">"You don't need to apply to more jobs. You need better conversations with the right people."</blockquote>
+          <div class="proof-badges" style="justify-content:flex-start;margin:16px 0 0">
+            <span class="proof-badge">ICF PCC Certified</span>
+            <span class="proof-badge">EdD Organizational Leadership</span>
+            <span class="proof-badge">Author, Becoming Fearless</span>
+          </div>
+        </div>
+        <div style="flex-shrink:0;display:flex;flex-direction:column;gap:12px">
+          <img src="assets/LIVEspeaker4.jpg" alt="Dr. Benjamin Ritter speaking at LIVE event" style="width:320px;max-width:100%;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.1)">
+          <img src="assets/USR9_CDC_Speaker_Series_on_Leadership_Benjamin_Ritter_2024_018_resized.jpg" alt="Dr. Benjamin Ritter on panel at CDC Speaker Series" style="width:320px;max-width:100%;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.1)">
+        </div>
       </div>
-      <div class="credibility-quote">"You don't need to apply to more jobs. You need to have better conversations with the right people. I built this tool to make that happen."</div>
-      <p style="font-family:'IBM Plex Mono',monospace;font-size:0.95rem;color:#444444;margin-top:12px;font-weight:600">Dr. Benjamin Ritter</p>
-      <a href="https://liveforyourselfconsulting.com" target="_blank" style="display:inline-block;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:0.92rem;font-weight:500">Learn more about LFY Consulting &#8594;</a>
+      <a href="https://liveforyourselfconsulting.com" target="_blank" style="display:inline-block;margin-top:24px;font-family:'IBM Plex Mono',monospace;font-size:0.92rem;font-weight:500">Learn more about LFY Consulting &#8594;</a>
+    </div>
+
+    <!-- FAQ -->
+    <div class="faq-section">
+      <h2>Questions you probably have.</h2>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">Is this actually free? What's the catch?</button>
+        <div class="faq-a">No catch. No credit card. Your first search gives you real job matches, real contacts with LinkedIn profiles, and a full outreach sequence — completely free. We make money when you upgrade for more searches, not by selling your data.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">Are these real people I can actually contact?</button>
+        <div class="faq-a">Yes. Every contact is sourced from public LinkedIn data and verified by AI to confirm current company association. Former employees are filtered out automatically. You get real names, real titles, and direct LinkedIn profile links — not generic company pages. We always recommend verifying on LinkedIn before reaching out.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">I already have LinkedIn Premium. Why do I need this?</button>
+        <div class="faq-a">LinkedIn Premium shows you jobs and lets you send InMails. Fearless Job Search goes further — it identifies the specific hiring manager, recruiter, and executive above the role, then writes a personalized 4-message outreach sequence from your resume in your voice. The difference is going from "here's a job listing" to "here's exactly who to contact and what to say to them."</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">What if there are no open roles at the company I want?</button>
+        <div class="faq-a">That's exactly what Company Target Mode is for. Enter any company — even if nothing is posted — and we surface the right decision-makers to connect with. At the senior level, the best roles are often filled through relationships before they're ever posted publicly. This gets you in front of the right people before the job even goes live.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">Who built this and why should I trust it?</button>
+        <div class="faq-a">Fearless Job Search was built by Dr. Benjamin Ritter — an ICF PCC-certified executive coach with a Doctorate in Organizational Leadership. He's coached over 500 senior leaders at companies like Google, Amazon, DoorDash, and Pinterest through career transitions. This tool is the exact strategy he uses with his coaching clients, now available as a product. It's not another AI gimmick — it's built by someone who has done this work for years.</div>
+      </div>
     </div>
 
     <!-- Pricing -->
@@ -2209,6 +2296,18 @@
   </div>
 
   <script>
+    // ── FAQ toggle ──
+    function toggleFaq(btn) {
+      var answer = btn.nextElementSibling;
+      var isOpen = btn.classList.contains('open');
+      document.querySelectorAll('.faq-q').forEach(function(q) { q.classList.remove('open'); });
+      document.querySelectorAll('.faq-a').forEach(function(a) { a.classList.remove('open'); });
+      if (!isOpen) {
+        btn.classList.add('open');
+        answer.classList.add('open');
+      }
+    }
+
     // ── Check checkout success ──
     // Auto-open signup modal if coming from landing page
     if (window.location.search.includes('signup=true')) {
