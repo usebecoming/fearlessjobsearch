@@ -158,9 +158,9 @@ function emailDay14(firstName) {
 const EMAIL_SEQUENCE = [
   { day: 2,  key: 'day2',  subject: 'Your search is waiting.',                          needsNoSearch: true,  template: emailDay2 },
   { day: 5,  key: 'day5',  subject: 'She had her first conversation in 6 days.',        needsNoSearch: false, template: emailDay5 },
-  { day: 7,  key: 'day7',  subject: "You've seen it work. Here's what's next.",          needsSearch: true,    template: emailDay7 },
-  { day: 10, key: 'day10', subject: "You haven't run your first search yet",             needsNoSearch: false, template: emailDay10 },
-  { day: 14, key: 'day14', subject: 'Last note from me.',                                needsNoSearch: false, template: emailDay14 },
+  { day: 10, key: 'day7',  subject: "You've seen it work. Here's what's next.",          needsSearch: true,    template: emailDay7 },
+  { day: 14, key: 'day10', subject: "You haven't run your first search yet",             needsNoSearch: false, template: emailDay10 },
+  { day: 21, key: 'day14', subject: 'Last note from me.',                                needsNoSearch: false, template: emailDay14 },
 ];
 
 export default async function handler(req, res) {
